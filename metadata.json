@@ -1,0 +1,5 @@
+{
+  "name": "ADAPTATOR (Generador de Fichas Adaptadas)",
+  "description": "Una aplicación web para generar y adaptar fichas educativas para niños con necesidades especiales, utilizando IA para personalizar el contenido según el perfil del niño.",
+  "requestFramePermissions": []
+}
