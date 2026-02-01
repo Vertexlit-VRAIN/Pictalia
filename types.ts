@@ -11,7 +11,8 @@ export interface WorksheetItem {
   type: 'image' | 'text' | 'traceable_text' | 'empty_box';
   content: string;
   searchTerm?: string;
-  pictogramUrl?: string | null;
+  selectedPictoUrl?: string;
+  pictoOptions?: string[];
 }
 
 export type WorksheetLayout = 'row' | 'column' | 'true_false' | 'sentence_building' | 'matching_horizontal';
@@ -32,6 +33,8 @@ export interface WorksheetSection {
 export interface Worksheet {
   title: string;
   pictogramSearchTerm: string;
+  selectedPictoUrl?: string;
+  pictoOptions?: string[];
   sections: WorksheetSection[];
 }
 

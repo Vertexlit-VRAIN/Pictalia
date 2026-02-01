@@ -56,7 +56,7 @@ const renderWorksheetItem = (item: WorksheetItem, index: number) => {
       return (
         <div key={index} className="flex flex-col items-center justify-center p-2 border-2 border-black rounded-lg h-32 w-32 bg-white pdf-avoid-break">
           <Pictogram 
-            src={item.pictogramUrl}
+            src={item.selectedPictoUrl}
             searchTerm={item.searchTerm || item.content} 
             altText={item.content} 
             className="max-h-20 max-w-20 object-contain"

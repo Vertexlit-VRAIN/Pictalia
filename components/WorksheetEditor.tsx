@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { SavedWorksheet } from '../types';
 import { EditableWorksheetDisplay } from './EditableWorksheetDisplay';
 import { refineWorksheet } from '../services/geminiService';
+import { searchPictograms, getPictogramUrl } from '../services/arasaacService';
 import { Spinner } from './Spinner';
 import { Wand2Icon, SaveIcon } from './Icons';
+import { produce } from 'immer';
 
 interface WorksheetEditorProps {
   worksheet: SavedWorksheet;
@@ -12,11 +14,60 @@ interface WorksheetEditorProps {
   onCancel: () => void;
 }
 
+const getFallbackImageUrl = (seed: string) => `https://picsum.photos/seed/${encodeURIComponent(seed)}/200`;
+
 export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, setWorksheet, onSave, onCancel }) => {
   const [refinementInstruction, setRefinementInstruction] = useState('');
   const [isRefining, setIsRefining] = useState(false);
   const [refinementError, setRefinementError] = useState<string | null>(null);
-  
+  const [isMigrating, setIsMigrating] = useState(true);
+
+  useEffect(() => {
+    const migrateWorksheet = async () => {
+      // Check if migration is needed (e.g., old data structure without picto options)
+      if (typeof worksheet.selectedPictoUrl !== 'undefined') {
+        setIsMigrating(false);
+        return;
+      }
+
+      setIsMigrating(true);
+      const searchTerms: { type: 'main' | 'item'; path: (number | string)[]; term: string }[] = [];
+      searchTerms.push({ type: 'main', path: [], term: worksheet.pictogramSearchTerm });
+      worksheet.sections.forEach((section, sectionIndex) => {
+        section.items.forEach((item, itemIndex) => {
+          if (item.type === 'image') {
+            searchTerms.push({ type: 'item', path: [sectionIndex, itemIndex], term: item.content });
+          }
+        });
+      });
+
+      const pictogramPromises = searchTerms.map(st => searchPictograms(st.term));
+      const pictogramResults = await Promise.all(pictogramPromises);
+
+      const migratedWorksheet = produce(worksheet, draft => {
+        searchTerms.forEach((st, index) => {
+          const pictos = pictogramResults[index];
+          const urls = pictos.map(p => getPictogramUrl(p._id));
+          if (st.type === 'main') {
+            draft.pictoOptions = urls;
+            draft.selectedPictoUrl = urls.length > 0 ? urls[0] : getFallbackImageUrl(st.term);
+          } else {
+            const [sectionIndex, itemIndex] = st.path;
+            const item = draft.sections[sectionIndex as number].items[itemIndex as number];
+            item.searchTerm = st.term;
+            item.pictoOptions = urls;
+            item.selectedPictoUrl = urls.length > 0 ? urls[0] : getFallbackImageUrl(st.term);
+          }
+        });
+      });
+
+      setWorksheet(migratedWorksheet);
+      setIsMigrating(false);
+    };
+
+    migrateWorksheet();
+  }, [worksheet, setWorksheet]);
+
   const handleRefineWithAI = async () => {
     if (!refinementInstruction.trim()) {
       setRefinementError('Por favor, escribe qué te gustaría cambiar.');
@@ -25,8 +76,45 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
     setIsRefining(true);
     setRefinementError(null);
     try {
-      const refined = await refineWorksheet(worksheet, refinementInstruction);
-      setWorksheet({ ...worksheet, ...refined });
+      const refinedPartial = await refineWorksheet(worksheet, refinementInstruction);
+      
+      // Create a complete worksheet with the refinements before processing
+      const newBaseWorksheet = { ...worksheet, ...refinedPartial };
+
+      // After refining, re-process the pictograms for any new/changed items
+      const searchTerms: { type: 'main' | 'item'; path: (number | string)[]; term: string }[] = [];
+      if (newBaseWorksheet.pictogramSearchTerm) {
+        searchTerms.push({ type: 'main', path: [], term: newBaseWorksheet.pictogramSearchTerm });
+      }
+      newBaseWorksheet.sections.forEach((section, sectionIndex) => {
+        section.items.forEach((item, itemIndex) => {
+          if (item.type === 'image') {
+            searchTerms.push({ type: 'item', path: [sectionIndex, itemIndex], term: item.content });
+          }
+        });
+      });
+
+      const pictogramPromises = searchTerms.map(st => searchPictograms(st.term));
+      const pictogramResults = await Promise.all(pictogramPromises);
+
+      const processedWorksheet = produce(newBaseWorksheet, draft => {
+        searchTerms.forEach((st, index) => {
+          const pictos = pictogramResults[index];
+          const urls = pictos.map(p => getPictogramUrl(p._id));
+          if (st.type === 'main') {
+            draft.pictoOptions = urls;
+            draft.selectedPictoUrl = urls.length > 0 ? urls[0] : getFallbackImageUrl(st.term);
+          } else {
+            const [sectionIndex, itemIndex] = st.path;
+            const item = draft.sections[sectionIndex as number].items[itemIndex as number];
+            item.searchTerm = st.term;
+            item.pictoOptions = urls;
+            item.selectedPictoUrl = urls.length > 0 ? urls[0] : getFallbackImageUrl(st.term);
+          }
+        });
+      });
+
+      setWorksheet(processedWorksheet);
       setRefinementInstruction('');
     } catch (err: any) {
       setRefinementError(err.message || 'Error al refinar la ficha.');
@@ -35,6 +123,15 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
     }
   };
   
+  if (isMigrating) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Spinner />
+        <p className="ml-4 text-gray-600">Actualizando formato de la ficha...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="md:col-span-2">

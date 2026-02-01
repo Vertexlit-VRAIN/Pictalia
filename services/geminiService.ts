@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { searchPictograms } from './arasaacService';
+
 import { CHILD_PROFILE, APP_DATA_STORAGE_KEY } from '../constants';
 import type { Worksheet, Profile, AppData, SavedWorksheet } from '../types';
 
@@ -101,10 +101,10 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
   const instructionPrompt = showPictogramInstructions
     ? `
       - **Instrucción Visual**: Para cada sección, en el objeto \`instruction\`, proporciona:
-        - \`text\`: La instrucción principal en una o dos palabras MAYÚSCULAS (ej: "UNE CON FLECHAS").
-        - \`pictograms\`: Un array que descompone la instrucción. Para "UNE CON FLECHAS", el array sería \`[{searchTerm: 'unir flecha', content: 'UNE'}, {searchTerm: 'flecha', content: 'FLECHA'}]\`. El \`searchTerm\` debe ser lo más descriptivo posible para encontrar la imagen correcta en ARASAAC.`
+        - \`text\`: La instrucción principal en una o dos palabras MAYÚSCULAS (ej: "RODEAR", "RELACIONAR").
+        - \`pictograms\`: Un array que descompone la instrucción. Para "RELACIONAR CON FLECHAS", el array sería \`[{searchTerm: 'relacionar', content: 'RELACIONAR'}, {searchTerm: 'flecha', content: 'FLECHA'}]\`. El \`searchTerm\` debe ser el verbo en infinitivo o un sustantivo, lo más descriptivo posible para encontrar la imagen correcta en ARASAAC.`
     : `
-      - **Instrucción Simple**: Para cada sección, el campo \`instruction.text\` debe ser una o dos palabras MAYÚSCULAS (ej: "RODEA", "UNE"). El campo \`instruction.pictograms\` debe omitirse.`;
+      - **Instrucción Simple**: Para cada sección, el campo \`instruction.text\` debe ser una o dos palabras MAYÚSCULAS (ej: "RODEAR", "RELACIONAR"). El campo \`instruction.pictograms\` debe omitirse.`;
   
   try {
     let contents: any;
@@ -118,7 +118,7 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
             INSTRUCCIONES DE ADAPTACIÓN:
             1.  **IDENTIFICA EL CONCEPTO**: Mira TODAS LAS PÁGINAS en la imagen y entiende cuál es el objetivo educativo principal (ej: aprender el número 3, los colores).
             2.  **REINVENTA Y AMPLÍA**: No copies los ejercicios. Crea una ficha nueva y más sencilla basada en el concepto.
-            3.  **ESTRUCTURA AGRUPADA**: Genera grupos de actividades del mismo tipo. Por ejemplo, crea AL MENOS TRES actividades seguidas de "unir con flechas" antes de cambiar a otro tipo.
+            3.  **ESTRUCTURA AGRUPADA**: Genera grupos de actividades del mismo tipo. Por ejemplo, crea AL MENOS TRES actividades seguidas de "relacionar con flechas" antes de cambiar a otro tipo.
             4.  **SIN EJEMPLOS RESUELTOS**: No incluyas una actividad resuelta como ejemplo. Todas las actividades deben ser para que el niño las resuelva.
             ${instructionPrompt}
             5.  **FORMATO JSON**: Tu respuesta DEBE ser un objeto JSON válido que se ajuste al esquema, sin texto adicional.
@@ -143,12 +143,12 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
             ${childProfile}
 
             REGLAS DE DISEÑO OBLIGATORIAS:
-            1.  **ESTRUCTURA DE LA FICHA**: La ficha debe tener una estructura clara. Genera grupos de actividades del mismo tipo. Por ejemplo, crea AL MENOS TRES actividades seguidas de "unir con flechas", luego puedes pasar a otro tipo de actividad.
+            1.  **ESTRUCTURA DE LA FICHA**: La ficha debe tener una estructura clara. Genera grupos de actividades del mismo tipo. Por ejemplo, crea AL MENOS TRES actividades seguidas de "relacionar con flechas", luego puedes pasar a otro tipo de actividad.
             2.  **SIN EJEMPLOS RESUELTOS**: No incluyas una primera actividad resuelta como ejemplo. Todas las actividades deben ser para que el niño las complete.
             3.  **VISUAL ANTE TODO**: La ficha debe ser 90% visual.
             ${instructionPrompt}
-            4.  **TIPO DE ACTIVIDADES**: Prioriza repasar, rodear, unir, pintar, clasificar visualmente. NO incluyas contar, escribir (excepto vocales mayúsculas) o matemáticas complejas.
-            5.  **TÉRMINOS DE BÚSQUEDA**: Para cada imagen, proporciona un término de búsqueda para ARASAAC. Debe ser específico y descriptivo. Por ejemplo, para "unir con flechas", un buen término sería "unir flecha". Para una manzana, "manzana".
+            4.  **TIPO DE ACTIVIDADES**: Prioriza repasar, rodear, relacionar, pintar, clasificar visualmente. Siempre usa VERBOS EN INFINITIVO. NO incluyas contar, escribir (excepto vocales mayúsculas) o matemáticas complejas.
+            5.  **TÉRMINOS DE BÚSQUEDA**: Para cada imagen, proporciona un término de búsqueda para ARASAAC. Debe ser el verbo en infinitivo o un sustantivo específico y descriptivo. Por ejemplo, para "relacionar con flechas", un buen término sería "relacionar". Para una manzana, "manzana".
             6.  **FORMATO**: La respuesta DEBE ser un objeto JSON válido que se ajuste al esquema proporcionado, sin ningún texto o explicación adicional.
 
             ---
@@ -162,7 +162,7 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
                 -   \`layout\`: "sentence_building"
                 -   \`items\`: [empty_box, empty_box, ..., picto_1, picto_2, ...].
 
-            3.  **"UNIR CON FLECHAS (HORIZONTAL)"**
+            3.  **"RELACIONAR CON FLECHAS (HORIZONTAL)"**
                 -   \`layout\`: "matching_horizontal"
                 -   \`items\`: [item_arriba_1, item_arriba_2, item_abajo_1, item_abajo_2].
             ---
@@ -186,26 +186,6 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
 
     const jsonText = response.text.trim();
     const worksheetData: Worksheet = JSON.parse(jsonText);
-
-    // Fetch pictograms from ARASAAC
-    if (worksheetData.pictogramSearchTerm) {
-        worksheetData.pictogramUrl = await searchPictograms(worksheetData.pictogramSearchTerm);
-    }
-
-    for (const section of worksheetData.sections) {
-        if (section.instruction.pictograms) {
-            for (const pictogram of section.instruction.pictograms) {
-                if (pictogram.searchTerm) {
-                    pictogram.url = await searchPictograms(pictogram.searchTerm);
-                }
-            }
-        }
-        for (const item of section.items) {
-            if (item.type === 'image' && item.searchTerm) {
-                item.pictogramUrl = await searchPictograms(item.searchTerm);
-            }
-        }
-    }
 
     return worksheetData;
   } catch (error) {

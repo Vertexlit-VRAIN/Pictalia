@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Header } from './components/Header';
 import { GenerateWorksheetView } from './components/GenerateWorksheetView';
 import { AdaptWorksheetView } from './components/AdaptWorksheetView';
@@ -10,9 +10,11 @@ import { Trash2, Edit3 } from './components/Icons';
 import { useDynamicLibraries } from './hooks/useDynamicLibraries';
 import { exportWorksheetAsPdf } from './lib/pdfUtils';
 import { WorksheetEditor } from './components/WorksheetEditor';
+import ApiKeyManager from './components/ApiKeyManager';
 
 type View = 'generate' | 'adapt' | 'profile' | 'library';
 
+// ... (LibraryView component remains unchanged)
 const LibraryView: React.FC = () => {
   const { savedWorksheets, deleteWorksheet, isLoading, activeProfile, updateWorksheet } = useAppDataManager();
   const [selectedWorksheet, setSelectedWorksheet] = useState<SavedWorksheet | null>(null);
@@ -163,6 +165,22 @@ const LibraryView: React.FC = () => {
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<View>('generate');
+  const [isApiKeyValid, setIsApiKeyValid] = useState(false);
+
+  useEffect(() => {
+    const key = localStorage.getItem('gemini_api_key');
+    if (key) {
+      setIsApiKeyValid(true);
+    }
+  }, []);
+
+  const handleApiKeyValid = () => {
+    setIsApiKeyValid(true);
+  };
+
+  if (!isApiKeyValid) {
+    return <ApiKeyManager onApiKeyValid={handleApiKeyValid} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
