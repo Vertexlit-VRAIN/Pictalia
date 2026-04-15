@@ -1,4 +1,19 @@
 export const APP_DATA_STORAGE_KEY = 'adaptatorAppData';
+export const LEGACY_GEMINI_API_KEY_STORAGE_KEY = 'gemini_api_key';
+
+export const DEFAULT_AI_SETTINGS = {
+  provider: 'gemini',
+  geminiApiKey: '',
+  geminiModel: 'gemini-2.5-flash',
+  ollamaBaseUrl: 'http://localhost:11434',
+  ollamaModel: 'gemma4:e4b',
+} as const;
+
+export const DEFAULT_PICTOGRAM_SETTINGS = {
+  provider: 'arasaac_official',
+  arasaacApiUrl: 'https://api.arasaac.org/api/pictograms',
+  privateApiUrl: 'http://localhost:3001/api/pictograms',
+} as const;
 
 export const CHILD_PROFILE = `
 Perfil del Niño:

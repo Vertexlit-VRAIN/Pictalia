@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CHILD_PROFILE, APP_DATA_STORAGE_KEY } from '../constants';
-import type { Profile, AppData, Worksheet, SavedWorksheet } from '../types';
+import { CHILD_PROFILE, APP_DATA_STORAGE_KEY, DEFAULT_AI_SETTINGS, DEFAULT_PICTOGRAM_SETTINGS, LEGACY_GEMINI_API_KEY_STORAGE_KEY } from '../constants';
+import type { Profile, AppData, Worksheet, SavedWorksheet, AISettings, PictogramSettings } from '../types';
 
 const DEFAULT_PROFILE_ID = 'default_profile_01';
 
@@ -15,6 +15,8 @@ const getDefaultProfile = (): Profile => ({
 const getInitialAppData = (): AppData => ({
   profiles: [getDefaultProfile()],
   activeProfileId: DEFAULT_PROFILE_ID,
+  aiSettings: { ...DEFAULT_AI_SETTINGS },
+  pictogramSettings: { ...DEFAULT_PICTOGRAM_SETTINGS },
 });
 
 export const useAppDataManager = () => {
@@ -29,6 +31,17 @@ export const useAppDataManager = () => {
       const savedDataRaw = localStorage.getItem(APP_DATA_STORAGE_KEY);
       if (savedDataRaw) {
         let data = JSON.parse(savedDataRaw);
+        const legacyGeminiApiKey = localStorage.getItem(LEGACY_GEMINI_API_KEY_STORAGE_KEY) || '';
+
+        data.aiSettings = {
+          ...DEFAULT_AI_SETTINGS,
+          ...data.aiSettings,
+          geminiApiKey: data.aiSettings?.geminiApiKey || legacyGeminiApiKey || '',
+        };
+        data.pictogramSettings = {
+          ...DEFAULT_PICTOGRAM_SETTINGS,
+          ...data.pictogramSettings,
+        };
 
         // Migration logic: Check for top-level savedWorksheets (old format)
         if (data.savedWorksheets) {
@@ -45,7 +58,7 @@ export const useAppDataManager = () => {
             data.profiles[0].savedWorksheets.unshift(...migratedWorksheets);
           }
           setAppData(data);
-          
+
         } else {
           // For data already in the new format, just ensure profiles have the array
           if (data.profiles) {
@@ -55,6 +68,10 @@ export const useAppDataManager = () => {
             }));
           }
           setAppData(data);
+        }
+
+        if (legacyGeminiApiKey) {
+          localStorage.removeItem(LEGACY_GEMINI_API_KEY_STORAGE_KEY);
         }
       } else {
         setAppData(getInitialAppData());
@@ -219,6 +236,34 @@ export const useAppDataManager = () => {
     showSaveMessage('Ficha actualizada con éxito.');
   }, [appData]);
 
+  const updateAISettings = useCallback((partialSettings: Partial<AISettings>) => {
+    setAppData(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        aiSettings: {
+          ...DEFAULT_AI_SETTINGS,
+          ...prev.aiSettings,
+          ...partialSettings,
+        },
+      };
+    });
+  }, []);
+
+  const updatePictogramSettings = useCallback((partialSettings: Partial<PictogramSettings>) => {
+    setAppData(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        pictogramSettings: {
+          ...DEFAULT_PICTOGRAM_SETTINGS,
+          ...prev.pictogramSettings,
+          ...partialSettings,
+        },
+      };
+    });
+  }, []);
+
   const activeProfile = appData?.profiles.find(p => p.id === appData.activeProfileId) || null;
   const hasChanges = editorContent !== initialEditorContent;
 
@@ -240,5 +285,9 @@ export const useAppDataManager = () => {
     saveWorksheet,
     deleteWorksheet,
     updateWorksheet,
+    aiSettings: appData?.aiSettings || { ...DEFAULT_AI_SETTINGS },
+    updateAISettings,
+    pictogramSettings: appData?.pictogramSettings || { ...DEFAULT_PICTOGRAM_SETTINGS },
+    updatePictogramSettings,
   };
 };

@@ -9,7 +9,7 @@ import { useAppDataManager } from '../hooks/useProfileManager';
 
 export const GenerateWorksheetView: React.FC = () => {
   const [topic, setTopic] = useState<string>('');
-  const { worksheet, isLoading, error, generate } = useWorksheetGenerator();
+  const { worksheet, isLoading, error, generate, status } = useWorksheetGenerator();
   const { libsReady } = useDynamicLibraries(['jspdf', 'html2canvas']);
   const { saveWorksheet } = useAppDataManager();
   const [isCurrentWorksheetSaved, setIsCurrentWorksheetSaved] = useState(false);
@@ -71,19 +71,21 @@ export const GenerateWorksheetView: React.FC = () => {
             disabled={isLoading}
             className="flex items-center justify-center gap-2 px-5 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
           >
-            {isLoading ? (
-              <>
-                <Spinner />
-                <span>Generando...</span>
-              </>
-            ) : (
-              <>
-                <Wand2Icon className="h-5 w-5" />
-                <span>Generar</span>
-              </>
-            )}
+            <Wand2Icon className="h-5 w-5" />
+            <span>Generar</span>
           </button>
         </div>
+        {isLoading && (
+          <div className="mt-4 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+            <div className="flex items-center gap-3">
+              <Spinner className="text-indigo-600" />
+              <div>
+                <p className="text-sm font-semibold text-indigo-900">{status.message}</p>
+                {status.detail && <p className="text-xs text-indigo-700 mt-1">{status.detail}</p>}
+              </div>
+            </div>
+          </div>
+        )}
         {(error || validationError) && <p className="text-red-600 text-sm mt-3 bg-red-50 p-3 rounded-md">{error || validationError}</p>}
       </div>
 

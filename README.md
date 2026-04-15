@@ -1,44 +1,103 @@
-# Adaptator - Adapted Worksheet Generator
+# Adaptator TEA
 
-This application helps create adapted educational worksheets. It uses a LLM to generate content and the Arasaac API for pictograms to provide visual support, making learning materials more accessible.
+Aplicación web para generar, adaptar y editar fichas educativas con apoyo visual para alumnado con TEA.
 
-## Features
+## Requisitos
 
-*   **Generate Worksheets:** Automatically create worksheets based on user-provided topics.
-*   **AI-Powered:** Uses AI to generate educational content.
-*   **Pictogram Support:** Integrates with Arasaac to include pictograms for better understanding.
-*   **Editable Content:** Allows for editing and customization of the generated worksheets.
-*   **PDF Export:** Export worksheets to PDF format.
+- Node.js 18 o superior
+- npm
+- Opcional: Ollama si quieres usar modelo local
 
-## How to Run the Project
+## Instalación
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd adaptator-(generador-de-fichas-adaptadas)
-    ```
+```bash
+npm install
+```
 
-2.  **Install dependencies:**
-    Make sure you have Node.js installed. Then, run the following command in the project root:
-    ```bash
-    npm install
-    ```
+## Ejecutar en desarrollo
 
-3.  **Set up environment variables:**
-    Create a file named `.env.local` in the root of the project and add your Google Gemini API key:
-    ```
-    VITE_GEMINI_API_KEY=YOUR_API_KEY
-    ```
-    You can get an API key from [Google AI Studio](https://aistudio.google.com/).
+```bash
+npm run dev
+```
 
-4.  **Run the development server:**
-    ```bash
-    npm run dev
-    ```
-    The application will be available at `http://localhost:5173` (or another port if 5173 is busy).
+La aplicación arranca normalmente en:
 
-## Available Scripts
+```text
+http://localhost:5173
+```
 
-*   `npm run dev`: Starts the development server.
-*   `npm run build`: Builds the application for production.
-*   `npm run preview`: Previews the production build locally.
+## Build de producción
+
+```bash
+npm run build
+```
+
+## Preview del build
+
+```bash
+npm run preview
+```
+
+## Configuración dentro de la app
+
+Toda la configuración se hace desde la vista `Perfil`.
+
+### Proveedor de IA
+
+Puedes usar un solo proveedor activo a la vez:
+
+- `Gemini API`
+  - Configura `API key`
+  - Configura el modelo, por ejemplo `gemini-2.5-flash`
+- `Ollama local`
+  - Configura la URL base, por defecto `http://localhost:11434`
+  - Configura el modelo, por defecto `gemma4:e4b`
+
+### Proveedor de pictogramas
+
+Puedes cambiar entre:
+
+- `ARASAAC oficial`
+- `API privada`
+
+La app ya está preparada para usar una API privada compatible con búsqueda de pictogramas.
+
+## Uso básico
+
+### Generar una ficha
+
+1. Ve a `Generar Ficha`
+2. Escribe el tema
+3. Pulsa `Generar`
+
+### Adaptar una ficha PDF
+
+1. Ve a `Adaptar Ficha`
+2. Sube un PDF
+3. Pulsa `Adaptar con IA`
+
+### Editar una ficha guardada
+
+1. Ve a `Biblioteca`
+2. Selecciona una ficha
+3. Pulsa `Editar`
+4. Haz clic sobre los pictogramas para cambiarlos
+5. Usa el botón flotante del asistente IA para pedir cambios
+
+## Logs de desarrollo
+
+Cuando ejecutas `npm run dev`, la app muestra logs útiles para depurar:
+
+- llamadas al proveedor de IA
+- prompt enviado
+- respuesta cruda del modelo
+- búsquedas de pictogramas
+- fases del proceso de generación
+
+Las llamadas de IA en desarrollo pasan por un endpoint interno de Vite para que puedas ver esos logs en la terminal.
+
+## Notas
+
+- La app no bloquea el arranque si falta configuración de IA.
+- Si el proveedor seleccionado no está bien configurado, fallarán solo las acciones de IA.
+- Para usar Ollama desde el navegador, el endpoint debe ser accesible desde tu máquina y permitir el origen si aplica.

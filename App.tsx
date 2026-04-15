@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { GenerateWorksheetView } from './components/GenerateWorksheetView';
 import { AdaptWorksheetView } from './components/AdaptWorksheetView';
@@ -10,7 +10,6 @@ import { Trash2, Edit3 } from './components/Icons';
 import { useDynamicLibraries } from './hooks/useDynamicLibraries';
 import { exportWorksheetAsPdf } from './lib/pdfUtils';
 import { WorksheetEditor } from './components/WorksheetEditor';
-import ApiKeyManager from './components/ApiKeyManager';
 
 type View = 'generate' | 'adapt' | 'profile' | 'library';
 
@@ -69,14 +68,14 @@ const LibraryView: React.FC = () => {
   }
   
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-1">
+    <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-5">
+      <div className="lg:sticky lg:top-24 lg:self-start">
         <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-200">
           <h3 className="text-lg font-bold text-gray-800 mb-4 px-2">
             Fichas de: <span className="text-indigo-600">{activeProfile?.name || 'Perfil Actual'}</span>
           </h3>
           {savedWorksheets.length > 0 ? (
-            <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+            <div className="space-y-2 max-h-[72vh] overflow-y-auto">
               {savedWorksheets.map(ws => (
                 <div
                   key={ws.id}
@@ -96,7 +95,7 @@ const LibraryView: React.FC = () => {
                   role="button"
                 >
                   <div className="flex-1">
-                    <p className="font-semibold text-sm">{ws.title}</p>
+                    <p className="font-semibold text-sm leading-tight">{ws.title}</p>
                     <p className={`text-xs mt-1 ${selectedWorksheet?.id === ws.id ? 'text-indigo-200' : 'text-gray-500'}`}>
                       {new Date(ws.createdAt).toLocaleDateString()} - {ws.sourceDescription}
                     </p>
@@ -124,7 +123,7 @@ const LibraryView: React.FC = () => {
           )}
         </div>
       </div>
-      <div className="lg:col-span-2">
+      <div className="min-w-0">
         {selectedWorksheet ? (
           <div className="flex flex-col">
             {isEditing && editingWorksheet ? (
@@ -165,22 +164,6 @@ const LibraryView: React.FC = () => {
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<View>('generate');
-  const [isApiKeyValid, setIsApiKeyValid] = useState(false);
-
-  useEffect(() => {
-    const key = localStorage.getItem('gemini_api_key');
-    if (key) {
-      setIsApiKeyValid(true);
-    }
-  }, []);
-
-  const handleApiKeyValid = () => {
-    setIsApiKeyValid(true);
-  };
-
-  if (!isApiKeyValid) {
-    return <ApiKeyManager onApiKeyValid={handleApiKeyValid} />;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
@@ -191,9 +174,6 @@ const App: React.FC = () => {
         {activeView === 'library' && <LibraryView />}
         {activeView === 'profile' && <ProfileView />}
       </main>
-      <footer className="text-center p-4 text-xs text-gray-400">
-        <p>&copy; 2024 Generador de Fichas Adaptadas. Creado con IA para la educación inclusiva.</p>
-      </footer>
     </div>
   );
 };

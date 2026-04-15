@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { SavedWorksheet } from '../types';
 import { EditableWorksheetDisplay } from './EditableWorksheetDisplay';
-import { refineWorksheet } from '../services/geminiService';
-import { searchPictograms, getPictogramUrl } from '../services/arasaacService';
+import { refineWorksheet } from '../services/aiService';
+import { searchPictograms } from '../services/pictogramService';
 import { Spinner } from './Spinner';
 import { Wand2Icon, SaveIcon } from './Icons';
 import { produce } from 'immer';
@@ -21,6 +21,7 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
   const [isRefining, setIsRefining] = useState(false);
   const [refinementError, setRefinementError] = useState<string | null>(null);
   const [isMigrating, setIsMigrating] = useState(true);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   useEffect(() => {
     const migrateWorksheet = async () => {
@@ -47,7 +48,7 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
       const migratedWorksheet = produce(worksheet, draft => {
         searchTerms.forEach((st, index) => {
           const pictos = pictogramResults[index];
-          const urls = pictos.map(p => getPictogramUrl(p._id));
+          const urls = pictos.map(p => p.url);
           if (st.type === 'main') {
             draft.pictoOptions = urls;
             draft.selectedPictoUrl = urls.length > 0 ? urls[0] : getFallbackImageUrl(st.term);
@@ -100,7 +101,7 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
       const processedWorksheet = produce(newBaseWorksheet, draft => {
         searchTerms.forEach((st, index) => {
           const pictos = pictogramResults[index];
-          const urls = pictos.map(p => getPictogramUrl(p._id));
+          const urls = pictos.map(p => p.url);
           if (st.type === 'main') {
             draft.pictoOptions = urls;
             draft.selectedPictoUrl = urls.length > 0 ? urls[0] : getFallbackImageUrl(st.term);
@@ -133,54 +134,95 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
   }
 
   return (
-    <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="md:col-span-2">
-        <div className="flex justify-between items-center mb-4">
+    <div className="mt-6 space-y-6">
+      <div className="bg-white p-4 sm:p-5 rounded-xl shadow-lg border border-gray-200">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
             <h3 className="text-xl font-bold">Modo Edición</h3>
-            <div className="flex gap-2">
-                <button 
-                  onClick={onCancel}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-md hover:bg-gray-300"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={onSave}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700"
-                >
-                  <SaveIcon className="w-5 h-5"/>
-                  Guardar Cambios
-                </button>
-            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              La ficha se mantiene con proporción A4 y centrada. El asistente de IA se abre desde el botón flotante para no molestar mientras editas.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button 
+              onClick={onCancel}
+              className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-md hover:bg-gray-300"
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={onSave}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700"
+            >
+              <SaveIcon className="w-5 h-5"/>
+              Guardar Cambios
+            </button>
+          </div>
         </div>
-        <div className="bg-white p-2">
+      </div>
+
+      <div className="bg-white p-3 sm:p-5 rounded-xl shadow-lg border border-gray-200 overflow-auto">
+        <div className="max-w-[920px] mx-auto">
           <EditableWorksheetDisplay worksheet={worksheet} onWorksheetChange={setWorksheet} />
         </div>
       </div>
-      <div className="md:col-span-1">
-        <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-200 sticky top-24">
-          <h4 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <Wand2Icon className="h-5 w-5 text-indigo-500" />
-            Asistente IA
-          </h4>
-          <p className="text-sm text-gray-500 mt-1 mb-3">
-            Describe los cambios que quieres hacer y la IA modificará la ficha.
-          </p>
-          <textarea
-            value={refinementInstruction}
-            onChange={(e) => setRefinementInstruction(e.target.value)}
-            placeholder="Ej: 'Cambia la primera actividad para que sea de repasar números del 1 al 5'"
-            className="w-full h-28 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
-            disabled={isRefining}
-          />
-          <button
-            onClick={handleRefineWithAI}
-            disabled={isRefining}
-            className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 disabled:bg-indigo-300"
+
+      <div className="fixed right-4 bottom-4 z-30 sm:right-6 sm:bottom-6">
+        <div className="flex items-end gap-3">
+          <div
+            className={`w-[320px] sm:w-[380px] rounded-2xl border border-gray-200 bg-white shadow-2xl transition-all duration-300 origin-bottom-right ${
+              isAssistantOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-6 opacity-0 pointer-events-none'
+            }`}
           >
-            {isRefining ? <><Spinner/> Refinando...</> : 'Refinar con IA'}
+            <div className="p-4">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Wand2Icon className="h-5 w-5 text-indigo-500" />
+                    <h4 className="text-lg font-bold text-gray-800">Asistente IA</h4>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Describe el cambio y la IA ajustará la ficha actual.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsAssistantOpen(false)}
+                  className="h-8 w-8 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center"
+                  aria-label="Cerrar asistente IA"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+
+              <textarea
+                value={refinementInstruction}
+                onChange={(e) => setRefinementInstruction(e.target.value)}
+                placeholder="Ej: 'Cambia la primera actividad para que sea de repasar números del 1 al 5'"
+                className="w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+                disabled={isRefining}
+              />
+              <button
+                onClick={handleRefineWithAI}
+                disabled={isRefining}
+                className="w-full mt-3 h-12 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 disabled:bg-indigo-300"
+              >
+                {isRefining ? <><Spinner/> Refinando...</> : 'Refinar con IA'}
+              </button>
+              {refinementError && <p className="text-red-600 text-xs mt-3">{refinementError}</p>}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsAssistantOpen((current) => !current)}
+            className="h-16 w-16 rounded-full bg-indigo-600 text-white shadow-2xl hover:bg-indigo-700 flex items-center justify-center"
+            aria-label={isAssistantOpen ? 'Cerrar asistente IA' : 'Abrir asistente IA'}
+            title={isAssistantOpen ? 'Cerrar asistente IA' : 'Abrir asistente IA'}
+          >
+            <Wand2Icon className="h-7 w-7" />
           </button>
-          {refinementError && <p className="text-red-600 text-xs mt-2">{refinementError}</p>}
         </div>
       </div>
     </div>

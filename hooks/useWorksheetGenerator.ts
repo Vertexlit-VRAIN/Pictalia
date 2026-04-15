@@ -1,17 +1,45 @@
 import { useState, useCallback } from 'react';
-import { generateWorksheet as geminiGenerateWorksheet } from '../services/geminiService';
-import { searchPictograms, getPictogramUrl } from '../services/arasaacService';
+import { generateWorksheet as generateWorksheetWithAI } from '../services/aiService';
+import { searchPictograms } from '../services/pictogramService';
 import { Worksheet } from '../types';
 import { produce } from 'immer';
 
 interface GenerateWorksheetOptions {
     topic?: string;
     adaptationDescription?: string;
+    adaptationTextContent?: string;
     adaptationImage?: {
         mimeType: string;
         data: string;
     };
 }
+
+type GenerationStage =
+    | 'idle'
+    | 'requesting_ai'
+    | 'collecting_terms'
+    | 'searching_pictograms'
+    | 'assembling_worksheet'
+    | 'done';
+
+interface GenerationStatus {
+    stage: GenerationStage;
+    message: string;
+    detail?: string;
+}
+
+const createStatus = (stage: GenerationStage, message: string, detail?: string): GenerationStatus => ({
+    stage,
+    message,
+    detail,
+});
+
+const logGenerationStep = (label: string, payload?: unknown) => {
+    console.log(`[WorksheetGenerator] ${label}`);
+    if (typeof payload !== 'undefined') {
+        console.log(payload);
+    }
+};
 
 
 
@@ -54,57 +82,72 @@ export const useWorksheetGenerator = () => {
     const [worksheet, setWorksheet] = useState<Worksheet | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [status, setStatus] = useState<GenerationStatus>(createStatus('idle', 'Listo para generar.'));
 
     const generate = useCallback(async (options: GenerateWorksheetOptions) => {
         setIsLoading(true);
         setError(null);
         setWorksheet(null);
+        setStatus(createStatus('requesting_ai', 'Generando estructura con IA...', options.topic || options.adaptationDescription || options.adaptationTextContent?.slice(0, 80) || 'Analizando la ficha subida.'));
+        console.groupCollapsed('[WorksheetGenerator] Start generation');
+        logGenerationStep('Input options', options);
         try {
-            const baseWorksheet = await geminiGenerateWorksheet(options);
-            console.log('Base Worksheet from Gemini:', baseWorksheet);
+            const baseWorksheet = await generateWorksheetWithAI(options);
+            logGenerationStep('Base worksheet from AI provider', baseWorksheet);
 
             // 1. Collect all search terms
+            setStatus(createStatus('collecting_terms', 'Preparando la búsqueda de pictogramas...'));
             const searchTerms: { type: 'main' | 'item' | 'instruction'; path: (number | string)[]; term: string }[] = [];
             searchTerms.push({ type: 'main', path: [], term: baseWorksheet.pictogramSearchTerm });
             baseWorksheet.sections.forEach((section, sectionIndex) => {
-                if (section.instruction.pictogramSearchTerm) {
-                    const transformedTerm = transformInstructionTerm(section.instruction.pictogramSearchTerm);
-                    searchTerms.push({ type: 'instruction', path: [sectionIndex], term: transformedTerm });
-                }
+                const instructionTerms = (section.instruction.pictograms || []).map((picto, pictoIndex) => ({
+                    type: 'instruction' as const,
+                    path: [sectionIndex, pictoIndex],
+                    term: transformInstructionTerm(picto.searchTerm || picto.content || section.instruction.text),
+                }));
+                searchTerms.push(...instructionTerms);
+
                 section.items.forEach((item, itemIndex) => {
                     if (item.type === 'image') {
-                        searchTerms.push({ type: 'item', path: [sectionIndex, itemIndex], term: item.content });
+                        searchTerms.push({ type: 'item', path: [sectionIndex, itemIndex], term: item.searchTerm || item.content });
                     }
                 });
             });
+            logGenerationStep('Collected search terms', searchTerms);
 
             // 2. Fetch all pictograms in parallel
+            setStatus(createStatus('searching_pictograms', 'Buscando pictogramas...', `${searchTerms.length} búsquedas pendientes.`));
+            searchTerms.forEach((searchTerm, index) => {
+                logGenerationStep(`Searching pictograms [${index + 1}/${searchTerms.length}]`, searchTerm);
+            });
             const pictogramPromises = searchTerms.map(st => searchPictograms(st.term));
             const pictogramResults = await Promise.all(pictogramPromises);
-            console.log('Raw Pictogram Results after Promise.all:', pictogramResults);
+            logGenerationStep('Raw pictogram results after Promise.all', pictogramResults);
 
             // 3. Apply updates synchronously with produce
+            setStatus(createStatus('assembling_worksheet', 'Montando la ficha final...', 'Asignando pictogramas y opciones.'));
             const processedWorksheet = produce(baseWorksheet, draft => {
                 searchTerms.forEach((st, index) => {
                     const pictos = pictogramResults[index];
-                    const urls = pictos.map(p => getPictogramUrl(p._id));
-                    console.log(`Processing search term "${st.term}": found pictos count=${pictos.length}, urls=${urls.length > 0 ? urls[0] : 'none'}`);
+                    const urls = pictos.map(p => p.url);
+                    logGenerationStep(`Processing search term "${st.term}"`, {
+                        type: st.type,
+                        path: st.path,
+                        pictogramCount: pictos.length,
+                        firstUrl: urls.length > 0 ? urls[0] : 'none',
+                    });
 
                     if (st.type === 'main') {
                         draft.pictoOptions = urls;
                         draft.selectedPictoUrl = urls.length > 0 ? urls[0] : '';
-                        console.log('Main Picto assigned:', draft.selectedPictoUrl);
+                        logGenerationStep('Main pictogram assigned', draft.selectedPictoUrl);
                     } else if (st.type === 'instruction') {
-                        const [sectionIndex] = st.path;
-                        if (pictos.length > 0) {
-                            draft.sections[sectionIndex as number].instruction.pictograms = pictos.map(p => {
-                                const pictoUrl = getPictogramUrl(p._id);
-                                console.log(`Instruction Picto "${st.term}" assigned URL: ${pictoUrl}`);
-                                return { url: pictoUrl, searchTerm: st.term, content: st.term };
-                            });
-                        } else {
-                            draft.sections[sectionIndex as number].instruction.pictograms = [{ url: '', searchTerm: st.term, content: st.term }];
-                            console.log(`Instruction Picto "${st.term}": No pictos found, assigned empty URL placeholder.`);
+                        const [sectionIndex, pictoIndex] = st.path;
+                        const instructionPicto = draft.sections[sectionIndex as number].instruction.pictograms?.[pictoIndex as number];
+                        if (instructionPicto) {
+                            instructionPicto.searchTerm = st.term;
+                            instructionPicto.url = pictos.length > 0 ? pictos[0].url : '';
+                            logGenerationStep(`Instruction pictogram "${st.term}" assigned`, instructionPicto.url || 'none');
                         }
                     } else {
                         const [sectionIndex, itemIndex] = st.path;
@@ -112,19 +155,23 @@ export const useWorksheetGenerator = () => {
                         item.searchTerm = st.term;
                         item.pictoOptions = urls;
                         item.selectedPictoUrl = urls.length > 0 ? urls[0] : '';
-                        console.log(`Item Picto "${st.term}" assigned URL:`, item.selectedPictoUrl);
+                        logGenerationStep(`Item pictogram "${st.term}" assigned`, item.selectedPictoUrl);
                     }
                 });
             });
-            console.log('Processed Worksheet (after picto assignment):', processedWorksheet);
+            logGenerationStep('Processed worksheet (after picto assignment)', processedWorksheet);
 
             setWorksheet(processedWorksheet);
+            setStatus(createStatus('done', 'Ficha lista.', `${searchTerms.length} búsquedas de pictogramas completadas.`));
         } catch (err: any) {
+            logGenerationStep('Generation failed', err);
             setError(err.message || 'Ocurrió un error inesperado.');
+            setStatus(createStatus('idle', 'La generación ha fallado.'));
         } finally {
             setIsLoading(false);
+            console.groupEnd();
         }
     }, []);
 
-    return { worksheet, isLoading, error, generate };
+    return { worksheet, isLoading, error, generate, status };
 };

@@ -1,15 +1,42 @@
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
+const runBasicOcr = async (imageSource: HTMLCanvasElement | string): Promise<string> => {
+  try {
+    const tesseractModule = await import('tesseract.js');
+    const recognize =
+      tesseractModule.recognize ||
+      tesseractModule.default?.recognize;
+
+    if (!recognize) {
+      console.warn('[PDF OCR] Tesseract recognize API is not available.');
+      return '';
+    }
+
+    console.log('[PDF OCR] Starting OCR fallback...');
+    const result = await recognize(imageSource, 'spa+eng', {
+      logger: (message: unknown) => {
+        console.log('[PDF OCR] Progress', message);
+      },
+    });
+
+    const text = result?.data?.text?.replace(/\s+/g, ' ').trim() || '';
+    console.log('[PDF OCR] Completed OCR fallback.', { textLength: text.length });
+    return text;
+  } catch (error) {
+    console.error('[PDF OCR] OCR fallback failed.', error);
+    return '';
+  }
+};
+
 /**
  * Processes a PDF file by rendering all its pages into a single JPEG image.
  * @param file The PDF file to process.
- * @returns A promise that resolves with the preview URL and base64 image data.
+ * @returns A promise that resolves with the preview URL, base64 image data, extracted text and its source.
  */
-export const processPdfFile = async (file: File): Promise<{ previewUrl: string, imageData: { mimeType: string; data: string } }> => {
-  const pdfjsLib = (window as any).pdfjsLib;
-  if (!pdfjsLib) {
-    throw new Error("La librería PDF.js no se ha cargado. Por favor, recarga la página.");
-  }
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.js`;
-
+export const processPdfFile = async (file: File): Promise<{ previewUrl: string, imageData: { mimeType: string; data: string }, extractedText: string, extractedTextSource: 'pdf_text' | 'ocr' | 'none' }> => {
   try {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -22,9 +49,18 @@ export const processPdfFile = async (file: File): Promise<{ previewUrl: string, 
     let totalHeight = 0;
     let maxWidth = 0;
     const scale = 1.5;
+    const extractedPageTexts: string[] = [];
 
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item: any) => ('str' in item ? item.str : ''))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      extractedPageTexts.push(pageText);
+
       const viewport = page.getViewport({ scale });
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
@@ -65,10 +101,18 @@ export const processPdfFile = async (file: File): Promise<{ previewUrl: string, 
 
     const imageUrl = stitchedCanvas.toDataURL('image/jpeg', 0.9);
     const base64Data = imageUrl.split(',')[1];
+    const directPdfText = extractedPageTexts.filter(Boolean).join('\n\n').trim();
+    const extractedText = directPdfText.length >= 40 ? directPdfText : await runBasicOcr(stitchedCanvas);
+    const extractedTextSource: 'pdf_text' | 'ocr' | 'none' =
+      extractedText
+        ? (directPdfText.length >= 40 ? 'pdf_text' : 'ocr')
+        : 'none';
     
     return {
       previewUrl: imageUrl,
-      imageData: { mimeType: 'image/jpeg', data: base64Data }
+      imageData: { mimeType: 'image/jpeg', data: base64Data },
+      extractedText,
+      extractedTextSource,
     };
 
   } catch (err: any) {

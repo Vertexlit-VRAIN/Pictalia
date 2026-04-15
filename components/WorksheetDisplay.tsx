@@ -107,6 +107,7 @@ const renderSection = ({ instruction, items, layout }: WorksheetSection) => {
             <div className="flex flex-col items-center gap-6">
                 <div className="flex flex-col items-center justify-center p-2 h-64 w-full bg-gray-50 rounded-lg">
                   <Pictogram
+                    src={mainImage.selectedPictoUrl}
                     searchTerm={mainImage.searchTerm || mainImage.content}
                     altText={mainImage.content}
                     className="max-h-full max-w-full object-contain"
@@ -210,7 +211,7 @@ export const WorksheetDisplay: React.FC<{ worksheet: Worksheet }> = ({ worksheet
       <header className="flex items-center justify-center gap-4 p-4 border-b-4 border-black mb-6 pdf-avoid-break">
         <div className="h-16 w-16 flex items-center justify-center border-2 border-black">
            <Pictogram
-            src={worksheet.pictogramUrl}
+            src={worksheet.selectedPictoUrl}
             searchTerm={worksheet.pictogramSearchTerm}
             altText={worksheet.pictogramSearchTerm}
             className="max-h-12 max-w-12"

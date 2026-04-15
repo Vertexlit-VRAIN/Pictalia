@@ -7,6 +7,30 @@ export interface Profile {
   savedWorksheets: SavedWorksheet[];
 }
 
+export type AIProvider = 'gemini' | 'ollama';
+
+export interface AISettings {
+  provider: AIProvider;
+  geminiApiKey: string;
+  geminiModel: string;
+  ollamaBaseUrl: string;
+  ollamaModel: string;
+}
+
+export type PictogramProvider = 'arasaac_official' | 'private_api';
+
+export interface PictogramSettings {
+  provider: PictogramProvider;
+  arasaacApiUrl: string;
+  privateApiUrl: string;
+}
+
+export interface PictogramSearchResult {
+  id: string;
+  url: string;
+  keywords?: string[];
+}
+
 export interface WorksheetItem {
   type: 'image' | 'text' | 'traceable_text' | 'empty_box';
   content: string;
@@ -47,4 +71,6 @@ export interface SavedWorksheet extends Worksheet {
 export interface AppData {
   profiles: Profile[];
   activeProfileId: string | null;
+  aiSettings: AISettings;
+  pictogramSettings: PictogramSettings;
 }
