@@ -6,6 +6,7 @@ import { searchPictograms } from '../services/pictogramService';
 import { Spinner } from './Spinner';
 import { Wand2Icon, SaveIcon } from './Icons';
 import { produce } from 'immer';
+import { normalizeWorksheet } from '../services/worksheetNormalizer';
 
 interface WorksheetEditorProps {
   worksheet: SavedWorksheet;
@@ -25,17 +26,25 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
 
   useEffect(() => {
     const migrateWorksheet = async () => {
+      const needsStructureMigration = worksheet.sections.some(
+        section => !section.exercise || !section.exerciseType || !section.items || !section.layout
+      );
+      const normalizedWorksheet = needsStructureMigration ? normalizeWorksheet(worksheet) : worksheet;
+
       // Check if migration is needed (e.g., old data structure without picto options)
-      if (typeof worksheet.selectedPictoUrl !== 'undefined') {
+      if (typeof normalizedWorksheet.selectedPictoUrl !== 'undefined') {
+        if (needsStructureMigration) {
+          setWorksheet(normalizedWorksheet);
+        }
         setIsMigrating(false);
         return;
       }
 
       setIsMigrating(true);
       const searchTerms: { type: 'main' | 'item'; path: (number | string)[]; term: string }[] = [];
-      searchTerms.push({ type: 'main', path: [], term: worksheet.pictogramSearchTerm });
-      worksheet.sections.forEach((section, sectionIndex) => {
-        section.items.forEach((item, itemIndex) => {
+      searchTerms.push({ type: 'main', path: [], term: normalizedWorksheet.pictogramSearchTerm });
+      normalizedWorksheet.sections.forEach((section, sectionIndex) => {
+        (section.items || []).forEach((item, itemIndex) => {
           if (item.type === 'image') {
             searchTerms.push({ type: 'item', path: [sectionIndex, itemIndex], term: item.content });
           }
@@ -45,7 +54,7 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
       const pictogramPromises = searchTerms.map(st => searchPictograms(st.term));
       const pictogramResults = await Promise.all(pictogramPromises);
 
-      const migratedWorksheet = produce(worksheet, draft => {
+      const migratedWorksheet = produce(normalizedWorksheet, draft => {
         searchTerms.forEach((st, index) => {
           const pictos = pictogramResults[index];
           const urls = pictos.map(p => p.url);
@@ -80,7 +89,7 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
       const refinedPartial = await refineWorksheet(worksheet, refinementInstruction);
       
       // Create a complete worksheet with the refinements before processing
-      const newBaseWorksheet = { ...worksheet, ...refinedPartial };
+      const newBaseWorksheet = normalizeWorksheet({ ...worksheet, ...refinedPartial });
 
       // After refining, re-process the pictograms for any new/changed items
       const searchTerms: { type: 'main' | 'item'; path: (number | string)[]; term: string }[] = [];
@@ -88,7 +97,7 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
         searchTerms.push({ type: 'main', path: [], term: newBaseWorksheet.pictogramSearchTerm });
       }
       newBaseWorksheet.sections.forEach((section, sectionIndex) => {
-        section.items.forEach((item, itemIndex) => {
+        (section.items || []).forEach((item, itemIndex) => {
           if (item.type === 'image') {
             searchTerms.push({ type: 'item', path: [sectionIndex, itemIndex], term: item.content });
           }

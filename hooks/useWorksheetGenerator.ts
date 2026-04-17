@@ -3,6 +3,7 @@ import { generateWorksheet as generateWorksheetWithAI } from '../services/aiServ
 import { searchPictograms } from '../services/pictogramService';
 import { Worksheet } from '../types';
 import { produce } from 'immer';
+import { normalizeWorksheet } from '../services/worksheetNormalizer';
 
 interface GenerateWorksheetOptions {
     topic?: string;
@@ -46,12 +47,12 @@ const logGenerationStep = (label: string, payload?: unknown) => {
 const transformInstructionTerm = (term: string): string => {
     let transformed = term.toLowerCase();
     // Simple replacements for common verbs
-    transformed = transformed.replace(/\bpinta\b/g, 'pintar');
-    transformed = transformed.replace(/\bune\b/g, 'relacionar');
-    transformed = transformed.replace(/\bune con\b/g, 'unir'); // Handle "une con"
+    transformed = transformed.replace(/\bpinta\b/g, 'rodear');
+    transformed = transformed.replace(/\bune con\b/g, 'unir');
+    transformed = transformed.replace(/\bune\b/g, 'unir');
     transformed = transformed.replace(/\brodea\b/g, 'rodear');
     transformed = transformed.replace(/\bcolorea\b/g, 'colorear');
-    transformed = transformed.replace(/\bescribe\b/g, 'escribir');
+    transformed = transformed.replace(/\bescribe\b/g, 'copiar');
     transformed = transformed.replace(/\blee\b/g, 'leer');
     transformed = transformed.replace(/\bmarca\b/g, 'marcar');
     transformed = transformed.replace(/\bencierra\b/g, 'encerrar');
@@ -62,7 +63,9 @@ const transformInstructionTerm = (term: string): string => {
     transformed = transformed.replace(/\bcuenta\b/g, 'contar');
     transformed = transformed.replace(/\bclasifica\b/g, 'clasificar');
     transformed = transformed.replace(/\bidentifica\b/g, 'identificar');
-    transformed = transformed.replace(/\brelaciona\b/g, 'relacionar');
+    transformed = transformed.replace(/\brelaciona\b/g, 'unir');
+    transformed = transformed.replace(/\brelacionar\b/g, 'unir');
+    transformed = transformed.replace(/\bcopia\b/g, 'copiar');
 
 
     // Remove common articles and prepositions that might hinder search
@@ -92,7 +95,8 @@ export const useWorksheetGenerator = () => {
         console.groupCollapsed('[WorksheetGenerator] Start generation');
         logGenerationStep('Input options', options);
         try {
-            const baseWorksheet = await generateWorksheetWithAI(options);
+            const rawWorksheet = await generateWorksheetWithAI(options);
+            const baseWorksheet = normalizeWorksheet(rawWorksheet);
             logGenerationStep('Base worksheet from AI provider', baseWorksheet);
 
             // 1. Collect all search terms

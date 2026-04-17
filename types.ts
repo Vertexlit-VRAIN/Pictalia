@@ -41,17 +41,58 @@ export interface WorksheetItem {
 
 export type WorksheetLayout = 'row' | 'column' | 'true_false' | 'sentence_building' | 'matching_horizontal';
 
+export type ExerciseType = 'repasar' | 'unir' | 'rodear' | 'copiar';
+
+export interface WorksheetInstructionPicto {
+  searchTerm: string;
+  content: string;
+  url?: string | null;
+}
+
+export interface WorksheetInstruction {
+  text: string;
+  pictograms?: WorksheetInstructionPicto[];
+}
+
+export interface RepasarExercise {
+  type: 'repasar';
+  prompts: WorksheetItem[];
+}
+
+export interface UnirExercisePair {
+  left: WorksheetItem;
+  right: WorksheetItem;
+}
+
+export interface UnirExercise {
+  type: 'unir';
+  pairs: UnirExercisePair[];
+}
+
+export interface RodearExercise {
+  type: 'rodear';
+  prompt?: WorksheetItem | null;
+  options: WorksheetItem[];
+}
+
+export interface CopiarExercise {
+  type: 'copiar';
+  model: WorksheetItem;
+  copies: WorksheetItem[];
+}
+
+export type WorksheetExercise =
+  | RepasarExercise
+  | UnirExercise
+  | RodearExercise
+  | CopiarExercise;
+
 export interface WorksheetSection {
-  instruction: {
-    text: string;
-    pictograms?: {
-      searchTerm: string;
-      content: string;
-      url?: string | null;
-    }[];
-  };
-  items: WorksheetItem[];
-  layout: WorksheetLayout;
+  instruction: WorksheetInstruction;
+  exerciseType?: ExerciseType;
+  exercise?: WorksheetExercise;
+  items?: WorksheetItem[];
+  layout?: WorksheetLayout;
 }
 
 export interface Worksheet {

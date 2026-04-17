@@ -216,10 +216,10 @@ const buildInstructionPrompt = (showPictogramInstructions: boolean): string => {
   return showPictogramInstructions
     ? `
       - **Instrucción Visual**: Para cada sección, en el objeto \`instruction\`, proporciona:
-        - \`text\`: La instrucción principal en una o dos palabras MAYÚSCULAS (ej: "RODEAR", "RELACIONAR").
-        - \`pictograms\`: Un array que descompone la instrucción. Para "RELACIONAR CON FLECHAS", el array sería \`[{searchTerm: 'relacionar', content: 'RELACIONAR'}, {searchTerm: 'flecha', content: 'FLECHA'}]\`. El \`searchTerm\` debe ser el verbo en infinitivo o un sustantivo, lo más descriptivo posible para encontrar la imagen correcta en ARASAAC.`
+        - \`text\`: La instrucción principal en una o dos palabras MAYÚSCULAS (ej: "RODEAR", "UNIR", "COPIAR").
+        - \`pictograms\`: Un array que descompone la instrucción. Para "UNIR CON FLECHAS", el array sería \`[{searchTerm: 'unir', content: 'UNIR'}, {searchTerm: 'flecha', content: 'FLECHA'}]\`. El \`searchTerm\` debe ser el verbo en infinitivo o un sustantivo, lo más descriptivo posible para encontrar la imagen correcta en ARASAAC.`
     : `
-      - **Instrucción Simple**: Para cada sección, el campo \`instruction.text\` debe ser una o dos palabras MAYÚSCULAS (ej: "RODEAR", "RELACIONAR"). El campo \`instruction.pictograms\` debe omitirse.`;
+      - **Instrucción Simple**: Para cada sección, el campo \`instruction.text\` debe ser una o dos palabras MAYÚSCULAS (ej: "RODEAR", "UNIR", "COPIAR"). El campo \`instruction.pictograms\` debe omitirse.`;
 };
 
 export const generateWorksheet = async (options: GenerateWorksheetOptions): Promise<Worksheet> => {
@@ -254,12 +254,14 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
         4. **SIN EJEMPLOS RESUELTOS**: Todas las actividades deben quedar sin resolver.
         5. **CONVERTIR TEXTO A PICTOS**: Si en la ficha original hay instrucciones, palabras o ejercicios principalmente textuales, transfórmalos a una versión visual con pictogramas e imágenes, manteniendo la intención pedagógica.
         ${instructionPrompt}
-        6. **SALIDA JSON**: Devuelve solo un objeto JSON válido con esta estructura exacta:
+        6. **TIPOS DE EJERCICIO**: Usa solo estos cuatro tipos de actividad: repasar, unir, rodear y copiar.
+        7. **SALIDA JSON**: Devuelve solo un objeto JSON válido con esta estructura exacta:
         {
           "title": "string",
           "pictogramSearchTerm": "string",
           "sections": [
             {
+              "exerciseType": "repasar | unir | rodear | copiar",
               "instruction": {
                 "text": "string",
                 "pictograms": [{ "searchTerm": "string", "content": "string" }]
@@ -293,7 +295,7 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
         2. **SIN EJEMPLOS RESUELTOS**: No incluyas una primera actividad resuelta como ejemplo.
         3. **VISUAL ANTE TODO**: La ficha debe ser 90% visual.
         ${instructionPrompt}
-        4. **TIPO DE ACTIVIDADES**: Prioriza repasar, rodear, relacionar, pintar y clasificar visualmente. Usa verbos en infinitivo. No incluyas contar, escribir salvo vocales mayúsculas, ni matemáticas complejas.
+        4. **TIPO DE ACTIVIDADES**: Usa solo estos cuatro tipos: repasar, unir, rodear y copiar. Prioriza lo visual. No incluyas matemáticas complejas ni actividades fuera de esos cuatro tipos.
         5. **TÉRMINOS DE BÚSQUEDA**: Para cada imagen, proporciona un término de búsqueda claro para ARASAAC.
         6. **SALIDA JSON**: Devuelve solo un objeto JSON válido con esta estructura exacta:
         {
@@ -301,6 +303,7 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
           "pictogramSearchTerm": "string",
           "sections": [
             {
+              "exerciseType": "repasar | unir | rodear | copiar",
               "instruction": {
                 "text": "string",
                 "pictograms": [{ "searchTerm": "string", "content": "string" }]
@@ -318,9 +321,10 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
         }
 
         MODELOS DE ACTIVIDAD:
-        - true_false: [imagen_principal, afirmacion_1, afirmacion_2]
-        - sentence_building: [empty_box, empty_box, picto_1, picto_2]
-        - matching_horizontal: [item_arriba_1, item_arriba_2, item_abajo_1, item_abajo_2]
+        - repasar: letras, sílabas o trazos visuales simples
+        - unir: conjuntos equivalentes en dos filas
+        - rodear: varias opciones visuales para marcar
+        - copiar: un modelo arriba y varias copias debajo
 
         ${adaptationText}
       `;
