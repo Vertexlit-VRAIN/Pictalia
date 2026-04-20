@@ -1,77 +1,123 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { Worksheet, WorksheetExercise, WorksheetItem, WorksheetSection } from '../types';
 import { getFlattenedItemsFromExercise, normalizeWorksheet } from '../services/worksheetNormalizer';
+import { searchPictograms } from '../services/pictogramService';
+
+const pictogramUrlCache = new Map<string, string>();
 
 const Pictogram: React.FC<{ searchTerm: string; altText: string; className?: string; src?: string | null }> = ({ searchTerm, altText, className, src }) => {
   const [imgSrc, setImgSrc] = useState<string>(src || '');
-  const attemptRef = useRef(0);
   const searchTermsRef = useRef<string[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (src) {
       setImgSrc(src);
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
-    attemptRef.current = 0;
     const terms = searchTerm ? [searchTerm, ...searchTerm.split(' ').reverse()] : [];
     const uniqueTerms = [...new Set(terms)].filter(term => term && term.trim() !== '');
     searchTermsRef.current = uniqueTerms;
 
-    if (uniqueTerms.length > 0) {
-      setImgSrc(`https://api.arasaac.org/api/pictograms/search/${encodeURIComponent(uniqueTerms[0])}?best=true`);
-    } else {
-      setImgSrc(`https://picsum.photos/seed/${encodeURIComponent(altText || 'placeholder')}/200`);
-    }
+    setImgSrc('');
+
+    const resolvePictogram = async () => {
+      for (const term of uniqueTerms) {
+        const cacheKey = term.trim().toLowerCase();
+        if (pictogramUrlCache.has(cacheKey)) {
+          if (!cancelled) {
+            setImgSrc(pictogramUrlCache.get(cacheKey) || '');
+          }
+          return;
+        }
+
+        const results = await searchPictograms(term);
+        const nextUrl = results[0]?.url || '';
+        if (nextUrl) {
+          pictogramUrlCache.set(cacheKey, nextUrl);
+          if (!cancelled) {
+            setImgSrc(nextUrl);
+          }
+          return;
+        }
+      }
+    };
+
+    void resolvePictogram();
+
+    return () => {
+      cancelled = true;
+    };
   }, [searchTerm, altText, src]);
 
   const handleError = () => {
-    attemptRef.current += 1;
-    const nextAttemptIndex = attemptRef.current;
-    const searchTerms = searchTermsRef.current;
-
-    if (nextAttemptIndex < searchTerms.length) {
-      const nextTerm = searchTerms[nextAttemptIndex];
-      setImgSrc(`https://api.arasaac.org/api/pictograms/search/${encodeURIComponent(nextTerm)}?best=true`);
-    } else {
-      const fallbackSearchTerm = searchTerm || altText || 'fallback';
-      setImgSrc(`https://picsum.photos/seed/${encodeURIComponent(fallbackSearchTerm)}/200`);
+    for (const term of searchTermsRef.current) {
+      pictogramUrlCache.delete(term.trim().toLowerCase());
     }
+    setImgSrc('');
   };
 
-  if (!imgSrc) return null;
+  if (!imgSrc) {
+    return <span className="px-1 text-center text-[10px] font-bold text-gray-700">{altText}</span>;
+  }
 
   return <img src={imgSrc} alt={altText} className={className} onError={handleError} />;
 };
 
-const renderTraceableGuide = (content: string, index: number) => (
-  <div key={index} className="w-full max-w-[620px] bg-white pdf-avoid-break">
-    <svg viewBox="0 0 620 72" className="block h-[72px] w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
-      <line x1="0" y1="1" x2="620" y2="1" stroke="black" strokeWidth="2" />
-      <line x1="0" y1="36" x2="620" y2="36" stroke="#6b7280" strokeWidth="2" strokeDasharray="4 4" />
-      <line x1="0" y1="71" x2="620" y2="71" stroke="black" strokeWidth="2" />
-      <text
-        x="310"
-        y="36"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fill="#d1d5db"
-        fontSize="82"
-        fontFamily="'Comic Sans MS', cursive, sans-serif"
-      >
-        {content}
-      </text>
-    </svg>
-  </div>
-);
+const renderTraceableGuide = (item: WorksheetItem, index: number) => {
+  const searchTerm = item.searchTerm || item.content;
+
+  return (
+    <div key={index} className="w-full max-w-[760px] bg-white pdf-avoid-break">
+      <div className="flex items-center gap-0">
+        <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-xl border-2 border-black bg-white p-2">
+          <Pictogram searchTerm={searchTerm} altText={item.content} className="max-h-full max-w-full object-contain" src={item.selectedPictoUrl} />
+        </div>
+        <svg viewBox="0 0 620 88" className="block h-[88px] w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+          <line x1="0" y1="6" x2="620" y2="6" stroke="black" strokeWidth="2" />
+          <line x1="0" y1="44" x2="620" y2="44" stroke="#6b7280" strokeWidth="2" strokeDasharray="6 6" />
+          <line x1="0" y1="82" x2="620" y2="82" stroke="black" strokeWidth="2" />
+          <text
+            x="310"
+            y="52"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="transparent"
+            stroke="#cbd5e1"
+            strokeWidth="1.2"
+            strokeDasharray="3 3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            paintOrder="stroke"
+            fontSize="94"
+            letterSpacing="0"
+            fontWeight="100"
+            fontFamily="'Helvetica Neue', Arial, sans-serif"
+          >
+            {item.content}
+          </text>
+        </svg>
+      </div>
+    </div>
+  );
+};
 
 const renderWorksheetItem = (item: WorksheetItem, index: number) => {
   switch (item.type) {
     case 'image':
       return (
         <div key={index} className="flex flex-col items-center justify-center p-3 border-2 border-black rounded-lg h-40 w-40 bg-white pdf-avoid-break">
-          {item.selectedPictoUrl ? (
-            <img src={item.selectedPictoUrl} alt={item.content} className="max-h-24 max-w-24 object-contain" />
+          {item.selectedPictoUrl || item.searchTerm ? (
+            <Pictogram
+              searchTerm={item.searchTerm || item.content}
+              altText={item.content}
+              src={item.selectedPictoUrl}
+              className="max-h-24 max-w-24 object-contain"
+            />
           ) : (
             <div className="flex flex-1 items-center justify-center px-2 text-center text-5xl font-bold text-gray-700">
               {item.content}
@@ -83,7 +129,7 @@ const renderWorksheetItem = (item: WorksheetItem, index: number) => {
     case 'text':
       return <div key={index} className="flex items-center justify-center h-32 w-32 text-4xl font-bold text-gray-700 pdf-avoid-break">{item.content}</div>;
     case 'traceable_text':
-      return renderTraceableGuide(item.content, index);
+      return renderTraceableGuide(item, index);
     case 'empty_box':
       return <div key={index} className="h-32 w-32 border-2 border-black rounded-lg bg-white pdf-avoid-break"></div>;
     default:
@@ -99,8 +145,13 @@ const SectionHeader: React.FC<{ instruction: WorksheetSection['instruction'] }> 
         {instruction.pictograms.map((picto, idx) => (
           <div key={idx} className="flex flex-col items-center text-xs font-semibold text-gray-500">
             <div className="w-10 h-10 p-1 bg-white rounded border border-gray-300 flex items-center justify-center">
-              {picto.url ? (
-                <img src={picto.url} alt={picto.content} className="max-w-full max-h-full object-contain" />
+              {picto.url || picto.searchTerm ? (
+                <Pictogram
+                  searchTerm={picto.searchTerm || picto.content}
+                  altText={picto.content}
+                  src={picto.url}
+                  className="max-w-full max-h-full object-contain"
+                />
               ) : (
                 <span className="px-1 text-center text-[10px] font-bold text-gray-700">{picto.content}</span>
               )}
@@ -119,9 +170,27 @@ const renderRepasarExercise = (exercise: Extract<WorksheetExercise, { type: 'rep
   </div>
 );
 
+const getStableHash = (value: string): number => {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = ((hash << 5) - hash) + value.charCodeAt(index);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
+const getStableShuffledItems = (items: WorksheetItem[]): WorksheetItem[] =>
+  [...items]
+    .map((item, index) => ({
+      item,
+      order: getStableHash(`${item.content}|${item.searchTerm || ''}|${index}`),
+    }))
+    .sort((left, right) => left.order - right.order)
+    .map(entry => entry.item);
+
 const renderUnirExercise = (exercise: Extract<WorksheetExercise, { type: 'unir' }>) => {
   const leftColumnItems = exercise.pairs.map(pair => pair.left);
-  const rightColumnItems = [...exercise.pairs.map(pair => pair.right)].sort(() => Math.random() - 0.5);
+  const rightColumnItems = getStableShuffledItems(exercise.pairs.map(pair => pair.right));
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_180px_minmax(0,1fr)] items-start">
@@ -216,8 +285,13 @@ export const WorksheetDisplay: React.FC<{ worksheet: Worksheet }> = ({ worksheet
       </style>
       <header className="flex items-center justify-center gap-4 p-4 border-b-4 border-black mb-6 pdf-avoid-break">
         <div className="h-16 w-16 flex items-center justify-center border-2 border-black">
-          {normalizedWorksheet.selectedPictoUrl ? (
-            <img src={normalizedWorksheet.selectedPictoUrl} alt={normalizedWorksheet.pictogramSearchTerm} className="max-h-12 max-w-12 object-contain" />
+          {normalizedWorksheet.selectedPictoUrl || normalizedWorksheet.pictogramSearchTerm ? (
+            <Pictogram
+              searchTerm={normalizedWorksheet.pictogramSearchTerm}
+              altText={normalizedWorksheet.pictogramSearchTerm}
+              src={normalizedWorksheet.selectedPictoUrl}
+              className="max-h-12 max-w-12 object-contain"
+            />
           ) : (
             <span className="px-2 text-center text-xs font-bold text-gray-700 uppercase">{normalizedWorksheet.pictogramSearchTerm}</span>
           )}

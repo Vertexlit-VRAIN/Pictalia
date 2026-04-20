@@ -42,6 +42,9 @@ const logGenerationStep = (label: string, payload?: unknown) => {
     }
 };
 
+const shouldResolveItemPictogram = (item: Worksheet['sections'][number]['items'][number]) =>
+    item.type === 'image' || item.type === 'traceable_text';
+
 
 
 const transformInstructionTerm = (term: string): string => {
@@ -112,7 +115,7 @@ export const useWorksheetGenerator = () => {
                 searchTerms.push(...instructionTerms);
 
                 section.items.forEach((item, itemIndex) => {
-                    if (item.type === 'image') {
+                    if (shouldResolveItemPictogram(item)) {
                         searchTerms.push({ type: 'item', path: [sectionIndex, itemIndex], term: item.searchTerm || item.content });
                     }
                 });

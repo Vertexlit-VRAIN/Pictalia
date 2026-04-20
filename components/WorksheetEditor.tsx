@@ -15,7 +15,8 @@ interface WorksheetEditorProps {
   onCancel: () => void;
 }
 
-const getFallbackImageUrl = (seed: string) => `https://picsum.photos/seed/${encodeURIComponent(seed)}/200`;
+const shouldResolveItemPictogram = (item: SavedWorksheet['sections'][number]['items'][number]) =>
+  item.type === 'image' || item.type === 'traceable_text';
 
 export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, setWorksheet, onSave, onCancel }) => {
   const [refinementInstruction, setRefinementInstruction] = useState('');
@@ -26,16 +27,22 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
 
   useEffect(() => {
     const migrateWorksheet = async () => {
+      const normalizedWorksheet = normalizeWorksheet(worksheet);
       const needsStructureMigration = worksheet.sections.some(
         section => !section.exercise || !section.exerciseType || !section.items || !section.layout
       );
-      const normalizedWorksheet = needsStructureMigration ? normalizeWorksheet(worksheet) : worksheet;
+      const needsSectionSync = worksheet.sections.some((section, sectionIndex) => {
+        const currentItems = JSON.stringify(section.items || []);
+        const normalizedItems = JSON.stringify(normalizedWorksheet.sections[sectionIndex]?.items || []);
+        return currentItems !== normalizedItems;
+      });
 
-      // Check if migration is needed (e.g., old data structure without picto options)
+      if (needsStructureMigration || needsSectionSync) {
+        setWorksheet(normalizedWorksheet);
+      }
+
+      // Check if pictogram migration is needed.
       if (typeof normalizedWorksheet.selectedPictoUrl !== 'undefined') {
-        if (needsStructureMigration) {
-          setWorksheet(normalizedWorksheet);
-        }
         setIsMigrating(false);
         return;
       }
@@ -45,8 +52,8 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
       searchTerms.push({ type: 'main', path: [], term: normalizedWorksheet.pictogramSearchTerm });
       normalizedWorksheet.sections.forEach((section, sectionIndex) => {
         (section.items || []).forEach((item, itemIndex) => {
-          if (item.type === 'image') {
-            searchTerms.push({ type: 'item', path: [sectionIndex, itemIndex], term: item.content });
+          if (shouldResolveItemPictogram(item)) {
+            searchTerms.push({ type: 'item', path: [sectionIndex, itemIndex], term: item.searchTerm || item.content });
           }
         });
       });
@@ -60,13 +67,13 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
           const urls = pictos.map(p => p.url);
           if (st.type === 'main') {
             draft.pictoOptions = urls;
-            draft.selectedPictoUrl = urls.length > 0 ? urls[0] : getFallbackImageUrl(st.term);
+            draft.selectedPictoUrl = urls.length > 0 ? urls[0] : '';
           } else {
             const [sectionIndex, itemIndex] = st.path;
             const item = draft.sections[sectionIndex as number].items[itemIndex as number];
             item.searchTerm = st.term;
             item.pictoOptions = urls;
-            item.selectedPictoUrl = urls.length > 0 ? urls[0] : getFallbackImageUrl(st.term);
+            item.selectedPictoUrl = urls.length > 0 ? urls[0] : '';
           }
         });
       });
@@ -98,8 +105,8 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
       }
       newBaseWorksheet.sections.forEach((section, sectionIndex) => {
         (section.items || []).forEach((item, itemIndex) => {
-          if (item.type === 'image') {
-            searchTerms.push({ type: 'item', path: [sectionIndex, itemIndex], term: item.content });
+          if (shouldResolveItemPictogram(item)) {
+            searchTerms.push({ type: 'item', path: [sectionIndex, itemIndex], term: item.searchTerm || item.content });
           }
         });
       });
@@ -113,13 +120,13 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
           const urls = pictos.map(p => p.url);
           if (st.type === 'main') {
             draft.pictoOptions = urls;
-            draft.selectedPictoUrl = urls.length > 0 ? urls[0] : getFallbackImageUrl(st.term);
+            draft.selectedPictoUrl = urls.length > 0 ? urls[0] : '';
           } else {
             const [sectionIndex, itemIndex] = st.path;
             const item = draft.sections[sectionIndex as number].items[itemIndex as number];
             item.searchTerm = st.term;
             item.pictoOptions = urls;
-            item.selectedPictoUrl = urls.length > 0 ? urls[0] : getFallbackImageUrl(st.term);
+            item.selectedPictoUrl = urls.length > 0 ? urls[0] : '';
           }
         });
       });
@@ -173,6 +180,31 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
       <div className="bg-white p-3 sm:p-5 rounded-xl shadow-lg border border-gray-200 overflow-auto">
         <div className="max-w-[920px] mx-auto">
           <EditableWorksheetDisplay worksheet={worksheet} onWorksheetChange={setWorksheet} />
+        </div>
+      </div>
+
+      <div className="sticky bottom-4 z-20">
+        <div className="mx-auto max-w-[960px] rounded-2xl border border-gray-200 bg-white/95 p-3 shadow-xl backdrop-blur">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-600">
+              Puedes guardar o cancelar desde aquí sin volver al inicio.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={onCancel}
+                className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-md hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={onSave}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700"
+              >
+                <SaveIcon className="w-5 h-5"/>
+                Guardar Cambios
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

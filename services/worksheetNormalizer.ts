@@ -167,7 +167,7 @@ const ensureTraceableItem = (item: WorksheetItem | undefined, fallbackContent: s
 };
 
 const normalizeRepasarExercise = (exercise: RepasarExercise | undefined, items: WorksheetItem[]): RepasarExercise => {
-  const sourceItems = exercise?.prompts?.length ? exercise.prompts : items;
+  const sourceItems = items.length > 0 ? items : (exercise?.prompts || []);
   const prompts = sourceItems.length > 0
     ? sourceItems.map(item => {
         if (item.type === 'image') {

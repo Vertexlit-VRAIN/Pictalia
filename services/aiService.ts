@@ -1,5 +1,6 @@
 import { APP_DATA_STORAGE_KEY, CHILD_PROFILE, DEFAULT_AI_SETTINGS } from '../constants';
 import type { Worksheet, Profile, AppData, SavedWorksheet, AISettings } from '../types';
+import { normalizeWorksheet } from './worksheetNormalizer';
 
 interface GenerateWorksheetOptions {
   topic?: string;
@@ -70,6 +71,276 @@ const extractJsonObject = (rawText: string): string => {
   }
 
   throw new Error('La respuesta de la IA no contiene un JSON válido.');
+};
+
+const WORKSHEET_JSON_SCHEMA = `{
+  "title": "string corto en español",
+  "pictogramSearchTerm": "sustantivo simple para el pictograma principal",
+  "sections": [
+    {
+      "exerciseType": "repasar",
+      "instruction": {
+        "text": "REPASAR",
+        "pictograms": [{ "searchTerm": "repasar", "content": "REPASAR" }]
+      },
+      "exercise": {
+        "type": "repasar",
+        "prompts": [
+          { "type": "traceable_text", "content": "A" },
+          { "type": "traceable_text", "content": "A" },
+          { "type": "traceable_text", "content": "A" }
+        ]
+      }
+    },
+    {
+      "exerciseType": "unir",
+      "instruction": {
+        "text": "UNIR",
+        "pictograms": [
+          { "searchTerm": "unir", "content": "UNIR" },
+          { "searchTerm": "flecha", "content": "FLECHA" }
+        ]
+      },
+      "exercise": {
+        "type": "unir",
+        "pairs": [
+          {
+            "left": { "type": "image", "content": "sol", "searchTerm": "sol" },
+            "right": { "type": "image", "content": "sol", "searchTerm": "sol" }
+          }
+        ]
+      }
+    },
+    {
+      "exerciseType": "rodear",
+      "instruction": {
+        "text": "RODEAR",
+        "pictograms": [{ "searchTerm": "rodear", "content": "RODEAR" }]
+      },
+      "exercise": {
+        "type": "rodear",
+        "prompt": { "type": "image", "content": "perro", "searchTerm": "perro" },
+        "options": [
+          { "type": "image", "content": "perro", "searchTerm": "perro" },
+          { "type": "image", "content": "gato", "searchTerm": "gato" },
+          { "type": "image", "content": "pez", "searchTerm": "pez" }
+        ]
+      }
+    },
+    {
+      "exerciseType": "copiar",
+      "instruction": {
+        "text": "COPIAR",
+        "pictograms": [{ "searchTerm": "copiar", "content": "COPIAR" }]
+      },
+      "exercise": {
+        "type": "copiar",
+        "model": { "type": "traceable_text", "content": "SOL" },
+        "copies": [
+          { "type": "traceable_text", "content": "SOL" },
+          { "type": "traceable_text", "content": "SOL" }
+        ]
+      }
+    }
+  ]
+}`;
+
+const WORKSHEET_OUTPUT_RULES = `
+REGLAS ESTRICTAS DE SALIDA:
+- Devuelve SOLO un objeto JSON válido. Sin markdown. Sin comentarios. Sin texto antes ni después.
+- Usa únicamente estos exerciseType: "repasar", "unir", "rodear", "copiar".
+- El campo "exercise.type" debe coincidir exactamente con "exerciseType".
+- No inventes layouts libres ni claves alternativas. No uses "activities", "tasks", "blocks", "pages" ni "elements".
+- Cada sección debe contener exactamente: "exerciseType", "instruction", "exercise".
+- Puedes omitir "instruction.pictograms" solo si se te pide instrucción simple. Nunca devuelvas null.
+- Los items de imagen deben usar type "image" y llevar "searchTerm".
+- Los items de trazado/copia deben usar type "traceable_text".
+- No devuelvas ejercicios resueltos ni respuestas marcadas como correctas.
+- Mantén todo el contenido alineado con el tema pedido. No uses letras, vocales, sílabas o palabras genéricas si el tema no es de lectoescritura.
+- Si dudas entre dos formatos, elige SIEMPRE la estructura del esquema JSON mostrado.`;
+
+const REFINEMENT_JSON_SCHEMA = `{
+  "title": "string opcional",
+  "pictogramSearchTerm": "string opcional",
+  "sections": [
+    {
+      "exerciseType": "rodear",
+      "instruction": {
+        "text": "RODEAR",
+        "pictograms": [{ "searchTerm": "rodear", "content": "RODEAR" }]
+      },
+      "exercise": {
+        "type": "rodear",
+        "prompt": { "type": "image", "content": "perro", "searchTerm": "perro" },
+        "options": [
+          { "type": "image", "content": "perro", "searchTerm": "perro" },
+          { "type": "image", "content": "gato", "searchTerm": "gato" }
+        ]
+      }
+    }
+  ]
+}`;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const parseJsonPayload = (rawText: string): unknown => JSON.parse(extractJsonObject(rawText));
+
+const normalizeWorksheetPayload = (payload: unknown): Worksheet => {
+  if (!isRecord(payload)) {
+    throw new Error('La IA no devolvió un objeto JSON válido para la ficha.');
+  }
+
+  const title = typeof payload.title === 'string' && payload.title.trim()
+    ? payload.title.trim()
+    : 'Ficha adaptada';
+  const pictogramSearchTerm = typeof payload.pictogramSearchTerm === 'string' && payload.pictogramSearchTerm.trim()
+    ? payload.pictogramSearchTerm.trim()
+    : title;
+  const sections = Array.isArray(payload.sections)
+    ? payload.sections.filter(section => isRecord(section))
+    : [];
+
+  if (sections.length === 0) {
+    throw new Error('La IA no devolvió ninguna sección utilizable.');
+  }
+
+  return normalizeWorksheet({
+    ...payload,
+    title,
+    pictogramSearchTerm,
+    sections,
+  } as Worksheet);
+};
+
+const normalizeRefinementPayload = (payload: unknown): Partial<Worksheet> => {
+  if (!isRecord(payload)) {
+    throw new Error('La IA no devolvió un objeto JSON válido para el refinado.');
+  }
+
+  const normalized: Partial<Worksheet> = {};
+
+  if (typeof payload.title === 'string' && payload.title.trim()) {
+    normalized.title = payload.title.trim();
+  }
+
+  if (typeof payload.pictogramSearchTerm === 'string' && payload.pictogramSearchTerm.trim()) {
+    normalized.pictogramSearchTerm = payload.pictogramSearchTerm.trim();
+  }
+
+  if (Array.isArray(payload.sections)) {
+    normalized.sections = normalizeWorksheetPayload({
+      title: normalized.title || 'Ficha refinada',
+      pictogramSearchTerm: normalized.pictogramSearchTerm || normalized.title || 'ficha',
+      sections: payload.sections,
+    }).sections;
+  }
+
+  return normalized;
+};
+
+const getSemanticContext = (options: GenerateWorksheetOptions): string =>
+  [options.topic, options.adaptationDescription, options.adaptationTextContent]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+const isLiteracyTopic = (context: string): boolean =>
+  /\b(letra|letras|vocal|vocales|silaba|silabas|sílaba|sílabas|abecedario|fonema|fonemas|lectura|escritura|lectoescritura)\b/i.test(context);
+
+const isSingleLetterToken = (value: string): boolean => /^[a-záéíóúüñ]$/i.test(value.trim());
+
+const needsSemanticRepair = (worksheet: Worksheet, options: GenerateWorksheetOptions): boolean => {
+  const context = getSemanticContext(options);
+  if (!context || isLiteracyTopic(context)) {
+    return false;
+  }
+
+  const repasarTokens = worksheet.sections
+    .filter(section => section.exercise?.type === 'repasar')
+    .flatMap(section => section.exercise?.type === 'repasar' ? section.exercise.prompts : [])
+    .map(item => item.content || '')
+    .filter(Boolean);
+
+  if (repasarTokens.length === 0) {
+    return false;
+  }
+
+  const singleLetterCount = repasarTokens.filter(isSingleLetterToken).length;
+  return singleLetterCount > 0 && singleLetterCount >= Math.ceil(repasarTokens.length / 2);
+};
+
+const repairSemanticMismatch = async (rawText: string, options: GenerateWorksheetOptions): Promise<Worksheet> => {
+  const semanticContext = getSemanticContext(options) || 'tema no especificado';
+  const repairPrompt = `
+Corrige esta ficha porque su contenido no respeta el tema solicitado.
+
+TEMA Y CONTEXTO REAL:
+${semanticContext}
+
+PROBLEMA DETECTADO:
+- La ficha usa letras, vocales o trazos genéricos.
+- Eso es incorrecto si el tema no es de lectoescritura.
+
+INSTRUCCIONES DE CORRECCIÓN:
+- Mantén la estructura JSON exacta del sistema.
+- Sustituye letras o vocales genéricas por palabras y conceptos reales del tema.
+- En ejercicios "repasar", usa palabras del tema completo o etiquetas significativas.
+- Ejemplo: si el tema es "partes de una planta", usa "raíz", "tallo", "hoja", "flor", "semilla".
+
+${WORKSHEET_OUTPUT_RULES}
+
+ESQUEMA OBJETIVO:
+${WORKSHEET_JSON_SCHEMA}
+
+SALIDA A CORREGIR:
+"""
+${rawText}
+"""`;
+
+  const repairedText = await runProviderPrompt(repairPrompt, options.adaptationImage);
+  return normalizeWorksheetPayload(parseJsonPayload(repairedText));
+};
+
+const repairJsonResponse = async (rawText: string, mode: 'worksheet' | 'refinement'): Promise<unknown> => {
+  const promptText = `
+Corrige la siguiente salida para que sea JSON válido y cumpla el esquema pedido.
+
+TIPO DE RESPUESTA: ${mode === 'worksheet' ? 'ficha completa' : 'refinado parcial de ficha'}
+
+${WORKSHEET_OUTPUT_RULES}
+
+${mode === 'worksheet'
+    ? `ESQUEMA OBJETIVO:
+${WORKSHEET_JSON_SCHEMA}`
+    : `ESQUEMA OBJETIVO:
+${REFINEMENT_JSON_SCHEMA}`}
+
+SALIDA A CORREGIR:
+"""
+${rawText}
+"""`;
+
+  const repairedText = await runProviderPrompt(promptText);
+  return parseJsonPayload(repairedText);
+};
+
+const parseWorksheetResponse = async (rawText: string): Promise<Worksheet> => {
+  try {
+    return normalizeWorksheetPayload(parseJsonPayload(rawText));
+  } catch (error) {
+    console.warn('Fallo al parsear la ficha inicial. Intentando reparación automática.', error);
+    return normalizeWorksheetPayload(await repairJsonResponse(rawText, 'worksheet'));
+  }
+};
+
+const parseRefinementResponse = async (rawText: string): Promise<Partial<Worksheet>> => {
+  try {
+    return normalizeRefinementPayload(parseJsonPayload(rawText));
+  } catch (error) {
+    console.warn('Fallo al parsear el refinado inicial. Intentando reparación automática.', error);
+    return normalizeRefinementPayload(await repairJsonResponse(rawText, 'refinement'));
+  }
 };
 
 const callGemini = async (promptText: string, settings: AISettings, adaptationImage?: GenerateWorksheetOptions['adaptationImage']): Promise<string> => {
@@ -255,28 +526,10 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
         5. **CONVERTIR TEXTO A PICTOS**: Si en la ficha original hay instrucciones, palabras o ejercicios principalmente textuales, transfórmalos a una versión visual con pictogramas e imágenes, manteniendo la intención pedagógica.
         ${instructionPrompt}
         6. **TIPOS DE EJERCICIO**: Usa solo estos cuatro tipos de actividad: repasar, unir, rodear y copiar.
-        7. **SALIDA JSON**: Devuelve solo un objeto JSON válido con esta estructura exacta:
-        {
-          "title": "string",
-          "pictogramSearchTerm": "string",
-          "sections": [
-            {
-              "exerciseType": "repasar | unir | rodear | copiar",
-              "instruction": {
-                "text": "string",
-                "pictograms": [{ "searchTerm": "string", "content": "string" }]
-              },
-              "items": [
-                {
-                  "type": "image | text | traceable_text | empty_box",
-                  "content": "string",
-                  "searchTerm": "string opcional"
-                }
-              ],
-              "layout": "row | column | true_false | sentence_building | matching_horizontal"
-            }
-          ]
-        }
+        7. **FIDELIDAD SEMÁNTICA**: Usa vocabulario del concepto detectado en la ficha original. Si la ficha trata, por ejemplo, sobre partes de una planta, los contenidos deben ser "raíz", "tallo", "hoja", "flor", etc., y nunca vocales o letras sueltas salvo que la ficha original trate de lectoescritura.
+        8. **SALIDA JSON**: Devuelve solo un objeto JSON válido con esta estructura exacta:
+        ${WORKSHEET_JSON_SCHEMA}
+        ${WORKSHEET_OUTPUT_RULES}
 
         Analiza la imagen y genera la ficha adaptada.
       `;
@@ -297,41 +550,31 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
         ${instructionPrompt}
         4. **TIPO DE ACTIVIDADES**: Usa solo estos cuatro tipos: repasar, unir, rodear y copiar. Prioriza lo visual. No incluyas matemáticas complejas ni actividades fuera de esos cuatro tipos.
         5. **TÉRMINOS DE BÚSQUEDA**: Para cada imagen, proporciona un término de búsqueda claro para ARASAAC.
-        6. **SALIDA JSON**: Devuelve solo un objeto JSON válido con esta estructura exacta:
-        {
-          "title": "string",
-          "pictogramSearchTerm": "string",
-          "sections": [
-            {
-              "exerciseType": "repasar | unir | rodear | copiar",
-              "instruction": {
-                "text": "string",
-                "pictograms": [{ "searchTerm": "string", "content": "string" }]
-              },
-              "items": [
-                {
-                  "type": "image | text | traceable_text | empty_box",
-                  "content": "string",
-                  "searchTerm": "string opcional"
-                }
-              ],
-              "layout": "row | column | true_false | sentence_building | matching_horizontal"
-            }
-          ]
-        }
+        6. **FIDELIDAD AL TEMA**: Todo el contenido debe pertenecer al tema pedido. Si el tema es "las partes de una planta", usa elementos como "raíz", "tallo", "hoja", "flor", "semilla". No uses vocales, sílabas o letras aisladas salvo que el tema sea explícitamente de lectoescritura.
+        7. **REPASAR CON SIGNIFICADO**: En actividades de tipo \`repasar\`, el texto trazable debe ser una palabra o etiqueta del tema, no una letra genérica, salvo que el tema sea una letra o sílaba concreta.
+        8. **SALIDA JSON**: Devuelve solo un objeto JSON válido con esta estructura exacta:
+        ${WORKSHEET_JSON_SCHEMA}
+        ${WORKSHEET_OUTPUT_RULES}
 
         MODELOS DE ACTIVIDAD:
-        - repasar: letras, sílabas o trazos visuales simples
-        - unir: conjuntos equivalentes en dos filas
-        - rodear: varias opciones visuales para marcar
-        - copiar: un modelo arriba y varias copias debajo
+        - repasar: letras, sílabas o trazos visuales simples con \`exercise.prompts\`
+        - unir: parejas equivalentes en dos columnas con \`exercise.pairs\`
+        - rodear: una consigna visual opcional y varias opciones con \`exercise.prompt\` y \`exercise.options\`
+        - copiar: un modelo arriba y varias repeticiones debajo con \`exercise.model\` y \`exercise.copies\`
 
         ${adaptationText}
       `;
     }
 
     const rawText = await runProviderPrompt(promptText, adaptationImage);
-    return JSON.parse(extractJsonObject(rawText)) as Worksheet;
+    const worksheet = await parseWorksheetResponse(rawText);
+
+    if (needsSemanticRepair(worksheet, options)) {
+      console.warn('La ficha generada no respeta el tema. Intentando corrección semántica automática.');
+      return await repairSemanticMismatch(rawText, options);
+    }
+
+    return worksheet;
   } catch (error) {
     console.error('Error al generar la ficha:', error);
     throw new Error(error instanceof Error ? error.message : 'No se pudo generar el contenido de la ficha. Por favor, inténtalo de nuevo.');
@@ -357,12 +600,16 @@ export const refineWorksheet = async (originalWorksheet: SavedWorksheet, instruc
     1. Aplica el cambio solicitado sin romper la estructura de la ficha.
     2. Puedes cambiar títulos, instrucciones, añadir, quitar o reemplazar items y secciones.
     3. Mantén los campos coherentes, especialmente \`searchTerm\` y \`content\`.
-    4. Devuelve solo el JSON final, sin markdown ni explicación.
+    4. Si modificas secciones, usa la misma estructura canónica del sistema:
+    ${WORKSHEET_JSON_SCHEMA}
+    5. Puedes devolver solo los campos modificados, pero cada sección que devuelvas debe ser válida por sí misma.
+    6. Devuelve solo el JSON final, sin markdown ni explicación.
+    ${WORKSHEET_OUTPUT_RULES}
   `;
 
   try {
     const rawText = await runProviderPrompt(prompt);
-    return JSON.parse(extractJsonObject(rawText)) as Partial<Worksheet>;
+    return await parseRefinementResponse(rawText);
   } catch (error) {
     console.error('Error al refinar la ficha:', error);
     throw new Error(error instanceof Error ? error.message : 'No se pudo refinar la ficha. Por favor, inténtalo de nuevo.');

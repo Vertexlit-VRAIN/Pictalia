@@ -39,6 +39,8 @@ const EXERCISE_TYPE_OPTIONS: { value: ExerciseType; label: string; addLabel: str
   { value: 'copiar', label: 'Copiar', addLabel: 'Añadir copia' },
 ];
 
+const pictogramUrlCache = new Map<string, string>();
+
 const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
   isOpen,
   onClose,
@@ -53,8 +55,7 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
   const [displayedTerm, setDisplayedTerm] = useState(currentDisplayedTerm);
   const [searchTerm, setSearchTerm] = useState(currentSearchTerm);
   const [selectedUrl, setSelectedUrl] = useState(currentSelectedUrl || '');
-  const [hidePictogram, setHidePictogram] = useState(false);
-  const [applyToAll, setApplyToAll] = useState(true);
+  const [applyToAll, setApplyToAll] = useState(false);
   const [results, setResults] = useState<PictogramSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -63,8 +64,7 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
     setDisplayedTerm(currentDisplayedTerm);
     setSearchTerm(currentSearchTerm);
     setSelectedUrl(currentSelectedUrl || '');
-    setHidePictogram(!currentSelectedUrl);
-    setApplyToAll(true);
+    setApplyToAll(false);
     setResults((currentPictoOptions || []).map((url, index) => ({ id: `${index}-${url}`, url })));
   }, [isOpen, currentDisplayedTerm, currentSearchTerm, currentSelectedUrl, currentPictoOptions]);
 
@@ -88,7 +88,7 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
           setResults(foundPictograms);
           if (foundPictograms.length > 0) {
             const stillExists = foundPictograms.some(picto => picto.url === selectedUrl);
-            if (!stillExists && !hidePictogram) {
+            if (!stillExists) {
               setSelectedUrl(foundPictograms[0].url);
             }
           } else {
@@ -106,7 +106,7 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [isOpen, searchTerm, displayedTerm, currentPictoOptions, selectedUrl, hidePictogram]);
+  }, [isOpen, searchTerm, displayedTerm, currentPictoOptions, selectedUrl]);
 
   if (!isOpen) return null;
 
@@ -118,7 +118,7 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
     onSave({
       displayedTerm: finalDisplayedTerm,
       searchTerm: finalSearchTerm,
-      selectedUrl: hidePictogram ? '' : selectedUrl,
+      selectedUrl,
       pictoOptions: results.map(result => result.url),
       applyToAll,
     });
@@ -166,29 +166,10 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
               />
               Aplicar a todas las instancias equivalentes
             </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={hidePictogram}
-                onChange={(e) => {
-                  const nextChecked = e.target.checked;
-                  setHidePictogram(nextChecked);
-                  if (nextChecked) {
-                    setSelectedUrl('');
-                  } else if (results.length > 0) {
-                    setSelectedUrl(results[0].url);
-                  }
-                }}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              No mostrar pictograma
-            </label>
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Selección actual</p>
               <div className="h-28 rounded-lg border-2 border-dashed border-gray-300 bg-white flex items-center justify-center">
-                {hidePictogram ? (
-                  <span className="text-sm font-semibold text-gray-600 text-center px-4">Solo texto</span>
-                ) : selectedUrl ? (
+                {selectedUrl ? (
                   <img src={selectedUrl} alt={displayedTerm} className="max-h-24 max-w-24 object-contain" />
                 ) : (
                   <span className="text-xs text-gray-500 text-center px-4">Sin pictograma seleccionado.</span>
@@ -208,10 +189,9 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
                   <button
                     key={result.id}
                     onClick={() => {
-                      setHidePictogram(false);
                       setSelectedUrl(result.url);
                     }}
-                    className={`p-2 rounded-lg border-2 transition-colors bg-white ${!hidePictogram && selectedUrl === result.url ? 'border-indigo-600' : 'border-gray-200 hover:border-indigo-300'}`}
+                    className={`p-2 rounded-lg border-2 transition-colors bg-white ${selectedUrl === result.url ? 'border-indigo-600' : 'border-gray-200 hover:border-indigo-300'}`}
                   >
                     <img src={result.url} alt={displayedTerm} className="w-full h-20 object-contain" loading="lazy" />
                   </button>
@@ -242,6 +222,66 @@ const PlaceholderPicto: React.FC<{ label: string }> = ({ label }) => (
   </div>
 );
 
+const EditorPictogramPreview: React.FC<{
+  searchTerm?: string;
+  altText: string;
+  src?: string | null;
+  className?: string;
+}> = ({ searchTerm, altText, src, className }) => {
+  const [imgSrc, setImgSrc] = useState(src || '');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (src) {
+      setImgSrc(src);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const normalizedSearchTerm = (searchTerm || altText).trim();
+    if (!normalizedSearchTerm) {
+      setImgSrc('');
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const resolvePreview = async () => {
+      const cacheKey = normalizedSearchTerm.toLowerCase();
+      if (pictogramUrlCache.has(cacheKey)) {
+        if (!cancelled) {
+          setImgSrc(pictogramUrlCache.get(cacheKey) || '');
+        }
+        return;
+      }
+
+      const results = await searchPictograms(normalizedSearchTerm);
+      const nextUrl = results[0]?.url || '';
+      if (nextUrl) {
+        pictogramUrlCache.set(cacheKey, nextUrl);
+      }
+      if (!cancelled) {
+        setImgSrc(nextUrl);
+      }
+    };
+
+    setImgSrc('');
+    void resolvePreview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchTerm, altText, src]);
+
+  if (!imgSrc) {
+    return <PlaceholderPicto label={searchTerm || altText || 'Sin pictograma'} />;
+  }
+
+  return <img src={imgSrc} alt={altText} className={className} loading="lazy" />;
+};
+
 const getFallbackDisplayTerm = (item: WorksheetItem): string => item.searchTerm || item.content || '';
 
 const createImageItem = (content: string): WorksheetItem => ({
@@ -263,12 +303,6 @@ const createInstructionPicto = (content: string) => ({
   url: '',
 });
 
-const createInstructionText = (content: string) => ({
-  content,
-  searchTerm: '',
-  url: '',
-});
-
 const getSectionItems = (section: WorksheetSection): WorksheetItem[] => section.items || [];
 
 const getExerciseTypeLabel = (exerciseType: ExerciseType): string =>
@@ -285,6 +319,24 @@ const moveItemInArray = <T,>(items: T[], fromIndex: number, toIndex: number) => 
 
 export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ worksheet, onWorksheetChange }) => {
   const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<number[]>([]);
+
+  const isSectionCollapsed = (sectionIndex: number): boolean => collapsedSections.includes(sectionIndex);
+
+  const toggleSectionCollapsed = (sectionIndex: number) => {
+    setCollapsedSections(current =>
+      current.includes(sectionIndex)
+        ? current.filter(index => index !== sectionIndex)
+        : [...current, sectionIndex]
+    );
+  };
+
+  const getSectionSummary = (section: WorksheetSection): string => {
+    const items = getSectionItems(section);
+    const firstLabel = items[0]?.content || section.instruction.text || 'Sin contenido';
+    const countLabel = items.length === 1 ? '1 elemento' : `${items.length} elementos`;
+    return `${countLabel} · ${firstLabel}`;
+  };
 
   const updateWorksheet = (recipe: (draft: SavedWorksheet) => void) => {
     const nextWorksheet = produce(worksheet, draft => {
@@ -389,12 +441,11 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
       }
 
       const item = draft.sections[editorTarget.sectionIndex].items?.[editorTarget.itemIndex];
-      if (!item || item.type === 'traceable_text' || item.type === 'empty_box') return;
+      if (!item || item.type === 'empty_box') return;
 
       const originalPictoUrl = item.selectedPictoUrl || '';
       const originalDisplayedTerm = item.searchTerm || item.content || '';
 
-      item.type = 'image';
       item.content = displayedTerm;
       item.searchTerm = searchTerm;
       item.selectedPictoUrl = selectedUrl;
@@ -441,13 +492,6 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
     updateWorksheet(draft => {
       const pictograms = draft.sections[sectionIndex].instruction.pictograms || (draft.sections[sectionIndex].instruction.pictograms = []);
       pictograms.push(createInstructionPicto('nuevo'));
-    });
-  };
-
-  const handleAddInstructionText = (sectionIndex: number) => {
-    updateWorksheet(draft => {
-      const pictograms = draft.sections[sectionIndex].instruction.pictograms || (draft.sections[sectionIndex].instruction.pictograms = []);
-      pictograms.push(createInstructionText('texto'));
     });
   };
 
@@ -596,13 +640,15 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
     }
 
     const item = worksheet.sections[editorTarget.sectionIndex].items?.[editorTarget.itemIndex];
-    if (!item || item.type === 'traceable_text' || item.type === 'empty_box') return null;
+    if (!item || item.type === 'empty_box') return null;
 
     return {
-      title: 'Editar elemento del ejercicio',
-      helperText: 'Todos estos elementos se editan igual. Si no seleccionas pictograma, se mostrará solo el texto.',
+      title: item.type === 'traceable_text' ? 'Editar trazo' : 'Editar elemento del ejercicio',
+      helperText: item.type === 'traceable_text'
+        ? 'Puedes elegir el pictograma de apoyo y el texto que se repasa.'
+        : 'Todos estos elementos se editan igual. Si no seleccionas pictograma, se mostrará solo el texto.',
       displayedTerm: item.content || '',
-      searchTerm: item.searchTerm || '',
+      searchTerm: item.searchTerm || item.content || '',
       selectedUrl: item.selectedPictoUrl || '',
       pictoOptions: item.pictoOptions || [],
     };
@@ -623,6 +669,8 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
   ) => {
     const key = `${sectionIndex}-${itemIndex}`;
     const exerciseType = section.exerciseType || 'rodear';
+    const isRepasarTrace = exerciseType === 'repasar' && item.type === 'traceable_text';
+    const previewPictoUrl = item.selectedPictoUrl || item.pictoOptions?.[0] || '';
     const addLabel = EXERCISE_TYPE_OPTIONS.find(option => option.value === exerciseType)?.addLabel || 'Añadir elemento';
     const itemCount = getSectionItems(section).length;
     const pairCount = exerciseType === 'unir' ? itemCount / 2 : 0;
@@ -638,7 +686,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
           : itemCount <= 2;
 
     return (
-      <div key={key} className="w-full max-w-[220px] rounded-xl border border-gray-200 bg-gray-50 p-3">
+      <div key={key} className={`w-full rounded-xl border border-gray-200 bg-gray-50 p-3 ${isRepasarTrace ? 'max-w-[720px]' : 'max-w-[220px]'}`}>
         <div className="flex items-start justify-between gap-2 mb-3">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
             {options?.title || (exerciseType === 'unir' ? `Pareja ${pairIndex + 1}` : `${getExerciseTypeLabel(exerciseType)} ${itemIndex + 1}`)}
@@ -681,8 +729,13 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
               onClick={() => setEditorTarget({ type: 'item', sectionIndex, itemIndex })}
               className="relative flex h-32 w-full items-center justify-center rounded-lg border-2 border-black bg-white group"
             >
-              {item.selectedPictoUrl ? (
-                <img src={item.selectedPictoUrl} alt={item.content} className="max-h-20 max-w-20 object-contain" loading="lazy" />
+              {previewPictoUrl || item.searchTerm || item.content ? (
+                <EditorPictogramPreview
+                  src={previewPictoUrl}
+                  searchTerm={item.searchTerm || item.content}
+                  altText={item.content}
+                  className="max-h-20 max-w-20 object-contain"
+                />
               ) : (
                 <span className="px-3 text-center text-3xl font-bold text-gray-700">{item.content || 'Texto'}</span>
               )}
@@ -690,27 +743,41 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
                 <span className="text-sm font-bold text-white">Editar elemento</span>
               </div>
             </button>
-            <div className="mt-3 space-y-2">
-              <input
-                type="text"
-                value={item.content}
-                onChange={(e) => handleItemTextChange(sectionIndex, itemIndex, e.target.value)}
-                placeholder="Texto"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-              />
-              <input
-                type="text"
-                value={item.searchTerm || ''}
-                onChange={(e) => handleItemSearchTermChange(sectionIndex, itemIndex, e.target.value)}
-                placeholder="Búsqueda de pictograma opcional"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-              />
-            </div>
+
+          </>
+        ) : item.type === 'traceable_text' ? (
+          <>
+            <button
+              onClick={() => setEditorTarget({ type: 'item', sectionIndex, itemIndex })}
+              className="relative flex min-h-32 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white group"
+            >
+              <div className={`flex w-full items-center ${isRepasarTrace ? 'gap-4 px-4 py-3' : 'justify-center gap-3 px-3'}`}>
+                <div className={`flex flex-shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-gray-50 ${isRepasarTrace ? 'h-24 w-24' : 'h-20 w-20'}`}>
+                  {previewPictoUrl || item.searchTerm || item.content ? (
+                    <EditorPictogramPreview
+                      src={previewPictoUrl}
+                      searchTerm={item.searchTerm || item.content}
+                      altText={item.content}
+                      className={`${isRepasarTrace ? 'max-h-20 max-w-20' : 'max-h-14 max-w-14'} object-contain`}
+                    />
+                  ) : (
+                    <PlaceholderPicto label={item.searchTerm || item.content || 'Sin pictograma'} />
+                  )}
+                </div>
+                <span className={`${isRepasarTrace ? 'flex-1 overflow-hidden text-center text-7xl' : 'text-6xl'} font-bold text-gray-300 break-words`}>
+                  {item.content || '...'}
+                </span>
+              </div>
+              <div className="absolute inset-0 rounded-md bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center">
+                <span className="text-sm font-bold text-white">Editar trazo</span>
+              </div>
+            </button>
+
           </>
         ) : (
           <>
             <div className="flex h-32 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white">
-              <span className={`font-bold ${item.type === 'traceable_text' ? 'text-7xl text-gray-300' : 'text-4xl text-gray-700'}`}>
+              <span className="text-4xl font-bold text-gray-700">
                 {item.content || '...'}
               </span>
             </div>
@@ -730,15 +797,15 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
   };
 
   const renderRepasarEditor = (section: WorksheetSection, sectionIndex: number) => (
-    <div className="space-y-4">
-      <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
-        El profesor prepara trazos simples y repetitivos. Conviene usar pocas unidades visuales y letras claras.
-      </div>
-      <div className="flex flex-wrap gap-3">
+      <div className="space-y-4">
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
+          El profesor prepara trazos simples y repetitivos. Conviene usar pocas unidades visuales y letras claras.
+        </div>
+      <div className="flex flex-col gap-3">
         {getSectionItems(section).map((item, itemIndex) =>
           renderWorksheetItem(item, sectionIndex, itemIndex, section, {
             title: `Trazo ${itemIndex + 1}`,
-            description: 'Modelo sencillo para repasar.',
+            description: 'Pictograma de apoyo y palabra guía para repasar.',
           })
         )}
       </div>
@@ -892,8 +959,13 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
         <div className="rounded-xl border border-gray-200 bg-white p-4">
           <div className="grid gap-4 md:grid-cols-[80px_minmax(0,1fr)] md:items-center">
             <button onClick={() => setEditorTarget({ type: 'main' })} className="h-16 w-16 flex items-center justify-center border-2 border-black relative group cursor-pointer bg-white">
-              {worksheet.selectedPictoUrl ? (
-                <img src={worksheet.selectedPictoUrl} alt={worksheet.pictogramSearchTerm} className="max-h-12 max-w-12" />
+              {worksheet.selectedPictoUrl || worksheet.pictoOptions?.[0] || worksheet.pictogramSearchTerm ? (
+                <EditorPictogramPreview
+                  src={worksheet.selectedPictoUrl || worksheet.pictoOptions?.[0]}
+                  searchTerm={worksheet.pictogramSearchTerm}
+                  altText={worksheet.pictogramSearchTerm}
+                  className="max-h-12 max-w-12"
+                />
               ) : (
                 <PlaceholderPicto label="Sin pictograma" />
               )}
@@ -919,7 +991,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
             <div key={sectionIndex} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex-1 space-y-3">
-                  <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+                  <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)_auto]">
                     <select
                       value={exerciseType}
                       onChange={(e) => handleExerciseTypeChange(sectionIndex, e.target.value as ExerciseType)}
@@ -935,94 +1007,84 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
                       onChange={(e) => handleTextChange(['sections', sectionIndex, 'instruction', 'text'], e.target.value)}
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-lg font-bold uppercase tracking-wide text-gray-700"
                     />
+                    <button
+                      type="button"
+                      onClick={() => toggleSectionCollapsed(sectionIndex)}
+                      className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-indigo-500 hover:text-indigo-600"
+                    >
+                      {isSectionCollapsed(sectionIndex) ? 'Expandir' : 'Colapsar'}
+                    </button>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {instructionPictograms.map((picto, pictoIndex) => (
-                      <div key={pictoIndex} className="flex flex-col items-center rounded-lg border border-gray-200 bg-gray-50 p-2">
-                        <div className="mb-2 flex items-center gap-1 self-end">
-                          <button
-                            type="button"
-                            onClick={() => handleMoveInstructionPicto(sectionIndex, pictoIndex, -1)}
-                            disabled={pictoIndex === 0}
-                            className="rounded-md bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            ←
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveInstructionPicto(sectionIndex, pictoIndex, 1)}
-                            disabled={pictoIndex === instructionPictograms.length - 1}
-                            className="rounded-md bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            →
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveInstructionPicto(sectionIndex, pictoIndex)}
-                            disabled={instructionPictograms.length <= 1}
-                            className="rounded-md bg-red-100 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            Quitar
-                          </button>
-                        </div>
-                        
-                        <button
-                          className="relative flex items-center justify-center p-1 border-2 border-gray-200 hover:border-indigo-500 rounded-lg h-16 w-16 group bg-white"
-                          onClick={() => setEditorTarget({ type: 'instruction', sectionIndex, pictoIndex })}
-                        >
-                          {picto.url ? (
-                            <img src={picto.url} alt={picto.content} className="max-h-12 max-w-12 object-contain" />
-                          ) : picto.searchTerm ? (
-                            <PlaceholderPicto label="Sin pictograma" />
-                          ) : (
-                            <span className="px-2 text-center text-xs font-semibold text-gray-600 uppercase">{picto.content}</span>
-                          )}
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
-                            <span className="text-white font-bold text-xs">Editar</span>
-                          </div>
-                        </button>
-                        <span className="mt-2 text-xs font-semibold uppercase text-gray-600">{picto.content}</span>
-                      </div>
-                    ))}
-                    <div className="flex flex-col gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleAddInstructionPicto(sectionIndex)}
-                        className="flex h-[58px] w-[124px] flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 text-sm font-semibold text-gray-600 hover:border-indigo-500 hover:text-indigo-600"
-                      >
-                        Añadir pictograma
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAddInstructionText(sectionIndex)}
-                        className="flex h-[58px] w-[124px] flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white px-3 text-sm font-semibold text-gray-600 hover:border-indigo-500 hover:text-indigo-600"
-                      >
-                        Añadir texto
-                      </button>
+                  {isSectionCollapsed(sectionIndex) ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                      {getSectionSummary(section)}
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        {instructionPictograms.map((picto, pictoIndex) => (
+                          <div key={pictoIndex} className="flex flex-col items-center rounded-lg border border-gray-200 bg-gray-50 p-2">
+                            <div className="mb-2 flex items-center gap-1 self-end">
+                              <button
+                                type="button"
+                                onClick={() => handleMoveInstructionPicto(sectionIndex, pictoIndex, -1)}
+                                disabled={pictoIndex === 0}
+                                className="rounded-md bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                ←
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveInstructionPicto(sectionIndex, pictoIndex, 1)}
+                                disabled={pictoIndex === instructionPictograms.length - 1}
+                                className="rounded-md bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                →
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveInstructionPicto(sectionIndex, pictoIndex)}
+                                disabled={instructionPictograms.length <= 1}
+                                className="rounded-md bg-red-100 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                Quitar
+                              </button>
+                            </div>
+                            
+                            <button
+                              className="relative flex items-center justify-center p-1 border-2 border-gray-200 hover:border-indigo-500 rounded-lg h-16 w-16 group bg-white"
+                              onClick={() => setEditorTarget({ type: 'instruction', sectionIndex, pictoIndex })}
+                            >
+                              {picto.url ? (
+                                <img src={picto.url} alt={picto.content} className="max-h-12 max-w-12 object-contain" />
+                              ) : picto.searchTerm ? (
+                                <PlaceholderPicto label="Sin pictograma" />
+                              ) : (
+                                <span className="px-2 text-center text-xs font-semibold text-gray-600 uppercase">{picto.content}</span>
+                              )}
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+                                <span className="text-white font-bold text-xs">Editar</span>
+                              </div>
+                            </button>
+                            <span className="mt-2 text-xs font-semibold uppercase text-gray-600">{picto.content}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleAddInstructionPicto(sectionIndex)}
+                          className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-600 hover:border-indigo-500 hover:text-indigo-600"
+                        >
+                          Añadir pictograma al enunciado
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {exerciseType !== 'rodear' && exerciseType !== 'unir' && (
-                    <button
-                      type="button"
-                      onClick={() => handleAddItem(sectionIndex)}
-                      className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-                    >
-                      {addLabel}
-                    </button>
-                  )}
-                  {(exerciseType === 'rodear' || exerciseType === 'unir') && (
-                    <button
-                      type="button"
-                      onClick={() => handleAddPictogramItem(sectionIndex)}
-                      className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-                    >
-                      {exerciseType === 'unir' ? 'Añadir pareja visual' : 'Añadir pictograma'}
-                    </button>
-                  )}
                   <button
                     type="button"
                     onClick={() => handleRemoveSection(sectionIndex)}
@@ -1034,9 +1096,31 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
                 </div>
               </div>
 
-              <div className="mt-4">
-                {renderExerciseEditor(section, sectionIndex)}
-              </div>
+              {!isSectionCollapsed(sectionIndex) && (
+                <div className="mt-4">
+                  {renderExerciseEditor(section, sectionIndex)}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {exerciseType !== 'rodear' && exerciseType !== 'unir' && (
+                      <button
+                        type="button"
+                        onClick={() => handleAddItem(sectionIndex)}
+                        className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                      >
+                        {addLabel}
+                      </button>
+                    )}
+                    {(exerciseType === 'rodear' || exerciseType === 'unir') && (
+                      <button
+                        type="button"
+                        onClick={() => handleAddPictogramItem(sectionIndex)}
+                        className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                      >
+                        {exerciseType === 'unir' ? 'Añadir pareja visual' : 'Añadir pictograma'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
