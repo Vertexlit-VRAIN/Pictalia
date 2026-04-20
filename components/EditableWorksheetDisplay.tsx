@@ -9,10 +9,11 @@ type EditableWorksheetProps = {
   onWorksheetChange: (newWorksheet: SavedWorksheet) => void;
 };
 
-type EditorTarget =
-  | { type: 'main' }
-  | { type: 'item'; sectionIndex: number; itemIndex: number }
-  | { type: 'instruction'; sectionIndex: number; pictoIndex: number };
+import { EditorTarget } from './editors/types';
+import { RepasarEditor } from './editors/RepasarEditor';
+import { UnirEditor } from './editors/UnirEditor';
+import { CopiarEditor } from './editors/CopiarEditor';
+import { RodearEditor } from './editors/RodearEditor';
 
 type PictogramEditorModalProps = {
   isOpen: boolean;
@@ -32,7 +33,7 @@ type PictogramEditorModalProps = {
   }) => void;
 };
 
-const EXERCISE_TYPE_OPTIONS: { value: ExerciseType; label: string; addLabel: string }[] = [
+export const EXERCISE_TYPE_OPTIONS: { value: ExerciseType; label: string; addLabel: string }[] = [
   { value: 'repasar', label: 'Repasar', addLabel: 'Añadir trazo' },
   { value: 'unir', label: 'Unir', addLabel: 'Añadir pareja' },
   { value: 'rodear', label: 'Rodear', addLabel: 'Añadir pictograma' },
@@ -216,13 +217,13 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
   );
 };
 
-const PlaceholderPicto: React.FC<{ label: string }> = ({ label }) => (
+export const PlaceholderPicto: React.FC<{ label: string }> = ({ label }) => (
   <div className="flex items-center justify-center text-center text-xs text-red-500 px-2">
     {label}
   </div>
 );
 
-const EditorPictogramPreview: React.FC<{
+export const EditorPictogramPreview: React.FC<{
   searchTerm?: string;
   altText: string;
   src?: string | null;
@@ -303,9 +304,9 @@ const createInstructionPicto = (content: string) => ({
   url: '',
 });
 
-const getSectionItems = (section: WorksheetSection): WorksheetItem[] => section.items || [];
+export const getSectionItems = (section: WorksheetSection): WorksheetItem[] => section.items || [];
 
-const getExerciseTypeLabel = (exerciseType: ExerciseType): string =>
+export const getExerciseTypeLabel = (exerciseType: ExerciseType): string =>
   EXERCISE_TYPE_OPTIONS.find(option => option.value === exerciseType)?.label || exerciseType;
 
 const moveItemInArray = <T,>(items: T[], fromIndex: number, toIndex: number) => {
@@ -654,288 +655,17 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
     };
   }, [editorTarget, worksheet]);
 
-  const renderWorksheetItem = (
-    item: WorksheetItem,
-    sectionIndex: number,
-    itemIndex: number,
-    section: WorksheetSection,
-    options?: {
-      title?: string;
-      description?: string;
-      hideMoveButtons?: boolean;
-      moveBackDisabled?: boolean;
-      moveForwardDisabled?: boolean;
-    }
-  ) => {
-    const key = `${sectionIndex}-${itemIndex}`;
-    const exerciseType = section.exerciseType || 'rodear';
-    const isRepasarTrace = exerciseType === 'repasar' && item.type === 'traceable_text';
-    const previewPictoUrl = item.selectedPictoUrl || item.pictoOptions?.[0] || '';
-    const addLabel = EXERCISE_TYPE_OPTIONS.find(option => option.value === exerciseType)?.addLabel || 'Añadir elemento';
-    const itemCount = getSectionItems(section).length;
-    const pairCount = exerciseType === 'unir' ? itemCount / 2 : 0;
-    const pairIndex = exerciseType === 'unir' ? (itemIndex < pairCount ? itemIndex : itemIndex - pairCount) : itemIndex;
-    const canMoveBack = exerciseType === 'unir' ? pairIndex > 0 : itemIndex > 0;
-    const canMoveForward = exerciseType === 'unir' ? pairIndex < pairCount - 1 : itemIndex < itemCount - 1;
-    const disableRemove = exerciseType === 'unir'
-      ? itemCount <= 4
-      : exerciseType === 'copiar'
-        ? itemCount <= 2
-        : exerciseType === 'repasar'
-          ? itemCount <= 1
-          : itemCount <= 2;
-
-    return (
-      <div key={key} className={`w-full rounded-xl border border-gray-200 bg-gray-50 p-3 ${isRepasarTrace ? 'max-w-[720px]' : 'max-w-[220px]'}`}>
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-            {options?.title || (exerciseType === 'unir' ? `Pareja ${pairIndex + 1}` : `${getExerciseTypeLabel(exerciseType)} ${itemIndex + 1}`)}
-          </span>
-          <div className="flex items-center gap-1">
-            {!options?.hideMoveButtons && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => handleMoveItem(sectionIndex, itemIndex, -1)}
-                  disabled={options?.moveBackDisabled ?? !canMoveBack}
-                  className="rounded-md bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  ←
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMoveItem(sectionIndex, itemIndex, 1)}
-                  disabled={options?.moveForwardDisabled ?? !canMoveForward}
-                  className="rounded-md bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  →
-                </button>
-              </>
-            )}
-            <button
-              type="button"
-              onClick={() => handleRemoveItem(sectionIndex, itemIndex)}
-              disabled={disableRemove}
-              className="rounded-md bg-red-100 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Quitar
-            </button>
-          </div>
-        </div>
-
-        {item.type !== 'traceable_text' && item.type !== 'empty_box' ? (
-          <>
-            <button
-              onClick={() => setEditorTarget({ type: 'item', sectionIndex, itemIndex })}
-              className="relative flex h-32 w-full items-center justify-center rounded-lg border-2 border-black bg-white group"
-            >
-              {previewPictoUrl || item.searchTerm || item.content ? (
-                <EditorPictogramPreview
-                  src={previewPictoUrl}
-                  searchTerm={item.searchTerm || item.content}
-                  altText={item.content}
-                  className="max-h-20 max-w-20 object-contain"
-                />
-              ) : (
-                <span className="px-3 text-center text-3xl font-bold text-gray-700">{item.content || 'Texto'}</span>
-              )}
-              <div className="absolute inset-0 rounded-md bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center">
-                <span className="text-sm font-bold text-white">Editar elemento</span>
-              </div>
-            </button>
-
-          </>
-        ) : item.type === 'traceable_text' ? (
-          <>
-            <button
-              onClick={() => setEditorTarget({ type: 'item', sectionIndex, itemIndex })}
-              className="relative flex min-h-32 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white group"
-            >
-              <div className={`flex w-full items-center ${isRepasarTrace ? 'gap-4 px-4 py-3' : 'justify-center gap-3 px-3'}`}>
-                <div className={`flex flex-shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-gray-50 ${isRepasarTrace ? 'h-24 w-24' : 'h-20 w-20'}`}>
-                  {previewPictoUrl || item.searchTerm || item.content ? (
-                    <EditorPictogramPreview
-                      src={previewPictoUrl}
-                      searchTerm={item.searchTerm || item.content}
-                      altText={item.content}
-                      className={`${isRepasarTrace ? 'max-h-20 max-w-20' : 'max-h-14 max-w-14'} object-contain`}
-                    />
-                  ) : (
-                    <PlaceholderPicto label={item.searchTerm || item.content || 'Sin pictograma'} />
-                  )}
-                </div>
-                <span className={`${isRepasarTrace ? 'flex-1 overflow-hidden text-center text-7xl' : 'text-6xl'} font-bold text-gray-300 break-words`}>
-                  {item.content || '...'}
-                </span>
-              </div>
-              <div className="absolute inset-0 rounded-md bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center">
-                <span className="text-sm font-bold text-white">Editar trazo</span>
-              </div>
-            </button>
-
-          </>
-        ) : (
-          <>
-            <div className="flex h-32 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white">
-              <span className="text-4xl font-bold text-gray-700">
-                {item.content || '...'}
-              </span>
-            </div>
-            <input
-              type="text"
-              value={item.content}
-              onChange={(e) => handleItemTextChange(sectionIndex, itemIndex, e.target.value)}
-              placeholder="Texto"
-              className="mt-3 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-            />
-          </>
-        )}
-
-        <p className="mt-3 text-[11px] text-gray-500">{options?.description || addLabel}</p>
-      </div>
-    );
-  };
-
-  const renderRepasarEditor = (section: WorksheetSection, sectionIndex: number) => (
-      <div className="space-y-4">
-        <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
-          El profesor prepara trazos simples y repetitivos. Conviene usar pocas unidades visuales y letras claras.
-        </div>
-      <div className="flex flex-col gap-3">
-        {getSectionItems(section).map((item, itemIndex) =>
-          renderWorksheetItem(item, sectionIndex, itemIndex, section, {
-            title: `Trazo ${itemIndex + 1}`,
-            description: 'Pictograma de apoyo y palabra guía para repasar.',
-          })
-        )}
-      </div>
-    </div>
-  );
-
-  const renderCopiarEditor = (section: WorksheetSection, sectionIndex: number) => {
-    const items = getSectionItems(section);
-    const model = items[0];
-    const copies = items.slice(1);
-
-    return (
-      <div className="space-y-4">
-        <div className="rounded-lg bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-900">
-          El alumno ve un modelo arriba y varias repeticiones debajo. Mantén el patrón muy estable.
-        </div>
-        {model && (
-          <div>
-            <p className="mb-2 text-sm font-semibold text-gray-700">Modelo</p>
-            {renderWorksheetItem(model, sectionIndex, 0, section, {
-              title: 'Modelo',
-              description: 'Referencia visual principal.',
-              hideMoveButtons: true,
-            })}
-          </div>
-        )}
-        <div>
-          <p className="mb-2 text-sm font-semibold text-gray-700">Copias</p>
-          <div className="flex flex-wrap gap-3">
-            {copies.map((item, index) =>
-              renderWorksheetItem(item, sectionIndex, index + 1, section, {
-                title: `Copia ${index + 1}`,
-                description: 'Espacio de repetición.',
-              })
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderRodearEditor = (section: WorksheetSection, sectionIndex: number) => (
-    <div className="space-y-4">
-      <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-900">
-        Presenta pocas opciones, muy diferenciadas y visualmente limpias para facilitar la discriminación.
-      </div>
-      <div className="flex flex-wrap gap-3">
-        {getSectionItems(section).map((item, itemIndex) =>
-          renderWorksheetItem(item, sectionIndex, itemIndex, section, {
-            title: `Opción ${itemIndex + 1}`,
-            description: 'Pictograma para rodear o señalar.',
-          })
-        )}
-      </div>
-    </div>
-  );
-
-  const renderUnirEditor = (section: WorksheetSection, sectionIndex: number) => {
-    const items = getSectionItems(section);
-    const pairCount = items.length / 2;
-    const leftItems = items.slice(0, pairCount);
-    const rightItems = items.slice(pairCount);
-
-    return (
-      <div className="space-y-4">
-        <div className="rounded-lg bg-violet-50 border border-violet-200 px-4 py-3 text-sm text-violet-900">
-          Trabaja asociaciones claras de uno a uno. Cada pareja debe tener relación evidente y pocas distracciones.
-        </div>
-        <div className="space-y-3">
-          {leftItems.map((leftItem, pairIndex) => (
-            <div key={pairIndex} className="rounded-xl border border-violet-200 bg-violet-50/40 p-3">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold text-violet-900">Pareja {pairIndex + 1}</span>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleMoveItem(sectionIndex, pairIndex, -1)}
-                    disabled={pairIndex === 0}
-                    className="rounded-md bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    ←
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleMoveItem(sectionIndex, pairIndex, 1)}
-                    disabled={pairIndex === pairCount - 1}
-                    className="rounded-md bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    →
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveItem(sectionIndex, pairIndex)}
-                    disabled={items.length <= 4}
-                    className="rounded-md bg-red-100 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Quitar pareja
-                  </button>
-                </div>
-              </div>
-              <div className="grid gap-3 lg:grid-cols-2">
-                {renderWorksheetItem(leftItem, sectionIndex, pairIndex, section, {
-                  title: 'Columna izquierda',
-                  description: 'Primer elemento de la asociación.',
-                  hideMoveButtons: true,
-                })}
-                {renderWorksheetItem(rightItems[pairIndex], sectionIndex, pairIndex + pairCount, section, {
-                  title: 'Columna derecha',
-                  description: 'Segundo elemento de la asociación.',
-                  hideMoveButtons: true,
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   const renderExerciseEditor = (section: WorksheetSection, sectionIndex: number) => {
     switch (section.exerciseType) {
       case 'repasar':
-        return renderRepasarEditor(section, sectionIndex);
+        return <RepasarEditor section={section} sectionIndex={sectionIndex} handleMoveItem={handleMoveItem} handleRemoveItem={handleRemoveItem} setEditorTarget={setEditorTarget} handleItemTextChange={handleItemTextChange} />;
       case 'unir':
-        return renderUnirEditor(section, sectionIndex);
+        return <UnirEditor section={section} sectionIndex={sectionIndex} handleMoveItem={handleMoveItem} handleRemoveItem={handleRemoveItem} setEditorTarget={setEditorTarget} handleItemTextChange={handleItemTextChange} />;
       case 'copiar':
-        return renderCopiarEditor(section, sectionIndex);
+        return <CopiarEditor section={section} sectionIndex={sectionIndex} handleMoveItem={handleMoveItem} handleRemoveItem={handleRemoveItem} setEditorTarget={setEditorTarget} handleItemTextChange={handleItemTextChange} />;
       case 'rodear':
       default:
-        return renderRodearEditor(section, sectionIndex);
+        return <RodearEditor section={section} sectionIndex={sectionIndex} handleMoveItem={handleMoveItem} handleRemoveItem={handleRemoveItem} setEditorTarget={setEditorTarget} handleItemTextChange={handleItemTextChange} />;
     }
   };
 

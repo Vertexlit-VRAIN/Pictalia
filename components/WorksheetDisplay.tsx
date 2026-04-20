@@ -3,9 +3,14 @@ import type { Worksheet, WorksheetExercise, WorksheetItem, WorksheetSection } fr
 import { getFlattenedItemsFromExercise, normalizeWorksheet } from '../services/worksheetNormalizer';
 import { searchPictograms } from '../services/pictogramService';
 
+import { RepasarDisplay } from './display/RepasarDisplay';
+import { UnirDisplay } from './display/UnirDisplay';
+import { RodearDisplay } from './display/RodearDisplay';
+import { CopiarDisplay } from './display/CopiarDisplay';
+
 const pictogramUrlCache = new Map<string, string>();
 
-const Pictogram: React.FC<{ searchTerm: string; altText: string; className?: string; src?: string | null }> = ({ searchTerm, altText, className, src }) => {
+export const Pictogram: React.FC<{ searchTerm: string; altText: string; className?: string; src?: string | null }> = ({ searchTerm, altText, className, src }) => {
   const [imgSrc, setImgSrc] = useState<string>(src || '');
   const searchTermsRef = useRef<string[]>([]);
 
@@ -68,83 +73,15 @@ const Pictogram: React.FC<{ searchTerm: string; altText: string; className?: str
   return <img src={imgSrc} alt={altText} className={className} onError={handleError} />;
 };
 
-const renderTraceableGuide = (item: WorksheetItem, index: number) => {
-  const searchTerm = item.searchTerm || item.content;
 
-  return (
-    <div key={index} className="w-full max-w-[760px] bg-white pdf-avoid-break">
-      <div className="flex items-center gap-0">
-        <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-xl border-2 border-black bg-white p-2">
-          <Pictogram searchTerm={searchTerm} altText={item.content} className="max-h-full max-w-full object-contain" src={item.selectedPictoUrl} />
-        </div>
-        <svg viewBox="0 0 620 88" className="block h-[88px] w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
-          <line x1="0" y1="6" x2="620" y2="6" stroke="black" strokeWidth="2" />
-          <line x1="0" y1="44" x2="620" y2="44" stroke="#6b7280" strokeWidth="2" strokeDasharray="6 6" />
-          <line x1="0" y1="82" x2="620" y2="82" stroke="black" strokeWidth="2" />
-          <text
-            x="310"
-            y="52"
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill="transparent"
-            stroke="#cbd5e1"
-            strokeWidth="1.2"
-            strokeDasharray="3 3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            paintOrder="stroke"
-            fontSize="94"
-            letterSpacing="0"
-            fontWeight="100"
-            fontFamily="'Helvetica Neue', Arial, sans-serif"
-          >
-            {item.content}
-          </text>
-        </svg>
-      </div>
-    </div>
-  );
-};
-
-const renderWorksheetItem = (item: WorksheetItem, index: number) => {
-  switch (item.type) {
-    case 'image':
-      return (
-        <div key={index} className="flex flex-col items-center justify-center p-3 border-2 border-black rounded-lg h-40 w-40 bg-white pdf-avoid-break">
-          {item.selectedPictoUrl || item.searchTerm ? (
-            <Pictogram
-              searchTerm={item.searchTerm || item.content}
-              altText={item.content}
-              src={item.selectedPictoUrl}
-              className="max-h-24 max-w-24 object-contain"
-            />
-          ) : (
-            <div className="flex flex-1 items-center justify-center px-2 text-center text-5xl font-bold text-gray-700">
-              {item.content}
-            </div>
-          )}
-          <span className="text-base text-center mt-2 font-mono text-gray-700 uppercase">{item.content}</span>
-        </div>
-      );
-    case 'text':
-      return <div key={index} className="flex items-center justify-center h-32 w-32 text-4xl font-bold text-gray-700 pdf-avoid-break">{item.content}</div>;
-    case 'traceable_text':
-      return renderTraceableGuide(item, index);
-    case 'empty_box':
-      return <div key={index} className="h-32 w-32 border-2 border-black rounded-lg bg-white pdf-avoid-break"></div>;
-    default:
-      return null;
-  }
-};
 
 const SectionHeader: React.FC<{ instruction: WorksheetSection['instruction'] }> = ({ instruction }) => (
-  <div className="text-center mb-6">
-    <h3 className="font-bold text-2xl text-gray-600 uppercase tracking-widest">{instruction.text}</h3>
+  <div className="flex items-center gap-6 mb-6">
     {instruction.pictograms && instruction.pictograms.length > 0 && (
-      <div className="mt-3 flex items-center justify-center gap-2 p-2 bg-gray-100 rounded-lg">
+      <div className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg">
         {instruction.pictograms.map((picto, idx) => (
-          <div key={idx} className="flex flex-col items-center text-xs font-semibold text-gray-500">
-            <div className="w-10 h-10 p-1 bg-white rounded border border-gray-300 flex items-center justify-center">
+          <div key={idx} className="flex flex-col items-center text-sm font-semibold text-gray-500">
+            <div className="w-16 h-16 p-1.5 bg-white rounded border border-gray-300 flex items-center justify-center">
               {picto.url || picto.searchTerm ? (
                 <Pictogram
                   searchTerm={picto.searchTerm || picto.content}
@@ -161,12 +98,7 @@ const SectionHeader: React.FC<{ instruction: WorksheetSection['instruction'] }> 
         ))}
       </div>
     )}
-  </div>
-);
-
-const renderRepasarExercise = (exercise: Extract<WorksheetExercise, { type: 'repasar' }>) => (
-  <div className="flex flex-col items-center justify-center gap-4">
-    {exercise.prompts.map((item, index) => renderWorksheetItem(item, index))}
+    <h3 className="font-bold text-3xl text-gray-600 uppercase tracking-widest">{instruction.text}</h3>
   </div>
 );
 
@@ -179,7 +111,7 @@ const getStableHash = (value: string): number => {
   return Math.abs(hash);
 };
 
-const getStableShuffledItems = (items: WorksheetItem[]): WorksheetItem[] =>
+export const getStableShuffledItems = (items: WorksheetItem[]): WorksheetItem[] =>
   [...items]
     .map((item, index) => ({
       item,
@@ -188,70 +120,17 @@ const getStableShuffledItems = (items: WorksheetItem[]): WorksheetItem[] =>
     .sort((left, right) => left.order - right.order)
     .map(entry => entry.item);
 
-const renderUnirExercise = (exercise: Extract<WorksheetExercise, { type: 'unir' }>) => {
-  const leftColumnItems = exercise.pairs.map(pair => pair.left);
-  const rightColumnItems = getStableShuffledItems(exercise.pairs.map(pair => pair.right));
-
-  return (
-    <div className="grid grid-cols-[minmax(0,1fr)_180px_minmax(0,1fr)] items-start">
-      <div className="flex flex-col gap-8 items-end">
-        {leftColumnItems.map((item, index) => (
-          <div key={`left-${index}`} className="flex items-center gap-4">
-            {renderWorksheetItem(item, index)}
-            <div className="w-5 h-5 rounded-full border-2 border-black bg-white shadow-inner flex-shrink-0"></div>
-          </div>
-        ))}
-      </div>
-
-      <div className="min-h-full"></div>
-
-      <div className="flex flex-col gap-8 items-start">
-        {rightColumnItems.map((item, index) => (
-          <div key={`right-${index}`} className="flex items-center gap-4">
-            <div className="w-5 h-5 rounded-full border-2 border-black bg-white shadow-inner flex-shrink-0"></div>
-            {renderWorksheetItem(item, index + leftColumnItems.length)}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const renderRodearExercise = (exercise: Extract<WorksheetExercise, { type: 'rodear' }>) => (
-  <div className="space-y-6">
-    {exercise.prompt && (
-      <div className="flex justify-center">
-        {renderWorksheetItem(exercise.prompt, 0)}
-      </div>
-    )}
-    <div className="flex flex-row items-center justify-center gap-4 flex-wrap">
-      {exercise.options.map((item, index) => renderWorksheetItem(item, index + (exercise.prompt ? 1 : 0)))}
-    </div>
-  </div>
-);
-
-const renderCopiarExercise = (exercise: Extract<WorksheetExercise, { type: 'copiar' }>) => (
-  <div className="flex flex-col items-center gap-6">
-    <div className="flex items-center justify-center">
-      {renderWorksheetItem(exercise.model, 0)}
-    </div>
-    <div className="flex flex-row items-center justify-center gap-4 flex-wrap">
-      {exercise.copies.map((item, index) => renderWorksheetItem(item, index + 1))}
-    </div>
-  </div>
-);
-
 const renderExercise = (exercise: WorksheetExercise) => {
   switch (exercise.type) {
     case 'repasar':
-      return renderRepasarExercise(exercise);
+      return <RepasarDisplay exercise={exercise} />;
     case 'unir':
-      return renderUnirExercise(exercise);
+      return <UnirDisplay exercise={exercise} />;
     case 'copiar':
-      return renderCopiarExercise(exercise);
+      return <CopiarDisplay exercise={exercise} />;
     case 'rodear':
     default:
-      return renderRodearExercise(exercise);
+      return <RodearDisplay exercise={exercise as any} />;
   }
 };
 
