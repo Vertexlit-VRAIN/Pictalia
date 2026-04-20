@@ -1,11 +1,57 @@
-import React from 'react';
-import { WorksheetExercise } from '../../types';
+import React, { useEffect, useMemo, useState } from 'react';
+import { WorksheetExercise, WorksheetItem } from '../../types';
 import { WorksheetItemDisplay } from './WorksheetItemDisplay';
-import { getStableShuffledItems } from '../WorksheetDisplay';
+
+const shuffleArray = <T,>(items: T[]): T[] => {
+  const next = [...items];
+
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [next[i], next[j]] = [next[j], next[i]];
+  }
+
+  return next;
+};
+
+const shuffleAvoidingSamePosition = <T,>(items: T[]): T[] => {
+  if (items.length <= 2) {
+    return shuffleArray(items);
+  }
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const shuffled = shuffleArray(items);
+    const hasSamePosition = shuffled.some((item, index) => item === items[index]);
+
+    if (!hasSamePosition) {
+      return shuffled;
+    }
+  }
+
+  return shuffleArray(items);
+};
 
 export const UnirDisplay: React.FC<{ exercise: Extract<WorksheetExercise, { type: 'unir' }> }> = ({ exercise }) => {
   const leftColumnItems = exercise.pairs.map(pair => pair.left);
-  const rightColumnItems = getStableShuffledItems(exercise.pairs.map(pair => pair.right));
+  const rightItems = exercise.pairs.map(pair => pair.right);
+
+  const pairsSignature = useMemo(
+    () =>
+      exercise.pairs
+        .map(
+          (pair) =>
+            `${pair.left.content}|${pair.left.searchTerm || ''}|${pair.right.content}|${pair.right.searchTerm || ''}`
+        )
+        .join('||'),
+    [exercise.pairs]
+  );
+
+  const [rightColumnItems, setRightColumnItems] = useState<WorksheetItem[]>(() =>
+    shuffleAvoidingSamePosition(rightItems)
+  );
+
+  useEffect(() => {
+    setRightColumnItems(shuffleAvoidingSamePosition(rightItems));
+  }, [pairsSignature]);
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_180px_minmax(0,1fr)] items-start">

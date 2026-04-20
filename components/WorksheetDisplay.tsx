@@ -102,24 +102,6 @@ const SectionHeader: React.FC<{ instruction: WorksheetSection['instruction'] }> 
   </div>
 );
 
-const getStableHash = (value: string): number => {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = ((hash << 5) - hash) + value.charCodeAt(index);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-};
-
-export const getStableShuffledItems = (items: WorksheetItem[]): WorksheetItem[] =>
-  [...items]
-    .map((item, index) => ({
-      item,
-      order: getStableHash(`${item.content}|${item.searchTerm || ''}|${index}`),
-    }))
-    .sort((left, right) => left.order - right.order)
-    .map(entry => entry.item);
-
 const renderExercise = (exercise: WorksheetExercise) => {
   switch (exercise.type) {
     case 'repasar':
