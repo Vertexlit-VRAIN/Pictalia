@@ -5,6 +5,8 @@ import { buildWorksheetPrompt, buildRefinementPrompt, buildSemanticRepairPrompt,
 
 interface GenerateWorksheetOptions {
   topic?: string;
+  goal?: string;
+  extraDetails?: string;
   adaptationDescription?: string;
   adaptationTextContent?: string;
   adaptationImage?: {
@@ -135,7 +137,7 @@ const normalizeRefinementPayload = (payload: unknown): Partial<Worksheet> => {
 };
 
 const getSemanticContext = (options: GenerateWorksheetOptions): string =>
-  [options.topic, options.adaptationDescription, options.adaptationTextContent]
+  [options.topic, options.goal, options.extraDetails, options.adaptationDescription, options.adaptationTextContent]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
@@ -351,6 +353,8 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
     const promptText = buildWorksheetPrompt(
       {
         topic: options.topic,
+        goal: options.goal,
+        extraDetails: options.extraDetails,
         adaptationDescription: options.adaptationDescription,
         adaptationTextContent: options.adaptationTextContent,
         hasImage: !!options.adaptationImage,

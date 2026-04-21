@@ -85,7 +85,8 @@ export const COPIAR_SCHEMA = `
         "type": "copiar",
         "model": { "type": "traceable_text", "content": "SOL" },
         "copies": [
-          { "type": "traceable_text", "content": "SOL" }
+          { "type": "traceable_text", "content": "LUNA" },
+          { "type": "traceable_text", "content": "NUBE" }
         ]
       }
     }`;

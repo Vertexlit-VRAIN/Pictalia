@@ -1,7 +1,7 @@
 import React from 'react';
 import { CommonEditorProps } from './types';
 import { WorksheetItemEditor } from './WorksheetItemEditor';
-import { getSectionItems } from '../EditableWorksheetDisplay';
+import { getSectionItems } from '../editorUtils';
 
 export const RodearEditor: React.FC<CommonEditorProps> = ({
   section,

@@ -7,6 +7,8 @@ import { normalizeWorksheet } from '../services/worksheetNormalizer';
 
 interface GenerateWorksheetOptions {
     topic?: string;
+    goal?: string;
+    extraDetails?: string;
     adaptationDescription?: string;
     adaptationTextContent?: string;
     adaptationImage?: {
@@ -94,7 +96,7 @@ export const useWorksheetGenerator = () => {
         setIsLoading(true);
         setError(null);
         setWorksheet(null);
-        setStatus(createStatus('requesting_ai', 'Generando estructura con IA...', options.topic || options.adaptationDescription || options.adaptationTextContent?.slice(0, 80) || 'Analizando la ficha subida.'));
+        setStatus(createStatus('requesting_ai', 'Generando estructura con IA...', options.topic || options.goal || options.adaptationDescription || options.adaptationTextContent?.slice(0, 80) || 'Analizando la ficha subida.'));
         console.groupCollapsed('[WorksheetGenerator] Start generation');
         logGenerationStep('Input options', options);
         try {

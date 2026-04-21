@@ -3,6 +3,8 @@ import { ALL_FEW_SHOT_EXAMPLES } from './examples';
 
 export interface PromptOptions {
   topic?: string;
+  goal?: string;
+  extraDetails?: string;
   adaptationDescription?: string;
   adaptationTextContent?: string;
   hasImage?: boolean;
@@ -50,8 +52,9 @@ export const buildWorksheetPrompt = (
         5. **CONVERTIR TEXTO A PICTOS**: Si en la ficha original hay instrucciones, palabras o ejercicios principalmente textuales, transfórmalos a una versión visual con pictogramas e imágenes, manteniendo la intención pedagógica.
         ${instructionPrompt}
         6. **VARIEDAD OBLIGATORIA Y NÚMERO DE EJERCICIOS**: Tu salida DEBE incluir al menos 4 secciones en total, **pero puedes generar 5 o 6 secciones si lo deseas**, repitiendo tipos de ejercicios (ej. dos "rodear" con contenido distinto). DEBES usar obligatoriamente los 4 tipos de ejercicio existentes (repasar, unir, rodear, copiar) al menos una vez en la ficha. Jamás omitas "rodear" ni "copiar". Para "unir", usa SIEMPRE un único estilo por ejercicio: si decides unir idénticos, todas las parejas de ese ejercicio deben ser idénticas; si decides usar relaciones lógicas, todas las parejas deben ser lógicas. Las columnas de "unir" deben tener máximo 4-5 parejas.
-        7. **FIDELIDAD SEMÁNTICA**: Usa vocabulario del concepto detectado en la ficha original. Si la ficha trata, por ejemplo, sobre partes de una planta, los contenidos deben ser "raíz", "tallo", "hoja", "flor", etc., y nunca vocales o letras sueltas salvo que la ficha original trate de lectoescritura.
-        8. **SALIDA JSON**: Devuelve solo un objeto JSON válido con esta estructura exacta:
+        7. **REGLA DE ORDEN**: Como norma metodológica crítica, si aparece el ejercicio de "copiar", este DEBE colocarse SIEMPRE a continuación de los ejercicios de trazar ("repasar").
+        8. **FIDELIDAD SEMÁNTICA**: Usa vocabulario del concepto detectado en la ficha original. Si la ficha trata, por ejemplo, sobre partes de una planta, los contenidos deben ser "raíz", "tallo", "hoja", "flor", etc., y nunca vocales o letras sueltas salvo que la ficha original trate de lectoescritura.
+        9. **SALIDA JSON**: Devuelve solo un objeto JSON válido con esta estructura exacta:
         ${WORKSHEET_JSON_SCHEMA}
         ${WORKSHEET_OUTPUT_RULES}
 
@@ -60,9 +63,22 @@ export const buildWorksheetPrompt = (
         Analiza la imagen y genera la ficha adaptada.
       `;
   } else {
-    const adaptationText = options.adaptationDescription
-      ? `El objetivo es adaptar el siguiente concepto de ficha: "${options.adaptationDescription}".`
-      : `El objetivo es crear una nueva ficha sobre: "${options.topic}".`;
+    const topicLine = options.adaptationDescription
+      ? `- TEMA A ADAPTAR: "${options.adaptationDescription}".`
+      : `- TEMA PRINCIPAL: "${options.topic}".`;
+    const goalLine = options.goal?.trim()
+      ? `\n        - OBJETIVO PEDAGÓGICO: ${options.goal.trim()}`
+      : '';
+    const extraDetailsLine = options.extraDetails?.trim()
+      ? `\n        - REQUISITOS ADICIONALES DEL PROFESOR: ${options.extraDetails.trim()}`
+      : '';
+
+    const pedagogicalContext = `
+        === DIRECTRICES PEDAGÓGICAS PARA ESTA FICHA ===
+        ${topicLine}${goalLine}${extraDetailsLine}
+
+        * Asegúrate de que todo el contenido generado (vocabulario, relaciones lógicas y opciones de ejercicios) refleje estrictamente estas directrices.
+        ================================================`
 
     return `
         Eres un experto en pedagogía terapéutica. Tu misión es crear una ficha de trabajo para un niño con este perfil:
@@ -75,10 +91,11 @@ export const buildWorksheetPrompt = (
         3. **VISUAL ANTE TODO**: La ficha debe ser 90% visual. Promueve la deducción guiada por pictogramas.
         ${instructionPrompt}
         4. **VARIEDAD OBLIGATORIA Y NÚMERO DE EJERCICIOS**: Tu salida DEBE incluir al menos 4 secciones en total, **pero puedes generar 5 o 6 secciones si lo deseas**, repitiendo tipos de ejercicios (ej. dos "unir" con contenido distinto). DEBES usar obligatoriamente los 4 tipos de ejercicio existentes (repasar, unir, rodear, copiar) al menos una vez en la ficha. Jamás omitas "rodear" ni "copiar". No incluyas ejercicios fuera de estos cuatro tipos.
-        5. **TÉRMINOS DE BÚSQUEDA**: Para cada imagen, proporciona un término de búsqueda claro para ARASAAC.
-        6. **FIDELIDAD AL TEMA**: Todo el contenido debe pertenecer al tema pedido. Si el tema es "las partes de una planta", usa elementos como "raíz", "tallo", "hoja", "flor", "semilla". No uses vocales, sílabas o letras aisladas salvo que el tema sea explícitamente de lectoescritura.
-        7. **REPASAR CON SIGNIFICADO**: En actividades de tipo \`repasar\`, el texto trazable debe ser una palabra o etiqueta del tema, no una letra genérica, salvo que el tema sea una letra o sílaba concreta.
-        8. **SALIDA JSON**: Devuelve solo un objeto JSON válido con esta estructura exacta:
+        5. **REGLA DE ORDEN**: Como norma metodológica crítica, si aparece el ejercicio de "copiar", este DEBE colocarse SIEMPRE a continuación de los ejercicios de trazar ("repasar").
+        6. **TÉRMINOS DE BÚSQUEDA**: Para cada imagen, proporciona un término de búsqueda claro para ARASAAC.
+        7. **FIDELIDAD AL TEMA**: Todo el contenido debe pertenecer al tema pedido. Si el tema es "las partes de una planta", usa elementos como "raíz", "tallo", "hoja", "flor", "semilla". No uses vocales, sílabas o letras aisladas salvo que el tema sea explícitamente de lectoescritura.
+        8. **REPASAR CON SIGNIFICADO**: En actividades de tipo \`repasar\`, el texto trazable debe ser una palabra o etiqueta del tema, no una letra genérica, salvo que el tema sea una letra o sílaba concreta.
+        9. **SALIDA JSON**: Devuelve solo un objeto JSON válido con esta estructura exacta:
         ${WORKSHEET_JSON_SCHEMA}
         ${WORKSHEET_OUTPUT_RULES}
 
@@ -87,11 +104,11 @@ export const buildWorksheetPrompt = (
         - repasar: palabras completas o etiquetas lógicas del tema con \`exercise.prompts\`
         - unir: puedes usar parejas IDÉNTICAS (ej: Perro-Perro) o CONCEPTUALMENTE RELACIONADAS (ej: Vaca-Leche). REGLA ESTRICTA: usa UN SOLO ESTILO por ejercicio. Si uno es idéntico, toda la columna debe ser de idénticos. Si es conceptual, toda la columna conceptual. IMPORTANTE: El array \`exercise.pairs\` debe tener un MÁXIMO de 4 a 5 parejas en total (columnas cortas).
         - rodear: la instrucción debe indicar visualmente qué buscar. Puede ser buscar un objeto idéntico ("RODEAR PERRO") o buscar por GRUPO/CATEGORÍA ("RODEAR ANIMALES", "RODEAR FRUTAS", "RODEAR ROPA"). Genera varias opciones con \`exercise.options\` asegurándote de mezclar opciones correctas e incorrectas. NO uses el campo \`exercise.prompt\`. Al igual que en "unir", si haces un "rodear" buscando idénticos, o uno por categoría, mantén la coherencia en ese ejercicio concreto. MÁXIMO 4-6 opciones en total por ejercicio.
-        - copiar: un modelo arriba con pictogramas para copiar la palabra debajo con \`exercise.model\` y \`exercise.copies\`. IMPORTANTE: Genera SIEMPRE UNA (1) sola copia en \`exercise.copies\`.
+        - copiar: actividades para copiar palabras de forma autónoma. \`exercise.model\` es la primera palabra a copiar. Usa el array \`exercise.copies\` para proporcionar PALABRAS ADICIONALES Y DIFERENTES del mismo tema. Genera entre 2 y 4 palabras DIFERENTES en total por ejercicio de copiar. NUNCA repitas la misma palabra en un mismo ejercicio.
 
         ${ALL_FEW_SHOT_EXAMPLES}
 
-        ${adaptationText}
+        ${pedagogicalContext}
       `;
   }
 };
@@ -104,7 +121,7 @@ export const buildSemanticRepairPrompt = (
 ): string => {
   const instructionPrompt = buildInstructionPrompt(showPictogramInstructions);
   const semanticContext =
-    [options.topic, options.adaptationDescription, options.adaptationTextContent]
+    [options.topic, options.goal, options.extraDetails, options.adaptationDescription, options.adaptationTextContent]
       .filter(Boolean)
       .join(' ') || '';
 

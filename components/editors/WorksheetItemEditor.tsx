@@ -1,12 +1,14 @@
 import React from 'react';
 import { WorksheetItem, WorksheetSection } from '../../types';
 import {
-  EXERCISE_TYPE_OPTIONS,
   PlaceholderPicto,
   EditorPictogramPreview,
+} from '../EditableWorksheetDisplay';
+import {
+  EXERCISE_TYPE_OPTIONS,
   getExerciseTypeLabel,
   getSectionItems
-} from '../EditableWorksheetDisplay';
+} from '../editorUtils';
 import { EditorTarget } from './types';
 import { ArrowDownIcon, ArrowUpIcon, MinusIcon, PencilRulerIcon } from '../Icons';
 

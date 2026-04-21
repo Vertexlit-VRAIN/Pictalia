@@ -4,6 +4,7 @@ import type { ExerciseType, PictogramSearchResult, SavedWorksheet, WorksheetItem
 import { searchPictograms } from '../services/pictogramService';
 import { normalizeWorksheet, normalizeWorksheetSection } from '../services/worksheetNormalizer';
 import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, PlusIcon, MinusIcon, XIcon, SaveIcon } from './Icons';
+import { EXERCISE_TYPE_OPTIONS, getSectionItems, getExerciseTypeLabel } from './editorUtils';
 
 type EditableWorksheetProps = {
   worksheet: SavedWorksheet;
@@ -34,12 +35,6 @@ type PictogramEditorModalProps = {
   }) => void;
 };
 
-export const EXERCISE_TYPE_OPTIONS: { value: ExerciseType; label: string; addLabel: string }[] = [
-  { value: 'repasar', label: 'Repasar', addLabel: 'Añadir trazo' },
-  { value: 'unir', label: 'Unir', addLabel: 'Añadir pareja' },
-  { value: 'rodear', label: 'Rodear', addLabel: 'Añadir pictograma' },
-  { value: 'copiar', label: 'Copiar', addLabel: 'Añadir copia' },
-];
 
 const pictogramUrlCache = new Map<string, string>();
 
@@ -323,10 +318,7 @@ const createInstructionPicto = (content: string) => ({
   url: '',
 });
 
-export const getSectionItems = (section: WorksheetSection): WorksheetItem[] => section.items || [];
 
-export const getExerciseTypeLabel = (exerciseType: ExerciseType): string =>
-  EXERCISE_TYPE_OPTIONS.find(option => option.value === exerciseType)?.label || exerciseType;
 
 const moveItemInArray = <T,>(items: T[], fromIndex: number, toIndex: number) => {
   if (toIndex < 0 || toIndex >= items.length || fromIndex === toIndex) {
