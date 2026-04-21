@@ -13,7 +13,7 @@ export const RepasarEditor: React.FC<CommonEditorProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
+      <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         El profesor prepara trazos simples y repetitivos. Conviene usar pocas unidades visuales y letras claras.
       </div>
       <div className="flex flex-col gap-3">

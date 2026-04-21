@@ -6,7 +6,7 @@ import { ProfileView } from './components/ProfileView';
 import { useAppDataManager } from './hooks/useProfileManager';
 import type { SavedWorksheet } from './types';
 import { WorksheetResult } from './components/WorksheetResult';
-import { Trash2, Edit3 } from './components/Icons';
+import { Trash2, FolderOpenIcon, PencilRulerIcon, DownloadIcon, CheckCircleIcon } from './components/Icons';
 import { useDynamicLibraries } from './hooks/useDynamicLibraries';
 import { exportWorksheetAsPdf } from './lib/pdfUtils';
 import { WorksheetEditor } from './components/WorksheetEditor';
@@ -64,54 +64,67 @@ const LibraryView: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div>Cargando biblioteca...</div>;
+    return <div className="rounded-[28px] border border-slate-200 bg-white p-8 text-slate-600 shadow-xl shadow-slate-200/50">Cargando biblioteca...</div>;
   }
   
   return (
     <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-5">
       <div className="lg:sticky lg:top-24 lg:self-start">
-        <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800 mb-4 px-2">
-            Fichas de: <span className="text-indigo-600">{activeProfile?.name || 'Perfil Actual'}</span>
-          </h3>
+        <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/50">
+            <div className="mb-4 flex items-center gap-3 px-2">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-700">
+                <FolderOpenIcon className="h-5 w-5" />
+              </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900">Biblioteca</h3>
+              <p className="text-sm text-slate-500">
+                Fichas de <span className="font-semibold text-sky-700">{activeProfile?.name || 'Perfil actual'}</span>
+              </p>
+            </div>
+          </div>
           {savedWorksheets.length > 0 ? (
             <div className="space-y-2 max-h-[72vh] overflow-y-auto">
               {savedWorksheets.map(ws => (
                 <div
                   key={ws.id}
-                  onClick={() => {
-                    if (!isEditing) {
-                      setSelectedWorksheet(ws);
-                      setDownloadError(null);
-                    }
-                  }}
-                  className={`flex items-start justify-between p-3 rounded-lg transition-colors duration-200 group ${
-                    isEditing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-                  } ${
+                  className={`group flex items-start justify-between rounded-2xl p-2 transition-all duration-200 ${
                     selectedWorksheet?.id === ws.id
-                      ? 'bg-indigo-600 text-white shadow'
-                      : 'bg-gray-100 hover:bg-indigo-100 text-gray-700'
-                  }`}
-                  role="button"
+                      ? 'bg-sky-100 text-sky-900 ring-1 ring-sky-200'
+                      : 'bg-slate-100 text-slate-700 hover:bg-sky-50'
+                  } ${isEditing ? 'opacity-60' : ''}`}
                 >
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm leading-tight">{ws.title}</p>
-                    <p className={`text-xs mt-1 ${selectedWorksheet?.id === ws.id ? 'text-indigo-200' : 'text-gray-500'}`}>
-                      {new Date(ws.createdAt).toLocaleDateString()} - {ws.sourceDescription}
-                    </p>
-                  </div>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    onClick={() => {
+                      if (!isEditing) {
+                        setSelectedWorksheet(ws);
+                        setDownloadError(null);
+                      }
+                    }}
+                    className="flex flex-1 items-start text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600 rounded-xl p-1"
+                    aria-pressed={selectedWorksheet?.id === ws.id}
+                    disabled={isEditing}
+                  >
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm leading-tight">{ws.title}</p>
+                      <p className={`mt-1 text-xs ${selectedWorksheet?.id === ws.id ? 'text-sky-700/80' : 'text-slate-500'}`}>
+                        {new Date(ws.createdAt).toLocaleDateString()} - {ws.sourceDescription}
+                      </p>
+                    </div>
+                    {selectedWorksheet?.id === ws.id && <CheckCircleIcon className="ml-2 h-4 w-4 flex-shrink-0 text-sky-700" />}
+                  </button>
+                  <button
+                    onClick={() => {
                       deleteWorksheet(ws.id);
                       if (selectedWorksheet?.id === ws.id) {
                         setSelectedWorksheet(null);
                       }
                     }}
                     title="Eliminar ficha"
-                    className={`p-1 rounded-full opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2 ${
-                      selectedWorksheet?.id === ws.id ? 'hover:bg-indigo-500' : 'hover:bg-red-200'
+                    className={`ml-2 rounded-full p-2 opacity-50 transition-opacity group-hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
+                      selectedWorksheet?.id === ws.id ? 'hover:bg-sky-200' : 'hover:bg-rose-100'
                     } ${isEditing ? 'hidden' : ''}`}
+                    aria-label={`Eliminar ficha ${ws.title}`}
+                    disabled={isEditing}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -119,7 +132,7 @@ const LibraryView: React.FC = () => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 p-4 text-center">No tienes fichas guardadas para este perfil. ¡Genera una y guárdala aquí!</p>
+            <p className="p-4 text-center text-sm text-slate-500">No tienes fichas guardadas para este perfil. Genera una y aparecerá aquí.</p>
           )}
         </div>
       </div>
@@ -146,14 +159,20 @@ const LibraryView: React.FC = () => {
             )}
 
             {downloadError && (
-              <div className="mt-4 p-3 bg-red-50 text-red-600 rounded-md border border-red-200 text-sm" role="alert">
+              <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700" role="alert">
                 <strong>Error al descargar:</strong> {downloadError}
               </div>
             )}
           </div>
         ) : (
-          <div className="flex items-center justify-center bg-white h-full rounded-xl shadow-lg border border-gray-200 p-8">
-            <p className="text-center text-gray-500">Selecciona una ficha de la biblioteca para verla aquí.</p>
+          <div className="flex h-full items-center justify-center rounded-[28px] border border-slate-200 bg-white p-10 shadow-xl shadow-slate-200/50">
+            <div className="max-w-md text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-sky-700">
+                <DownloadIcon className="h-6 w-6" />
+              </div>
+              <p className="text-base font-semibold text-slate-800">Selecciona una ficha de la biblioteca para verla aquí.</p>
+              <p className="mt-2 text-sm text-slate-500">Desde esta vista podrás descargarla en PDF o abrir el modo edición.</p>
+            </div>
           </div>
         )}
       </div>
@@ -166,9 +185,15 @@ const App: React.FC = () => {
   const [activeView, setActiveView] = useState<View>('generate');
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(125,211,252,0.18),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(167,243,208,0.18),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] font-sans text-slate-800">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-white"
+      >
+        Saltar al contenido principal
+      </a>
       <Header activeView={activeView} setActiveView={setActiveView} />
-      <main className="p-4 sm:p-6 lg:p-8">
+      <main id="main-content" className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
         {activeView === 'generate' && <GenerateWorksheetView />}
         {activeView === 'adapt' && <AdaptWorksheetView />}
         {activeView === 'library' && <LibraryView />}

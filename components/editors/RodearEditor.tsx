@@ -13,7 +13,7 @@ export const RodearEditor: React.FC<CommonEditorProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-900">
+      <div className="rounded-[20px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
         Presenta pocas opciones, muy diferenciadas y visualmente limpias para facilitar la discriminación.
       </div>
       <div className="flex flex-wrap gap-3">

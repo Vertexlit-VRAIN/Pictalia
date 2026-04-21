@@ -3,6 +3,7 @@ import { produce } from 'immer';
 import type { ExerciseType, PictogramSearchResult, SavedWorksheet, WorksheetItem, WorksheetSection } from '../types';
 import { searchPictograms } from '../services/pictogramService';
 import { normalizeWorksheet, normalizeWorksheetSection } from '../services/worksheetNormalizer';
+import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, PlusIcon, MinusIcon, XIcon, SaveIcon } from './Icons';
 
 type EditableWorksheetProps = {
   worksheet: SavedWorksheet;
@@ -128,61 +129,61 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-bold text-gray-800">{title}</h3>
-        <p className="text-sm text-gray-500 mt-1">
+      <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+        <p className="mt-1 text-sm text-slate-500">
           {helperText || 'Cambia el texto, la búsqueda y el pictograma sin salir del editor.'}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-5">
           <div className="space-y-4">
             <div>
-              <label htmlFor="displayedTerm" className="block text-sm font-medium text-gray-700 mb-1">Texto visible</label>
+              <label htmlFor="displayedTerm" className="mb-1 block text-sm font-medium text-slate-700">Texto visible</label>
               <input
                 id="displayedTerm"
                 type="text"
                 value={displayedTerm}
                 onChange={(e) => setDisplayedTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
                 autoFocus
               />
             </div>
             <div>
-              <label htmlFor="searchTerm" className="block text-sm font-medium text-gray-700 mb-1">Búsqueda de pictograma</label>
+              <label htmlFor="searchTerm" className="mb-1 block text-sm font-medium text-slate-700">Búsqueda de pictograma</label>
               <input
                 id="searchTerm"
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Ej: unir, perro, rojo"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
               />
             </div>
-            <label className="flex items-center gap-2 text-sm text-gray-700">
+            <label className="flex items-center gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"
                 checked={applyToAll}
                 onChange={(e) => setApplyToAll(e.target.checked)}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
               />
               Aplicar a todas las instancias equivalentes
             </label>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Selección actual</p>
-              <div className="h-28 rounded-lg border-2 border-dashed border-gray-300 bg-white flex items-center justify-center">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Selección actual</p>
+              <div className="flex h-28 items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-white">
                 {selectedUrl ? (
                   <img src={selectedUrl} alt={displayedTerm} className="max-h-24 max-w-24 object-contain" />
                 ) : (
-                  <span className="text-xs text-gray-500 text-center px-4">Sin pictograma seleccionado.</span>
+                  <span className="px-4 text-center text-xs text-slate-500">Sin pictograma seleccionado.</span>
                 )}
               </div>
             </div>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-gray-700">Resultados</p>
-              {isSearching && <span className="text-xs text-gray-500">Buscando...</span>}
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-sm font-medium text-slate-700">Resultados</p>
+              {isSearching && <span className="text-xs text-slate-500">Buscando...</span>}
             </div>
             {results.length > 0 ? (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[420px] overflow-y-auto pr-1">
@@ -192,14 +193,14 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
                     onClick={() => {
                       setSelectedUrl(result.url);
                     }}
-                    className={`p-2 rounded-lg border-2 transition-colors bg-white ${selectedUrl === result.url ? 'border-indigo-600' : 'border-gray-200 hover:border-indigo-300'}`}
+                    className={`rounded-2xl border-2 bg-white p-2 transition-colors ${selectedUrl === result.url ? 'border-sky-600' : 'border-slate-200 hover:border-sky-300'}`}
                   >
                     <img src={result.url} alt={displayedTerm} className="w-full h-20 object-contain" loading="lazy" />
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="h-56 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-center text-sm text-gray-500 px-6">
+              <div className="flex h-56 items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center text-sm text-slate-500">
                 No se ha encontrado ningún pictograma.
               </div>
             )}
@@ -207,8 +208,12 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
         </div>
 
         <div className="mt-6 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-md hover:bg-gray-300">Cancelar</button>
-          <button onClick={handleSave} disabled={!displayedTerm.trim()} className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 disabled:bg-indigo-300">
+          <button onClick={onClose} className="inline-flex items-center gap-2 rounded-2xl bg-slate-200 px-4 py-2.5 font-semibold text-slate-700 hover:bg-slate-300">
+            <XIcon className="h-4 w-4" />
+            Cancelar
+          </button>
+          <button onClick={handleSave} disabled={!displayedTerm.trim()} className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:bg-slate-300">
+            <SaveIcon className="h-4 w-4" />
             Guardar
           </button>
         </div>
@@ -298,6 +303,20 @@ const createTraceableItem = (content: string): WorksheetItem => ({
   content,
 });
 
+const cloneWorksheetItem = (item: WorksheetItem | undefined, fallbackContent: string): WorksheetItem => {
+  if (!item) {
+    return createTraceableItem(fallbackContent);
+  }
+
+  return {
+    ...item,
+    content: item.content || fallbackContent,
+    searchTerm: item.searchTerm,
+    selectedPictoUrl: item.selectedPictoUrl,
+    pictoOptions: item.pictoOptions ? [...item.pictoOptions] : item.pictoOptions,
+  };
+};
+
 const createInstructionPicto = (content: string) => ({
   content,
   searchTerm: content.toLowerCase(),
@@ -318,9 +337,31 @@ const moveItemInArray = <T,>(items: T[], fromIndex: number, toIndex: number) => 
   items.splice(toIndex, 0, movedItem);
 };
 
+const moveIndexInList = (indexes: number[], fromIndex: number, toIndex: number): number[] => {
+  if (fromIndex === toIndex) return indexes;
+
+  return indexes.map(index => {
+    if (index === fromIndex) return toIndex;
+
+    if (fromIndex < toIndex) {
+      if (index > fromIndex && index <= toIndex) return index - 1;
+      return index;
+    }
+
+    if (index >= toIndex && index < fromIndex) return index + 1;
+    return index;
+  });
+};
+
+const removeIndexFromList = (indexes: number[], removedIndex: number): number[] =>
+  indexes
+    .filter(index => index !== removedIndex)
+    .map(index => (index > removedIndex ? index - 1 : index));
+
 export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ worksheet, onWorksheetChange }) => {
   const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<number[]>([]);
+  const [sectionPendingDelete, setSectionPendingDelete] = useState<number | null>(null);
 
   const isSectionCollapsed = (sectionIndex: number): boolean => collapsedSections.includes(sectionIndex);
 
@@ -484,9 +525,23 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
   };
 
   const handleRemoveSection = (sectionIndex: number) => {
+    if (worksheet.sections.length <= 1) return;
+
     updateWorksheet(draft => {
       draft.sections.splice(sectionIndex, 1);
     });
+    setCollapsedSections(current => removeIndexFromList(current, sectionIndex));
+    setSectionPendingDelete(null);
+  };
+
+  const handleMoveSection = (sectionIndex: number, direction: -1 | 1) => {
+    const targetIndex = sectionIndex + direction;
+    if (targetIndex < 0 || targetIndex >= worksheet.sections.length) return;
+
+    updateWorksheet(draft => {
+      moveItemInArray(draft.sections, sectionIndex, targetIndex);
+    });
+    setCollapsedSections(current => moveIndexInList(current, sectionIndex, targetIndex));
   };
 
   const handleAddInstructionPicto = (sectionIndex: number) => {
@@ -528,7 +583,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
 
       if (exerciseType === 'copiar') {
         const modelContent = items[0]?.content || 'A';
-        items.push(createTraceableItem(modelContent));
+        items.push(cloneWorksheetItem(items[0], modelContent));
         return;
       }
 
@@ -685,10 +740,48 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
         />
       )}
 
+      {sectionPendingDelete !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setSectionPendingDelete(null)}>
+          <div
+            className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-section-title"
+          >
+            <div className="mb-4 flex items-start gap-3">
+              <div>
+                <h3 id="delete-section-title" className="text-lg font-black text-slate-900">Eliminar ejercicio</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Vas a eliminar el ejercicio {sectionPendingDelete + 1}. Esta acción no se puede deshacer desde este paso.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setSectionPendingDelete(null)}
+                className="inline-flex items-center gap-2 rounded-2xl bg-slate-200 px-4 py-2.5 font-semibold text-slate-700 hover:bg-slate-300"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRemoveSection(sectionPendingDelete)}
+                className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-4 py-2.5 font-semibold text-white hover:bg-rose-700"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4">
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-[80px_minmax(0,1fr)] md:items-center">
-            <button onClick={() => setEditorTarget({ type: 'main' })} className="h-16 w-16 flex items-center justify-center border-2 border-black relative group cursor-pointer bg-white">
+            <button onClick={() => setEditorTarget({ type: 'main' })} className="relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-slate-300 bg-white transition hover:border-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600 group">
               {worksheet.selectedPictoUrl || worksheet.pictoOptions?.[0] || worksheet.pictogramSearchTerm ? (
                 <EditorPictogramPreview
                   src={worksheet.selectedPictoUrl || worksheet.pictoOptions?.[0]}
@@ -699,7 +792,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
               ) : (
                 <PlaceholderPicto label="Sin pictograma" />
               )}
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                 <span className="text-white font-bold text-xs">Editar</span>
               </div>
             </button>
@@ -707,7 +800,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
               type="text"
               value={worksheet.title}
               onChange={(e) => handleTextChange(['title'], e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 text-2xl font-extrabold uppercase tracking-wider text-black"
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-2xl font-extrabold uppercase tracking-wider text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
             />
           </div>
         </div>
@@ -718,14 +811,63 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
           const instructionPictograms = section.instruction.pictograms || [];
 
           return (
-            <div key={sectionIndex} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div key={sectionIndex} className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex-1 space-y-3">
-                  <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)_auto]">
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleSectionCollapsed(sectionIndex)}
+                        className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-sky-500 hover:text-sky-700"
+                        aria-label={isSectionCollapsed(sectionIndex) ? 'Expandir ejercicio' : 'Colapsar ejercicio'}
+                        title={isSectionCollapsed(sectionIndex) ? 'Expandir ejercicio' : 'Colapsar ejercicio'}
+                      >
+                        <ChevronDownIcon className={`h-4 w-4 transition-transform ${isSectionCollapsed(sectionIndex) ? '-rotate-90' : ''}`} />
+                      </button>
+                      <div className="truncate text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        Ejercicio {sectionIndex + 1}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleMoveSection(sectionIndex, -1)}
+                        disabled={sectionIndex === 0}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-sky-500 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label="Subir ejercicio"
+                        title="Subir ejercicio"
+                      >
+                        <ArrowUpIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveSection(sectionIndex, 1)}
+                        disabled={sectionIndex === worksheet.sections.length - 1}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-sky-500 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label="Bajar ejercicio"
+                        title="Bajar ejercicio"
+                      >
+                        <ArrowDownIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSectionPendingDelete(sectionIndex)}
+                        disabled={worksheet.sections.length <= 1}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-white text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label="Eliminar ejercicio"
+                        title="Eliminar ejercicio"
+                      >
+                        <XIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
                     <select
                       value={exerciseType}
                       onChange={(e) => handleExerciseTypeChange(sectionIndex, e.target.value as ExerciseType)}
-                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold"
+                      className="rounded-2xl border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
                     >
                       {EXERCISE_TYPE_OPTIONS.map(option => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -735,55 +877,48 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
                       type="text"
                       value={section.instruction.text}
                       onChange={(e) => handleTextChange(['sections', sectionIndex, 'instruction', 'text'], e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-lg font-bold uppercase tracking-wide text-gray-700"
+                      className="w-full rounded-2xl border border-slate-300 px-3 py-2 text-lg font-bold uppercase tracking-wide text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
                     />
-                    <button
-                      type="button"
-                      onClick={() => toggleSectionCollapsed(sectionIndex)}
-                      className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-indigo-500 hover:text-indigo-600"
-                    >
-                      {isSectionCollapsed(sectionIndex) ? 'Expandir' : 'Colapsar'}
-                    </button>
                   </div>
 
                   {isSectionCollapsed(sectionIndex) ? (
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                       {getSectionSummary(section)}
                     </div>
                   ) : (
                     <>
                       <div className="flex flex-wrap gap-2">
                         {instructionPictograms.map((picto, pictoIndex) => (
-                          <div key={pictoIndex} className="flex flex-col items-center rounded-lg border border-gray-200 bg-gray-50 p-2">
+                          <div key={pictoIndex} className="flex flex-col items-center rounded-2xl border border-slate-200 bg-slate-50 p-2">
                             <div className="mb-2 flex items-center gap-1 self-end">
                               <button
                                 type="button"
                                 onClick={() => handleMoveInstructionPicto(sectionIndex, pictoIndex, -1)}
                                 disabled={pictoIndex === 0}
-                                className="rounded-md bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
                               >
-                                ←
+                                <ArrowUpIcon className="h-4 w-4" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleMoveInstructionPicto(sectionIndex, pictoIndex, 1)}
                                 disabled={pictoIndex === instructionPictograms.length - 1}
-                                className="rounded-md bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
                               >
-                                →
+                                <ArrowDownIcon className="h-4 w-4" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleRemoveInstructionPicto(sectionIndex, pictoIndex)}
                                 disabled={instructionPictograms.length <= 1}
-                                className="rounded-md bg-red-100 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-50"
                               >
-                                Quitar
+                                <MinusIcon className="h-4 w-4" />
                               </button>
                             </div>
                             
                             <button
-                              className="relative flex items-center justify-center p-1 border-2 border-gray-200 hover:border-indigo-500 rounded-lg h-16 w-16 group bg-white"
+                              className="group relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-slate-200 bg-white p-1 hover:border-sky-500"
                               onClick={() => setEditorTarget({ type: 'instruction', sectionIndex, pictoIndex })}
                             >
                               {picto.url ? (
@@ -793,11 +928,11 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
                               ) : (
                                 <span className="px-2 text-center text-xs font-semibold text-gray-600 uppercase">{picto.content}</span>
                               )}
-                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+                              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                                 <span className="text-white font-bold text-xs">Editar</span>
                               </div>
                             </button>
-                            <span className="mt-2 text-xs font-semibold uppercase text-gray-600">{picto.content}</span>
+                            <span className="mt-2 text-xs font-semibold uppercase text-slate-600">{picto.content}</span>
                           </div>
                         ))}
                       </div>
@@ -805,8 +940,9 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
                         <button
                           type="button"
                           onClick={() => handleAddInstructionPicto(sectionIndex)}
-                          className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-600 hover:border-indigo-500 hover:text-indigo-600"
+                          className="inline-flex items-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 hover:border-sky-500 hover:text-sky-700"
                         >
+                          <PlusIcon className="h-4 w-4" />
                           Añadir pictograma al enunciado
                         </button>
                       </div>
@@ -814,16 +950,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
                   )}
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveSection(sectionIndex)}
-                    disabled={worksheet.sections.length <= 1}
-                    className="rounded-lg bg-red-100 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Eliminar ejercicio
-                  </button>
-                </div>
+                <div className="flex flex-wrap gap-2" />
               </div>
 
               {!isSectionCollapsed(sectionIndex) && (
@@ -834,8 +961,9 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
                       <button
                         type="button"
                         onClick={() => handleAddItem(sectionIndex)}
-                        className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                        className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
                       >
+                        <PlusIcon className="h-4 w-4" />
                         {addLabel}
                       </button>
                     )}
@@ -843,8 +971,9 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
                       <button
                         type="button"
                         onClick={() => handleAddPictogramItem(sectionIndex)}
-                        className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                        className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
                       >
+                        <PlusIcon className="h-4 w-4" />
                         {exerciseType === 'unir' ? 'Añadir pareja visual' : 'Añadir pictograma'}
                       </button>
                     )}
@@ -855,16 +984,17 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
           );
         })}
 
-        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">
-          <p className="text-sm font-semibold text-gray-700 mb-3">Añadir ejercicio nuevo</p>
+        <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-4">
+          <p className="mb-3 text-sm font-semibold text-slate-700">Añadir ejercicio nuevo</p>
           <div className="flex flex-wrap gap-2">
             {EXERCISE_TYPE_OPTIONS.map(option => (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => handleAddSection(option.value)}
-                className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-700 border border-gray-300 hover:border-indigo-500 hover:text-indigo-600"
+                className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-sky-500 hover:text-sky-700"
               >
+                <PlusIcon className="h-4 w-4" />
                 {option.label}
               </button>
             ))}

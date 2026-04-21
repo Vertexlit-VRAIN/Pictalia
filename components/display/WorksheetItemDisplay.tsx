@@ -8,12 +8,14 @@ const renderTraceableGuide = (item: WorksheetItem, index: number, hidePicto?: bo
   return (
     <div key={index} className="w-full max-w-[760px] bg-white pdf-avoid-break">
       <div className="flex items-center gap-0">
-        {!hidePicto && (
+        {!hidePicto ? (
           <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-xl border-2 border-black bg-white p-2">
             <Pictogram searchTerm={searchTerm} altText={item.content} className="max-h-full max-w-full object-contain" src={item.selectedPictoUrl} />
           </div>
+        ) : (
+          <div className="h-24 w-24 flex-shrink-0" aria-hidden="true" />
         )}
-        <svg viewBox="0 0 620 88" className={`block h-[88px] w-full overflow-visible ${hidePicto ? 'ml-[96px]' : ''}`} preserveAspectRatio="none" aria-hidden="true">
+        <svg viewBox="0 0 620 88" className="block h-[88px] w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
           <line x1="0" y1="6" x2="620" y2="6" stroke="black" strokeWidth="2" />
           <line x1="0" y1="44" x2="620" y2="44" stroke="#6b7280" strokeWidth="2" strokeDasharray="6 6" />
           <line x1="0" y1="82" x2="620" y2="82" stroke="black" strokeWidth="2" />

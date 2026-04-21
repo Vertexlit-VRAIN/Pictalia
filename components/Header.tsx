@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrainCircuitIcon, FilePlus2Icon, UserCogIcon, Library } from './Icons';
+import { BrainCircuitIcon, FileTextIcon, FolderOpenIcon, ScanTextIcon, SlidersHorizontalIcon } from './Icons';
 
 interface HeaderProps {
   activeView: 'generate' | 'adapt' | 'profile' | 'library';
@@ -8,50 +8,61 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ activeView, setActiveView }) => {
   const getButtonClasses = (view: 'generate' | 'adapt' | 'profile' | 'library') => {
-    const baseClasses = "flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500";
+    const baseClasses = "group flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600";
     if (activeView === view) {
-      return `${baseClasses} bg-indigo-600 text-white shadow-md`;
+      return `${baseClasses} bg-sky-100 text-sky-900 shadow-sm ring-1 ring-sky-200`;
     }
-    return `${baseClasses} bg-white text-gray-700 hover:bg-indigo-50`;
+    return `${baseClasses} bg-white/70 text-slate-700 hover:bg-white hover:text-slate-900`;
   };
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-10">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between py-4 gap-4">
-          <div className="flex items-center gap-3">
-            <BrainCircuitIcon className="h-8 w-8 text-indigo-600" />
-            <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
-              Generador de Fichas Adaptadas
-            </h1>
+    <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl">
+      <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 via-cyan-400 to-emerald-300 text-white shadow-lg shadow-sky-500/25">
+              <BrainCircuitIcon className="h-7 w-7" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                Adaptador TEA
+              </h1>
+              <p className="text-sm text-slate-600">
+                Genera, adapta y edita fichas visuales con una navegación más clara y usable.
+              </p>
+            </div>
           </div>
-          <nav className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg">
+          <nav aria-label="Navegación principal" className="flex flex-wrap items-center gap-2 rounded-3xl border border-slate-200 bg-slate-100/80 p-2 shadow-inner">
             <button
               onClick={() => setActiveView('generate')}
               className={getButtonClasses('generate')}
+              aria-current={activeView === 'generate' ? 'page' : undefined}
             >
-              <FilePlus2Icon className="h-5 w-5" />
+              <FileTextIcon className="h-5 w-5" />
               <span>Generar Ficha</span>
             </button>
             <button
               onClick={() => setActiveView('adapt')}
               className={getButtonClasses('adapt')}
+              aria-current={activeView === 'adapt' ? 'page' : undefined}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-file-cog"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v3"/><path d="M14 2v6h6"/><circle cx="12" cy="15" r="2"/><path d="M12 12v1"/><path d="M12 17v1"/><path d="m14.6 13.5-.87.5"/><path d="m10.27 16-.87.5"/><path d="m14.6 16.5-.87-.5"/><path d="m10.27 14-.87-.5"/><path d="M7 18a2 2 0 0 0 2 2h1"/><path d="M17 18a2 2 0 0 1-2 2h-1"/></svg>
+              <ScanTextIcon className="h-5 w-5" />
               <span>Adaptar Ficha</span>
             </button>
-             <button
+            <button
               onClick={() => setActiveView('library')}
               className={getButtonClasses('library')}
+              aria-current={activeView === 'library' ? 'page' : undefined}
             >
-              <Library className="h-5 w-5" />
+              <FolderOpenIcon className="h-5 w-5" />
               <span>Biblioteca</span>
             </button>
             <button
               onClick={() => setActiveView('profile')}
               className={getButtonClasses('profile')}
+              aria-current={activeView === 'profile' ? 'page' : undefined}
             >
-              <UserCogIcon className="h-5 w-5" />
+              <SlidersHorizontalIcon className="h-5 w-5" />
               <span>Perfil</span>
             </button>
           </nav>

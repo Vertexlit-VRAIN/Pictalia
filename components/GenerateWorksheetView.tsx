@@ -3,7 +3,7 @@ import { useWorksheetGenerator } from '../hooks/useWorksheetGenerator';
 import { useDynamicLibraries } from '../hooks/useDynamicLibraries';
 import { exportWorksheetAsPdf } from '../lib/pdfUtils';
 import { Spinner } from './Spinner';
-import { Wand2Icon } from './Icons';
+import { FileTextIcon } from './Icons';
 import { WorksheetResult } from './WorksheetResult';
 import { useAppDataManager } from '../hooks/useProfileManager';
 
@@ -51,43 +51,62 @@ export const GenerateWorksheetView: React.FC = () => {
 
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-        <h2 className="text-xl font-bold text-gray-800 mb-1">Generar Nueva Ficha</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Describe el concepto que quieres trabajar (ej: "el número 5", "la vocal A", "animales de la granja"). La IA creará una ficha adaptada al perfil del niño.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="text"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder="Ej: El color rojo"
-            className="flex-grow w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-            disabled={isLoading}
-          />
-          <button
-            onClick={handleGenerate}
-            disabled={isLoading}
-            className="flex items-center justify-center gap-2 px-5 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
-          >
-            <Wand2Icon className="h-5 w-5" />
-            <span>Generar</span>
-          </button>
+    <div className="mx-auto max-w-5xl">
+      <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/50 sm:p-8">
+        <div
+          className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-sky-100 via-cyan-50 to-white"
+          aria-hidden="true"
+        />
+        <div className="relative">
+          <div className="mb-6 max-w-2xl">
+            <h2 className="text-3xl font-black tracking-tight text-slate-900">Generar nueva ficha</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Describe el concepto a trabajar y la IA montará una ficha visual adaptada al perfil del niño con actividades listas para revisar, guardar o editar.
+            </p>
+          </div>
+
+          <label htmlFor="topic-input" className="mb-2 block text-sm font-semibold text-slate-700">
+            Tema de la ficha
+          </label>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              id="topic-input"
+              type="text"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="Ej: El color rojo"
+              className="w-full flex-grow rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
+              disabled={isLoading}
+              aria-describedby="topic-help"
+            />
+            <button
+              onClick={handleGenerate}
+              disabled={isLoading}
+              className="inline-flex min-w-[180px] items-center justify-center gap-3 rounded-2xl bg-sky-600 px-5 py-3 font-semibold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15">
+                <FileTextIcon className="h-5 w-5" />
+              </span>
+              <span>Generar ficha</span>
+            </button>
+          </div>
+          <p id="topic-help" className="mt-3 text-sm text-slate-500">
+            Ejemplos: "el número 5", "la vocal A" o "animales de la granja".
+          </p>
         </div>
         {isLoading && (
-          <div className="mt-4 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+          <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-4" role="status" aria-live="polite">
             <div className="flex items-center gap-3">
-              <Spinner className="text-indigo-600" />
+              <Spinner className="text-sky-600" />
               <div>
-                <p className="text-sm font-semibold text-indigo-900">{status.message}</p>
-                {status.detail && <p className="text-xs text-indigo-700 mt-1">{status.detail}</p>}
+                <p className="text-sm font-semibold text-sky-950">{status.message}</p>
+                {status.detail && <p className="mt-1 text-xs text-sky-800">{status.detail}</p>}
               </div>
             </div>
           </div>
         )}
-        {(error || validationError) && <p className="text-red-600 text-sm mt-3 bg-red-50 p-3 rounded-md">{error || validationError}</p>}
-      </div>
+        {(error || validationError) && <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700" role="alert">{error || validationError}</p>}
+      </section>
 
       {worksheet && (
         <WorksheetResult

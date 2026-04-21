@@ -69,7 +69,8 @@ const normalizeInstruction = (instruction: WorksheetSection['instruction'] | und
   }
 
   return {
-    text: instruction.text.trim().toUpperCase(),
+    // Preserve intermediate spaces while the user types in the editor.
+    text: instruction.text.toUpperCase(),
     pictograms: instruction.pictograms?.map(picto => ({
       searchTerm: picto.searchTerm || picto.content || '',
       content: picto.content || picto.searchTerm || '',

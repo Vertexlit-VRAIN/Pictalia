@@ -4,7 +4,7 @@ import { EditableWorksheetDisplay } from './EditableWorksheetDisplay';
 import { refineWorksheet } from '../services/aiService';
 import { searchPictograms } from '../services/pictogramService';
 import { Spinner } from './Spinner';
-import { Wand2Icon, SaveIcon } from './Icons';
+import { Wand2Icon, SaveIcon, XIcon, PencilRulerIcon } from './Icons';
 import { produce } from 'immer';
 import { normalizeWorksheet } from '../services/worksheetNormalizer';
 
@@ -142,33 +142,38 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
   
   if (isMigrating) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Spinner />
-        <p className="ml-4 text-gray-600">Actualizando formato de la ficha...</p>
+      <div className="flex h-96 items-center justify-center rounded-[28px] border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
+        <Spinner className="text-sky-600" />
+        <p className="ml-4 text-slate-600">Actualizando formato de la ficha...</p>
       </div>
     );
   }
 
   return (
     <div className="mt-6 space-y-6">
-      <div className="bg-white p-4 sm:p-5 rounded-xl shadow-lg border border-gray-200">
+      <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/50 sm:p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h3 className="text-xl font-bold">Modo Edición</h3>
-            <p className="text-sm text-gray-500 mt-1">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-sky-800">
+              <PencilRulerIcon className="h-4 w-4" />
+              Edición manual
+            </div>
+            <h3 className="text-2xl font-black tracking-tight text-slate-900">Modo edición</h3>
+            <p className="mt-1 text-sm text-slate-500">
               La ficha se mantiene con proporción A4 y centrada. El asistente de IA se abre desde el botón flotante para no molestar mientras editas.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button 
               onClick={onCancel}
-              className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-md hover:bg-gray-300"
+              className="inline-flex items-center gap-2 rounded-2xl bg-slate-200 px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600"
             >
+              <XIcon className="h-5 w-5" />
               Cancelar
             </button>
             <button 
               onClick={onSave}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700"
+              className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600"
             >
               <SaveIcon className="w-5 h-5"/>
               Guardar Cambios
@@ -177,28 +182,29 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
         </div>
       </div>
 
-      <div className="bg-white p-3 sm:p-5 rounded-xl shadow-lg border border-gray-200 overflow-auto">
+      <div className="overflow-auto rounded-[28px] border border-slate-200 bg-white p-3 shadow-xl shadow-slate-200/50 sm:p-5">
         <div className="max-w-[920px] mx-auto">
           <EditableWorksheetDisplay worksheet={worksheet} onWorksheetChange={setWorksheet} />
         </div>
       </div>
 
-      <div className="sticky bottom-4 z-20">
-        <div className="mx-auto max-w-[960px] rounded-2xl border border-gray-200 bg-white/95 p-3 shadow-xl backdrop-blur">
+      <div className="sticky bottom-4 z-40">
+        <div className="mx-auto max-w-[960px] rounded-[24px] border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-slate-600">
               Puedes guardar o cancelar desde aquí sin volver al inicio.
             </p>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={onCancel}
-                className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-md hover:bg-gray-300"
+                className="inline-flex items-center gap-2 rounded-2xl bg-slate-200 px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600"
               >
+                <XIcon className="h-5 w-5" />
                 Cancelar
               </button>
               <button
                 onClick={onSave}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700"
+                className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600"
               >
                 <SaveIcon className="w-5 h-5"/>
                 Guardar Cambios
@@ -208,33 +214,30 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
         </div>
       </div>
 
-      <div className="fixed right-4 bottom-4 z-30 sm:right-6 sm:bottom-6">
-        <div className="flex items-end gap-3">
+      <div className="fixed bottom-10 right-8 z-30 sm:bottom-12 sm:right-10">
+        <div className="flex flex-col items-end gap-3">
           <div
-            className={`w-[320px] sm:w-[380px] rounded-2xl border border-gray-200 bg-white shadow-2xl transition-all duration-300 origin-bottom-right ${
-              isAssistantOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-6 opacity-0 pointer-events-none'
+            className={`origin-bottom-right w-[320px] rounded-[24px] border border-slate-200 bg-white shadow-2xl transition-all duration-300 sm:w-[380px] ${
+              isAssistantOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'
             }`}
           >
             <div className="p-4">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Wand2Icon className="h-5 w-5 text-indigo-500" />
-                    <h4 className="text-lg font-bold text-gray-800">Asistente IA</h4>
+                    <Wand2Icon className="h-5 w-5 text-sky-600" />
+                    <h4 className="text-lg font-bold text-slate-900">Asistente IA</h4>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="mt-1 text-sm text-slate-500">
                     Describe el cambio y la IA ajustará la ficha actual.
                   </p>
                 </div>
                 <button
                   onClick={() => setIsAssistantOpen(false)}
-                  className="h-8 w-8 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600"
                   aria-label="Cerrar asistente IA"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
+                  <XIcon className="h-4 w-4" />
                 </button>
               </div>
 
@@ -242,23 +245,23 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({ worksheet, set
                 value={refinementInstruction}
                 onChange={(e) => setRefinementInstruction(e.target.value)}
                 placeholder="Ej: 'Cambia la primera actividad para que sea de repasar números del 1 al 5'"
-                className="w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm"
+                className="h-32 w-full rounded-2xl border border-slate-300 p-3 text-sm transition focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
                 disabled={isRefining}
               />
               <button
                 onClick={handleRefineWithAI}
                 disabled={isRefining}
-                className="w-full mt-3 h-12 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 disabled:bg-indigo-300"
+                className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-2 font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:bg-slate-800 disabled:bg-slate-300"
               >
                 {isRefining ? <><Spinner/> Refinando...</> : 'Refinar con IA'}
               </button>
-              {refinementError && <p className="text-red-600 text-xs mt-3">{refinementError}</p>}
+              {refinementError && <p className="mt-3 text-xs text-rose-600">{refinementError}</p>}
             </div>
           </div>
 
           <button
             onClick={() => setIsAssistantOpen((current) => !current)}
-            className="h-16 w-16 rounded-full bg-indigo-600 text-white shadow-2xl hover:bg-indigo-700 flex items-center justify-center"
+            className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 text-white shadow-2xl shadow-slate-900/30 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600"
             aria-label={isAssistantOpen ? 'Cerrar asistente IA' : 'Abrir asistente IA'}
             title={isAssistantOpen ? 'Cerrar asistente IA' : 'Abrir asistente IA'}
           >

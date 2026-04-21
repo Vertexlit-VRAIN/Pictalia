@@ -2,13 +2,17 @@ import React from 'react';
 import { WorksheetExercise } from '../../types';
 import { WorksheetItemDisplay } from './WorksheetItemDisplay';
 
-export const CopiarDisplay: React.FC<{ exercise: Extract<WorksheetExercise, { type: 'copiar' }> }> = ({ exercise }) => (
-  <div className="flex flex-col items-center gap-6">
-    <div className="flex items-center justify-center">
-      <WorksheetItemDisplay item={exercise.model} index={0} solidText={true} />
+export const CopiarDisplay: React.FC<{ exercise: Extract<WorksheetExercise, { type: 'copiar' }> }> = ({ exercise }) => {
+  const models = [exercise.model, ...exercise.copies];
+
+  return (
+    <div className="flex w-full flex-col items-center gap-6">
+      {models.map((item, index) => (
+        <div key={index} className="flex w-full flex-col items-center gap-3">
+          <WorksheetItemDisplay item={item} index={index} solidText={true} />
+          <WorksheetItemDisplay item={item} index={index + 100} hidePicto={true} hideText={true} />
+        </div>
+      ))}
     </div>
-    <div className="flex flex-row items-center justify-center gap-4 flex-wrap">
-      {exercise.copies.map((item, index) => <WorksheetItemDisplay key={index} item={item} index={index + 1} hidePicto={true} hideText={true} />)}
-    </div>
-  </div>
-);
+  );
+};
