@@ -1,6 +1,61 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { WorksheetItem } from '../../types';
-import { Pictogram } from '../WorksheetDisplay';
+import { Pictogram, getAdaptiveSpelledBoxWidth } from '../PictogramRenderer';
+
+const getAdaptiveImageWidth = (item: WorksheetItem, isSpelledFallback: boolean): string => {
+  const shouldExpand = item.pictogramRenderMode === 'spell' || isSpelledFallback;
+  return getAdaptiveSpelledBoxWidth(item.searchTerm || item.content || '', shouldExpand, {
+    minRem: 8.5,
+    baseRem: 4.5,
+    stepRem: 2.8,
+    maxRem: 34,
+  });
+};
+
+const ImageItemCard: React.FC<{
+  item: WorksheetItem;
+  index: number;
+  hidePicto?: boolean;
+  hideText?: boolean;
+}> = ({ item, index, hidePicto, hideText }) => {
+  const [isSpelledFallback, setIsSpelledFallback] = useState(item.pictogramRenderMode === 'spell');
+  const adaptiveWidth = getAdaptiveImageWidth(item, isSpelledFallback);
+  const showLetterBlocks = item.pictogramRenderMode === 'spell' || isSpelledFallback;
+
+  return (
+    <div
+      key={index}
+      className="flex flex-shrink-0 flex-col items-center justify-center p-3 border-2 border-black rounded-lg min-h-44 bg-white pdf-avoid-break"
+      style={{
+        width: adaptiveWidth,
+        minWidth: adaptiveWidth,
+      }}
+    >
+      {!hidePicto && (
+        item.selectedPictoUrl || item.searchTerm ? (
+              <Pictogram
+                searchTerm={item.searchTerm || item.content}
+                altText={item.content}
+                src={item.selectedPictoUrl}
+                renderMode={item.pictogramRenderMode}
+            letterTerms={item.spelledLetterTerms}
+            letterUrls={item.spelledLetterUrls}
+            className="max-h-24 max-w-24 object-contain"
+            letterWrapperClassName="max-h-28 w-full min-w-0 justify-center px-1"
+            letterTileClassName="max-h-12 max-w-12"
+            letterSingleRow
+            onFallbackModeChange={setIsSpelledFallback}
+          />
+        ) : (
+          <div className="flex flex-1 items-center justify-center px-2 text-center text-5xl font-bold text-gray-700 break-words line-clamp-2 overflow-hidden">
+            {item.content.substring(0, 7)}
+          </div>
+        )
+      )}
+      {!hideText && !showLetterBlocks && <span className="mt-2 text-sm text-center font-mono text-gray-700 uppercase">{item.content}</span>}
+    </div>
+  );
+};
 
 const renderTraceableGuide = (item: WorksheetItem, index: number, hidePicto?: boolean, hideText?: boolean, solidText?: boolean) => {
   const searchTerm = item.searchTerm || item.content;
@@ -10,7 +65,16 @@ const renderTraceableGuide = (item: WorksheetItem, index: number, hidePicto?: bo
       <div className="flex items-center gap-0">
         {!hidePicto ? (
           <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-xl border-2 border-black bg-white p-2">
-            <Pictogram searchTerm={searchTerm} altText={item.content} className="max-h-full max-w-full object-contain" src={item.selectedPictoUrl} />
+            <Pictogram
+              searchTerm={searchTerm}
+              altText={item.content}
+              className="max-h-full max-w-full object-contain"
+              src={item.selectedPictoUrl}
+              renderMode={item.pictogramRenderMode}
+              letterTerms={item.spelledLetterTerms}
+              letterUrls={item.spelledLetterUrls}
+              letterTileClassName="min-h-8 min-w-8 max-w-full"
+            />
           </div>
         ) : (
           <div className="h-24 w-24 flex-shrink-0" aria-hidden="true" />
@@ -49,25 +113,7 @@ const renderTraceableGuide = (item: WorksheetItem, index: number, hidePicto?: bo
 export const WorksheetItemDisplay: React.FC<{ item: WorksheetItem; index: number; hidePicto?: boolean; hideText?: boolean; solidText?: boolean }> = ({ item, index, hidePicto, hideText, solidText }) => {
   switch (item.type) {
     case 'image':
-      return (
-        <div key={index} className="flex flex-col items-center justify-center p-3 border-2 border-black rounded-lg h-40 w-40 bg-white pdf-avoid-break">
-          {!hidePicto && (
-            item.selectedPictoUrl || item.searchTerm ? (
-              <Pictogram
-                searchTerm={item.searchTerm || item.content}
-                altText={item.content}
-                src={item.selectedPictoUrl}
-                className="max-h-24 max-w-24 object-contain"
-              />
-            ) : (
-              <div className="flex flex-1 items-center justify-center px-2 text-center text-5xl font-bold text-gray-700">
-                {item.content}
-              </div>
-            )
-          )}
-          {!hideText && <span className="text-base text-center mt-2 font-mono text-gray-700 uppercase">{item.content}</span>}
-        </div>
-      );
+      return <ImageItemCard item={item} index={index} hidePicto={hidePicto} hideText={hideText} />;
     case 'text':
       return <div key={index} className="flex items-center justify-center h-32 w-32 text-4xl font-bold text-gray-700 pdf-avoid-break">{!hideText ? item.content : ''}</div>;
     case 'traceable_text':

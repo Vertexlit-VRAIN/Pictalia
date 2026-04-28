@@ -1,106 +1,119 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import type { Worksheet, WorksheetExercise, WorksheetItem, WorksheetSection } from '../types';
 import { getFlattenedItemsFromExercise, normalizeWorksheet } from '../services/worksheetNormalizer';
-import { searchPictograms } from '../services/pictogramService';
-
 import { RepasarDisplay } from './display/RepasarDisplay';
 import { UnirDisplay } from './display/UnirDisplay';
 import { RodearDisplay } from './display/RodearDisplay';
 import { CopiarDisplay } from './display/CopiarDisplay';
+import { Pictogram, getAdaptiveSpelledBoxWidth } from './PictogramRenderer';
 
-const pictogramUrlCache = new Map<string, string>();
+const AdaptiveWorksheetPictoBox: React.FC<{
+  searchTerm: string;
+  altText: string;
+  src?: string;
+  renderMode?: Worksheet['pictogramRenderMode'];
+  letterTerms?: string[];
+  letterUrls?: string[];
+  className: string;
+  innerClassName: string;
+  tileClassName: string;
+  defaultWidthRem?: number;
+  fallbackMinRem?: number;
+  fallbackBaseRem?: number;
+  fallbackStepRem?: number;
+  fallbackMaxRem?: number;
+  onFallbackModeChange?: (isSpelledFallback: boolean) => void;
+}> = ({
+  searchTerm,
+  altText,
+  src,
+  renderMode,
+  letterTerms,
+  letterUrls,
+  className,
+  innerClassName,
+  tileClassName,
+  defaultWidthRem = 4,
+  fallbackMinRem = 7,
+  fallbackBaseRem = 6.5,
+  fallbackStepRem = 1.15,
+  fallbackMaxRem = 12,
+  onFallbackModeChange,
+}) => {
+  const [isSpelledFallback, setIsSpelledFallback] = useState(renderMode === 'spell');
 
-export const Pictogram: React.FC<{ searchTerm: string; altText: string; className?: string; src?: string | null }> = ({ searchTerm, altText, className, src }) => {
-  const [imgSrc, setImgSrc] = useState<string>(src || '');
-  const searchTermsRef = useRef<string[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (src) {
-      setImgSrc(src);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const terms = searchTerm ? [searchTerm, ...searchTerm.split(' ').reverse()] : [];
-    const uniqueTerms = [...new Set(terms)].filter(term => term && term.trim() !== '');
-    searchTermsRef.current = uniqueTerms;
-
-    setImgSrc('');
-
-    const resolvePictogram = async () => {
-      for (const term of uniqueTerms) {
-        const cacheKey = term.trim().toLowerCase();
-        if (pictogramUrlCache.has(cacheKey)) {
-          if (!cancelled) {
-            setImgSrc(pictogramUrlCache.get(cacheKey) || '');
-          }
-          return;
-        }
-
-        const results = await searchPictograms(term);
-        const nextUrl = results[0]?.url || '';
-        if (nextUrl) {
-          pictogramUrlCache.set(cacheKey, nextUrl);
-          if (!cancelled) {
-            setImgSrc(nextUrl);
-          }
-          return;
-        }
-      }
-    };
-
-    void resolvePictogram();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [searchTerm, altText, src]);
-
-  const handleError = () => {
-    for (const term of searchTermsRef.current) {
-      pictogramUrlCache.delete(term.trim().toLowerCase());
-    }
-    setImgSrc('');
+  const handleFallbackChange = (val: boolean) => {
+    setIsSpelledFallback(val);
+    onFallbackModeChange?.(val);
   };
+  const shouldExpand = isSpelledFallback || renderMode === 'spell';
+  const width = shouldExpand
+    ? getAdaptiveSpelledBoxWidth(searchTerm || altText || '', true, {
+        minRem: fallbackMinRem,
+        baseRem: fallbackBaseRem,
+        stepRem: fallbackStepRem,
+        maxRem: fallbackMaxRem,
+      })
+    : `${defaultWidthRem}rem`;
 
-  if (!imgSrc) {
-    return <span className="px-1 text-center text-[10px] font-bold text-gray-700">{altText}</span>;
-  }
-
-  return <img src={imgSrc} alt={altText} className={className} onError={handleError} />;
+  return (
+    <div className={className} style={{ width, minWidth: width }}>
+      <Pictogram
+        searchTerm={searchTerm}
+        altText={altText}
+        src={src}
+        renderMode={renderMode}
+        letterTerms={letterTerms}
+        letterUrls={letterUrls}
+        className={innerClassName}
+        letterWrapperClassName="max-w-full px-1 py-1"
+        letterTileClassName={tileClassName}
+        onFallbackModeChange={handleFallbackChange}
+      />
+    </div>
+  );
 };
 
+const InstructionPictoCard: React.FC<{ picto: any }> = ({ picto }) => {
+  const [isSpelledFallback, setIsSpelledFallback] = useState(picto.pictogramRenderMode === 'spell');
 
+  if (isSpelledFallback) return null;
 
-const SectionHeader: React.FC<{ instruction: WorksheetSection['instruction'] }> = ({ instruction }) => (
-  <div className="flex items-center gap-6 mb-6">
-    {instruction.pictograms && instruction.pictograms.length > 0 && (
-      <div className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg">
-        {instruction.pictograms.map((picto, idx) => (
-          <div key={idx} className="flex flex-col items-center text-sm font-semibold text-gray-500">
-            <div className="w-16 h-16 p-1.5 bg-white rounded border border-gray-300 flex items-center justify-center">
-              {picto.url || picto.searchTerm ? (
-                <Pictogram
-                  searchTerm={picto.searchTerm || picto.content}
-                  altText={picto.content}
-                  src={picto.url}
-                  className="max-w-full max-h-full object-contain"
-                />
-              ) : (
-                <span className="px-1 text-center text-[10px] font-bold text-gray-700">{picto.content}</span>
-              )}
-            </div>
-            <span className="mt-1">{picto.content}</span>
-          </div>
-        ))}
-      </div>
-    )}
-    <h3 className="font-bold text-3xl text-gray-600 uppercase tracking-widest">{instruction.text}</h3>
-  </div>
-);
+  return (
+    <div className="flex flex-col items-center text-sm font-semibold text-gray-500">
+      <AdaptiveWorksheetPictoBox
+        searchTerm={picto.searchTerm || picto.content}
+        altText={picto.content}
+        src={picto.url}
+        renderMode={picto.pictogramRenderMode}
+        letterTerms={picto.spelledLetterTerms}
+        letterUrls={picto.spelledLetterUrls}
+        className="flex min-h-16 items-center justify-center rounded border border-gray-300 bg-white p-1.5"
+        innerClassName="max-w-full max-h-full object-contain"
+        tileClassName="min-h-10 min-w-10 max-w-full"
+        onFallbackModeChange={setIsSpelledFallback}
+      />
+      {picto.pictogramRenderMode !== 'spell' && <span className="mt-1">{picto.content}</span>}
+    </div>
+  );
+};
+
+const SectionHeader: React.FC<{ instruction: WorksheetSection['instruction'] }> = ({ instruction }) => {
+  const hasPictograms = instruction.pictograms && instruction.pictograms.length > 0;
+
+  return (
+    <div className="flex items-center gap-6 mb-6">
+      {hasPictograms && (
+        <div className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg empty:hidden">
+          {instruction.pictograms!.map((picto, idx) => (
+            <InstructionPictoCard key={idx} picto={picto} />
+          ))}
+        </div>
+      )}
+      <h3 className="font-bold text-3xl text-gray-600 uppercase tracking-widest">{instruction.text}</h3>
+    </div>
+  );
+};
 
 const renderExercise = (exercise: WorksheetExercise) => {
   switch (exercise.type) {
@@ -145,18 +158,17 @@ export const WorksheetDisplay: React.FC<{ worksheet: Worksheet }> = ({ worksheet
         `}
       </style>
       <header className="flex items-center justify-center gap-4 p-4 border-b-4 border-black mb-6 pdf-avoid-break">
-        <div className="h-16 w-16 flex items-center justify-center border-2 border-black">
-          {normalizedWorksheet.selectedPictoUrl || normalizedWorksheet.pictogramSearchTerm ? (
-            <Pictogram
-              searchTerm={normalizedWorksheet.pictogramSearchTerm}
-              altText={normalizedWorksheet.pictogramSearchTerm}
-              src={normalizedWorksheet.selectedPictoUrl}
-              className="max-h-12 max-w-12 object-contain"
-            />
-          ) : (
-            <span className="px-2 text-center text-xs font-bold text-gray-700 uppercase">{normalizedWorksheet.pictogramSearchTerm}</span>
-          )}
-        </div>
+        <AdaptiveWorksheetPictoBox
+          searchTerm={normalizedWorksheet.pictogramSearchTerm}
+          altText={normalizedWorksheet.pictogramSearchTerm}
+          src={normalizedWorksheet.selectedPictoUrl}
+          renderMode={normalizedWorksheet.pictogramRenderMode}
+          letterTerms={normalizedWorksheet.spelledLetterTerms}
+          letterUrls={normalizedWorksheet.spelledLetterUrls}
+          className="flex min-h-16 items-center justify-center border-2 border-black p-1"
+          innerClassName="max-h-12 max-w-12 object-contain"
+          tileClassName="min-h-10 min-w-10 max-w-full"
+        />
         <h2 className="text-4xl font-extrabold tracking-wider text-black uppercase">{normalizedWorksheet.title}</h2>
       </header>
 

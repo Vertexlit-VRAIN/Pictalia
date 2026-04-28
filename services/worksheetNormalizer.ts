@@ -69,6 +69,9 @@ const hydrateItem = (base: WorksheetItem, hydrated?: WorksheetItem): WorksheetIt
   if (hydrated.selectedPictoUrl !== undefined) result.selectedPictoUrl = hydrated.selectedPictoUrl;
   if (hydrated.pictoOptions !== undefined) result.pictoOptions = hydrated.pictoOptions;
   if (hydrated.searchTerm !== undefined) result.searchTerm = hydrated.searchTerm;
+  if (hydrated.pictogramRenderMode !== undefined) result.pictogramRenderMode = hydrated.pictogramRenderMode;
+  if (hydrated.spelledLetterTerms !== undefined) result.spelledLetterTerms = hydrated.spelledLetterTerms;
+  if (hydrated.spelledLetterUrls !== undefined) result.spelledLetterUrls = hydrated.spelledLetterUrls;
   return result;
 };
 
@@ -84,6 +87,9 @@ const normalizeInstruction = (instruction: WorksheetSection['instruction'] | und
       searchTerm: picto.searchTerm || picto.content || '',
       content: picto.content || picto.searchTerm || '',
       url: picto.url,
+      pictogramRenderMode: picto.pictogramRenderMode,
+      spelledLetterTerms: picto.spelledLetterTerms,
+      spelledLetterUrls: picto.spelledLetterUrls,
     })),
   };
 };
@@ -180,15 +186,15 @@ const normalizeRepasarExercise = (exercise: RepasarExercise | undefined, items: 
   const sourceItems = items.length > 0 ? items : (exercise?.prompts || []);
   const prompts = sourceItems.length > 0
     ? sourceItems.map((item, index) => {
-        const hydratedItem = items.length > 0 && exercise?.prompts?.length ? items[index] : undefined;
-        let base;
-        if (item.type === 'image') {
-          base = cloneItem(item);
-        } else {
-          base = ensureTraceableItem(item, item.content || 'A');
-        }
-        return hydrateItem(base, hydratedItem || item);
-      })
+      const hydratedItem = items.length > 0 && exercise?.prompts?.length ? items[index] : undefined;
+      let base;
+      if (item.type === 'image') {
+        base = cloneItem(item);
+      } else {
+        base = ensureTraceableItem(item, item.content || 'A');
+      }
+      return hydrateItem(base, hydratedItem || item);
+    })
     : [{ type: 'traceable_text', content: 'A' }];
 
   return { type: 'repasar', prompts };
@@ -214,11 +220,11 @@ const normalizeUnirExercise = (exercise: UnirExercise | undefined, items: Worksh
   const usable = normalized.length >= 4
     ? normalized
     : [
-        { type: 'image', content: 'sol', searchTerm: 'sol' },
-        { type: 'image', content: 'luna', searchTerm: 'luna' },
-        { type: 'image', content: 'sol', searchTerm: 'sol' },
-        { type: 'image', content: 'luna', searchTerm: 'luna' },
-      ];
+      { type: 'image', content: 'sol', searchTerm: 'sol' },
+      { type: 'image', content: 'luna', searchTerm: 'luna' },
+      { type: 'image', content: 'sol', searchTerm: 'sol' },
+      { type: 'image', content: 'luna', searchTerm: 'luna' },
+    ];
 
   const midPoint = usable.length / 2;
   return {
@@ -238,9 +244,9 @@ const normalizeRodearExercise = (exercise: RodearExercise | undefined, items: Wo
   const options = sourceOptions.length > 0
     ? sourceOptions.map((item, index) => hydrateItem(ensureImageItem(item, `opcion ${index + 1}`), isHydrated ? items[index + (hasPrompt ? 1 : 0)] : item))
     : [
-        { type: 'image', content: 'opcion 1', searchTerm: 'opcion' },
-        { type: 'image', content: 'opcion 2', searchTerm: 'opcion' },
-      ];
+      { type: 'image', content: 'opcion 1', searchTerm: 'opcion' },
+      { type: 'image', content: 'opcion 2', searchTerm: 'opcion' },
+    ];
 
   return {
     type: 'rodear',
@@ -251,7 +257,7 @@ const normalizeRodearExercise = (exercise: RodearExercise | undefined, items: Wo
 
 const normalizeCopiarExercise = (exercise: CopiarExercise | undefined, items: WorksheetItem[]): CopiarExercise => {
   const isHydrated = items.length > 0;
-  
+
   if (exercise?.model) {
     return {
       type: 'copiar',
@@ -335,6 +341,9 @@ export const normalizeWorksheetSection = (section: Partial<WorksheetSection>): W
 
 export const normalizeWorksheet = (worksheet: Worksheet): Worksheet => ({
   ...worksheet,
+  pictogramRenderMode: worksheet.pictogramRenderMode,
+  spelledLetterTerms: worksheet.spelledLetterTerms,
+  spelledLetterUrls: worksheet.spelledLetterUrls,
   sections: (worksheet.sections || []).map(section => normalizeWorksheetSection(section)),
 });
 

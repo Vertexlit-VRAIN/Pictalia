@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { produce } from 'immer';
-import type { ExerciseType, PictogramSearchResult, SavedWorksheet, WorksheetItem, WorksheetSection } from '../types';
+import type { ExerciseType, PictogramRenderMode, PictogramSearchResult, SavedWorksheet, WorksheetItem, WorksheetSection } from '../types';
 import { searchPictograms } from '../services/pictogramService';
 import { normalizeWorksheet, normalizeWorksheetSection } from '../services/worksheetNormalizer';
 import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, PlusIcon, MinusIcon, XIcon, SaveIcon } from './Icons';
 import { EXERCISE_TYPE_OPTIONS, getSectionItems, getExerciseTypeLabel } from './editorUtils';
+import { Pictogram, getAdaptiveSpelledBoxStyle } from './PictogramRenderer';
 
 type EditableWorksheetProps = {
   worksheet: SavedWorksheet;
@@ -26,17 +27,23 @@ type PictogramEditorModalProps = {
   currentSearchTerm: string;
   currentSelectedUrl?: string;
   currentPictoOptions?: string[];
+  currentRenderMode?: PictogramRenderMode;
+  currentSpelledLetterTerms?: string[];
+  currentSpelledLetterUrls?: string[];
   onSave: (payload: {
     displayedTerm: string;
     searchTerm: string;
     selectedUrl: string;
     pictoOptions: string[];
+    renderMode: PictogramRenderMode;
+    spelledLetterTerms: string[];
+    spelledLetterUrls: string[];
     applyToAll: boolean;
   }) => void;
 };
 
-
-const pictogramUrlCache = new Map<string, string>();
+const getSpellableCharacters = (value: string): string[] =>
+  Array.from(value.trim()).filter(character => character.trim().length > 0);
 
 const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
   isOpen,
@@ -47,23 +54,38 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
   currentSearchTerm,
   currentSelectedUrl,
   currentPictoOptions,
+  currentRenderMode,
+  currentSpelledLetterTerms,
+  currentSpelledLetterUrls,
   onSave,
 }) => {
   const [displayedTerm, setDisplayedTerm] = useState(currentDisplayedTerm);
   const [searchTerm, setSearchTerm] = useState(currentSearchTerm);
   const [selectedUrl, setSelectedUrl] = useState(currentSelectedUrl || '');
+  const [renderMode, setRenderMode] = useState<PictogramRenderMode>(currentRenderMode || 'auto');
+  const [spelledLetterTerms, setSpelledLetterTerms] = useState<string[]>(currentSpelledLetterTerms || []);
+  const [spelledLetterUrls, setSpelledLetterUrls] = useState<string[]>(currentSpelledLetterUrls || []);
   const [applyToAll, setApplyToAll] = useState(false);
   const [results, setResults] = useState<PictogramSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const letters = useMemo(() => getSpellableCharacters(searchTerm || displayedTerm), [displayedTerm, searchTerm]);
 
   useEffect(() => {
     if (!isOpen) return;
     setDisplayedTerm(currentDisplayedTerm);
     setSearchTerm(currentSearchTerm);
     setSelectedUrl(currentSelectedUrl || '');
+    setRenderMode(currentRenderMode || 'auto');
+    setSpelledLetterTerms(currentSpelledLetterTerms || []);
+    setSpelledLetterUrls(currentSpelledLetterUrls || []);
     setApplyToAll(false);
     setResults((currentPictoOptions || []).map((url, index) => ({ id: `${index}-${url}`, url })));
-  }, [isOpen, currentDisplayedTerm, currentSearchTerm, currentSelectedUrl, currentPictoOptions]);
+  }, [isOpen, currentDisplayedTerm, currentSearchTerm, currentSelectedUrl, currentPictoOptions, currentRenderMode, currentSpelledLetterTerms, currentSpelledLetterUrls]);
+
+  useEffect(() => {
+    setSpelledLetterTerms(current => letters.map((letter, index) => current[index]?.trim() || letter));
+    setSpelledLetterUrls(current => letters.map((_, index) => current[index] || ''));
+  }, [letters]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -117,6 +139,9 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
       searchTerm: finalSearchTerm,
       selectedUrl,
       pictoOptions: results.map(result => result.url),
+      renderMode,
+      spelledLetterTerms: letters.map((letter, index) => spelledLetterTerms[index]?.trim() || letter),
+      spelledLetterUrls: letters.map((_, index) => spelledLetterUrls[index] || ''),
       applyToAll,
     });
     onClose();
@@ -127,7 +152,7 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
       <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-slate-900">{title}</h3>
         <p className="mt-1 text-sm text-slate-500">
-          {helperText || 'Cambia el texto, la búsqueda y el pictograma sin salir del editor.'}
+          {helperText || 'Cambia el texto, la búsqueda visual y la presentación sin salir del editor.'}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-5">
@@ -144,7 +169,7 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
               />
             </div>
             <div>
-              <label htmlFor="searchTerm" className="mb-1 block text-sm font-medium text-slate-700">Búsqueda de pictograma</label>
+              <label htmlFor="searchTerm" className="mb-1 block text-sm font-medium text-slate-700">Búsqueda visual</label>
               <input
                 id="searchTerm"
                 type="text"
@@ -157,6 +182,15 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
             <label className="flex items-center gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"
+                checked={renderMode === 'spell'}
+                onChange={(e) => setRenderMode(e.target.checked ? 'spell' : 'auto')}
+                className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+              />
+              Mostrar en bloques de letras
+            </label>
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
                 checked={applyToAll}
                 onChange={(e) => setApplyToAll(e.target.checked)}
                 className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
@@ -165,30 +199,50 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
             </label>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Selección actual</p>
-              <div className="flex h-28 items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-white">
-                {selectedUrl ? (
-                  <img src={selectedUrl} alt={displayedTerm} className="max-h-24 max-w-24 object-contain" />
+              <div className="flex min-h-28 items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-white px-2 py-3">
+                {selectedUrl || displayedTerm.trim() || searchTerm.trim() ? (
+                  <Pictogram
+                    searchTerm={searchTerm || displayedTerm}
+                    altText={displayedTerm}
+                    src={renderMode === 'spell' ? '' : selectedUrl}
+                    renderMode={renderMode}
+                    letterTerms={spelledLetterTerms}
+                    letterUrls={spelledLetterUrls}
+                    className="max-h-24 max-w-24 object-contain"
+                    letterWrapperClassName="max-w-full justify-center px-1.5 py-1.5"
+                    letterTileClassName="min-h-10 min-w-10"
+                  />
                 ) : (
                   <span className="px-4 text-center text-xs text-slate-500">Sin pictograma seleccionado.</span>
                 )}
               </div>
             </div>
+            {renderMode === 'spell' && letters.length > 0 && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Bloques de letras</p>
+                <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-3 text-sm text-sky-900">
+                  Este modo muestra la palabra en bloques, una letra por bloque, con una tipografía más legible y sin repetir el texto debajo.
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-sm font-medium text-slate-700">Resultados</p>
+              <p className="text-sm font-medium text-slate-700">{renderMode === 'spell' ? 'Vista de bloques' : 'Resultados'}</p>
               {isSearching && <span className="text-xs text-slate-500">Buscando...</span>}
             </div>
-            {results.length > 0 ? (
+            {renderMode !== 'spell' && results.length > 0 ? (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[420px] overflow-y-auto pr-1">
                 {results.map((result) => (
                   <button
                     key={result.id}
-                    onClick={() => {
-                      setSelectedUrl(result.url);
-                    }}
-                    className={`rounded-2xl border-2 bg-white p-2 transition-colors ${selectedUrl === result.url ? 'border-sky-600' : 'border-slate-200 hover:border-sky-300'}`}
+                    onClick={() => setSelectedUrl(result.url)}
+                    className={`rounded-2xl border-2 bg-white p-2 transition-colors ${
+                      selectedUrl === result.url
+                        ? 'border-sky-600'
+                        : 'border-slate-200 hover:border-sky-300'
+                    }`}
                   >
                     <img src={result.url} alt={displayedTerm} className="w-full h-20 object-contain" loading="lazy" />
                   </button>
@@ -196,7 +250,9 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
               </div>
             ) : (
               <div className="flex h-56 items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center text-sm text-slate-500">
-                No se ha encontrado ningún pictograma.
+                {renderMode === 'spell'
+                  ? 'La palabra se mostrará como bloques de letras. No hace falta elegir resultados visuales.'
+                  : 'No se ha encontrado ningún pictograma.'}
               </div>
             )}
           </div>
@@ -223,64 +279,114 @@ export const PlaceholderPicto: React.FC<{ label: string }> = ({ label }) => (
   </div>
 );
 
+const AdaptivePreviewButton: React.FC<{
+  searchTerm?: string;
+  altText: string;
+  src?: string | null;
+  renderMode?: PictogramRenderMode;
+  letterTerms?: string[];
+  letterUrls?: string[];
+  className: string;
+  previewClassName?: string;
+  previewTileClassName?: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+  defaultWidthRem?: number;
+  fallbackMinRem?: number;
+  fallbackBaseRem?: number;
+  fallbackStepRem?: number;
+  fallbackMaxRem?: number;
+}> = ({
+  searchTerm,
+  altText,
+  src,
+  renderMode,
+  letterTerms,
+  letterUrls,
+  className,
+  previewClassName,
+  previewTileClassName,
+  onClick,
+  children,
+  defaultWidthRem = 5,
+  fallbackMinRem = 7.5,
+  fallbackBaseRem = 6.5,
+  fallbackStepRem = 1.2,
+  fallbackMaxRem = 12,
+}) => {
+  const [isSpelledFallback, setIsSpelledFallback] = useState(renderMode === 'spell');
+  const shouldExpand = isSpelledFallback || renderMode === 'spell';
+  const adaptiveStyle = getAdaptiveSpelledBoxStyle(searchTerm || altText || '', shouldExpand, {
+    defaultRem: defaultWidthRem,
+    minRem: fallbackMinRem,
+    baseRem: fallbackBaseRem,
+    stepRem: fallbackStepRem,
+    maxRem: fallbackMaxRem,
+  });
+
+  return (
+    <button className={className} style={adaptiveStyle} type="button" onClick={onClick}>
+      {src || searchTerm || altText ? (
+        <EditorPictogramPreview
+          src={src}
+          searchTerm={searchTerm}
+          altText={altText}
+          renderMode={renderMode}
+          letterTerms={letterTerms}
+          letterUrls={letterUrls}
+          className="max-h-12 max-w-12 object-contain"
+          letterWrapperClassName={previewClassName || 'max-w-full justify-center px-1.5 py-1.5'}
+          letterTileClassName={previewTileClassName || 'min-h-10 min-w-10'}
+          onFallbackModeChange={setIsSpelledFallback}
+        />
+      ) : (
+        <PlaceholderPicto label="Sin pictograma" />
+      )}
+      {children}
+    </button>
+  );
+};
+
+const EDITOR_LETTER_BLOCK_PREVIEW_SIZING = {
+  defaultWidthRem: 5,
+  fallbackMinRem: 10.5,
+  fallbackBaseRem: 7.5,
+  fallbackStepRem: 1.85,
+  fallbackMaxRem: 34,
+} as const;
+
 export const EditorPictogramPreview: React.FC<{
   searchTerm?: string;
   altText: string;
   src?: string | null;
+  renderMode?: PictogramRenderMode;
+  letterTerms?: string[];
+  letterUrls?: string[];
   className?: string;
-}> = ({ searchTerm, altText, src, className }) => {
-  const [imgSrc, setImgSrc] = useState(src || '');
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (src) {
-      setImgSrc(src);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const normalizedSearchTerm = (searchTerm || altText).trim();
-    if (!normalizedSearchTerm) {
-      setImgSrc('');
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const resolvePreview = async () => {
-      const cacheKey = normalizedSearchTerm.toLowerCase();
-      if (pictogramUrlCache.has(cacheKey)) {
-        if (!cancelled) {
-          setImgSrc(pictogramUrlCache.get(cacheKey) || '');
-        }
-        return;
-      }
-
-      const results = await searchPictograms(normalizedSearchTerm);
-      const nextUrl = results[0]?.url || '';
-      if (nextUrl) {
-        pictogramUrlCache.set(cacheKey, nextUrl);
-      }
-      if (!cancelled) {
-        setImgSrc(nextUrl);
-      }
-    };
-
-    setImgSrc('');
-    void resolvePreview();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [searchTerm, altText, src]);
-
-  if (!imgSrc) {
-    return <PlaceholderPicto label={searchTerm || altText || 'Sin pictograma'} />;
+  letterWrapperClassName?: string;
+  letterTileClassName?: string;
+  letterSingleRow?: boolean;
+  onFallbackModeChange?: (isSpelledFallback: boolean) => void;
+}> = ({ searchTerm, altText, src, renderMode, letterTerms, letterUrls, className, letterWrapperClassName, letterTileClassName, letterSingleRow, onFallbackModeChange }) => {
+  if (!(src || searchTerm || altText)) {
+    return <PlaceholderPicto label="Sin pictograma" />;
   }
 
-  return <img src={imgSrc} alt={altText} className={className} loading="lazy" />;
+  return (
+    <Pictogram
+      searchTerm={searchTerm || altText}
+      altText={altText}
+      src={src}
+      renderMode={renderMode}
+      letterTerms={letterTerms}
+      letterUrls={letterUrls}
+      className={className}
+      letterWrapperClassName={letterWrapperClassName}
+      letterTileClassName={letterTileClassName || 'min-h-10 min-w-10'}
+      letterSingleRow={letterSingleRow}
+      onFallbackModeChange={onFallbackModeChange}
+    />
+  );
 };
 
 const getFallbackDisplayTerm = (item: WorksheetItem): string => item.searchTerm || item.content || '';
@@ -291,6 +397,9 @@ const createImageItem = (content: string): WorksheetItem => ({
   searchTerm: content.toLowerCase(),
   selectedPictoUrl: '',
   pictoOptions: [],
+  pictogramRenderMode: 'auto',
+  spelledLetterTerms: [],
+  spelledLetterUrls: [],
 });
 
 const createTraceableItem = (content: string): WorksheetItem => ({
@@ -309,6 +418,9 @@ const cloneWorksheetItem = (item: WorksheetItem | undefined, fallbackContent: st
     searchTerm: item.searchTerm,
     selectedPictoUrl: item.selectedPictoUrl,
     pictoOptions: item.pictoOptions ? [...item.pictoOptions] : item.pictoOptions,
+    pictogramRenderMode: item.pictogramRenderMode,
+    spelledLetterTerms: item.spelledLetterTerms ? [...item.spelledLetterTerms] : item.spelledLetterTerms,
+    spelledLetterUrls: item.spelledLetterUrls ? [...item.spelledLetterUrls] : item.spelledLetterUrls,
   };
 };
 
@@ -316,6 +428,9 @@ const createInstructionPicto = (content: string) => ({
   content,
   searchTerm: content.toLowerCase(),
   url: '',
+  pictogramRenderMode: 'auto' as PictogramRenderMode,
+  spelledLetterTerms: [content],
+  spelledLetterUrls: [],
 });
 
 
@@ -399,12 +514,18 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
     newPictoOptions: string[],
     oldDisplayedTerm: string,
     newDisplayedTerm: string,
-    newSearchTerm: string
+    newSearchTerm: string,
+    newRenderMode: PictogramRenderMode,
+    newSpelledLetterTerms: string[],
+    newSpelledLetterUrls: string[]
   ) => {
     if (draft.selectedPictoUrl === oldPictoUrl && draft.pictogramSearchTerm === oldDisplayedTerm) {
       draft.selectedPictoUrl = newPictoUrl;
       draft.pictoOptions = newPictoOptions;
       draft.pictogramSearchTerm = newDisplayedTerm;
+      draft.pictogramRenderMode = newRenderMode;
+      draft.spelledLetterTerms = newSpelledLetterTerms;
+      draft.spelledLetterUrls = newSpelledLetterUrls;
     }
 
     draft.sections.forEach(section => {
@@ -413,6 +534,9 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
           picto.url = newPictoUrl;
           picto.searchTerm = newSearchTerm;
           picto.content = newDisplayedTerm;
+          picto.pictogramRenderMode = newRenderMode;
+          picto.spelledLetterTerms = newSpelledLetterTerms;
+          picto.spelledLetterUrls = newSpelledLetterUrls;
         }
       });
 
@@ -422,6 +546,9 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
           item.pictoOptions = newPictoOptions;
           item.searchTerm = newSearchTerm;
           item.content = newDisplayedTerm;
+          item.pictogramRenderMode = newRenderMode;
+          item.spelledLetterTerms = newSpelledLetterTerms;
+          item.spelledLetterUrls = newSpelledLetterUrls;
         }
       });
     });
@@ -432,12 +559,18 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
     searchTerm,
     selectedUrl,
     pictoOptions,
+    renderMode,
+    spelledLetterTerms,
+    spelledLetterUrls,
     applyToAll,
   }: {
     displayedTerm: string;
     searchTerm: string;
     selectedUrl: string;
     pictoOptions: string[];
+    renderMode: PictogramRenderMode;
+    spelledLetterTerms: string[];
+    spelledLetterUrls: string[];
     applyToAll: boolean;
   }) => {
     if (!editorTarget) return;
@@ -448,11 +581,14 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
         const originalDisplayedTerm = draft.pictogramSearchTerm || '';
 
         draft.pictogramSearchTerm = displayedTerm;
-        draft.selectedPictoUrl = selectedUrl;
+        draft.selectedPictoUrl = renderMode === 'spell' ? '' : selectedUrl;
         draft.pictoOptions = pictoOptions;
+        draft.pictogramRenderMode = renderMode;
+        draft.spelledLetterTerms = spelledLetterTerms;
+        draft.spelledLetterUrls = spelledLetterUrls;
 
         if (applyToAll) {
-          applyGlobalPictoUpdate(draft, originalPictoUrl, selectedUrl, pictoOptions, originalDisplayedTerm, displayedTerm, searchTerm);
+          applyGlobalPictoUpdate(draft, originalPictoUrl, selectedUrl, pictoOptions, originalDisplayedTerm, displayedTerm, searchTerm, renderMode, spelledLetterTerms, spelledLetterUrls);
         }
         return;
       }
@@ -466,10 +602,13 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
 
         instructionPicto.content = displayedTerm;
         instructionPicto.searchTerm = searchTerm;
-        instructionPicto.url = selectedUrl;
+        instructionPicto.url = renderMode === 'spell' ? '' : selectedUrl;
+        instructionPicto.pictogramRenderMode = renderMode;
+        instructionPicto.spelledLetterTerms = spelledLetterTerms;
+        instructionPicto.spelledLetterUrls = spelledLetterUrls;
 
         if (applyToAll) {
-          applyGlobalPictoUpdate(draft, originalPictoUrl, selectedUrl, pictoOptions, originalDisplayedTerm, displayedTerm, searchTerm);
+          applyGlobalPictoUpdate(draft, originalPictoUrl, selectedUrl, pictoOptions, originalDisplayedTerm, displayedTerm, searchTerm, renderMode, spelledLetterTerms, spelledLetterUrls);
         }
         return;
       }
@@ -482,11 +621,14 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
 
       item.content = displayedTerm;
       item.searchTerm = searchTerm;
-      item.selectedPictoUrl = selectedUrl;
+      item.selectedPictoUrl = renderMode === 'spell' ? '' : selectedUrl;
       item.pictoOptions = pictoOptions;
+      item.pictogramRenderMode = renderMode;
+      item.spelledLetterTerms = spelledLetterTerms;
+      item.spelledLetterUrls = spelledLetterUrls;
 
       if (applyToAll) {
-        applyGlobalPictoUpdate(draft, originalPictoUrl, selectedUrl, pictoOptions, originalDisplayedTerm, displayedTerm, searchTerm);
+        applyGlobalPictoUpdate(draft, originalPictoUrl, selectedUrl, pictoOptions, originalDisplayedTerm, displayedTerm, searchTerm, renderMode, spelledLetterTerms, spelledLetterUrls);
       }
     });
 
@@ -655,10 +797,6 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
     handleTextChange(['sections', sectionIndex, 'items', itemIndex, 'content'], value);
   };
 
-  const handleItemSearchTermChange = (sectionIndex: number, itemIndex: number, value: string) => {
-    handleTextChange(['sections', sectionIndex, 'items', itemIndex, 'searchTerm'], value);
-  };
-
   const currentEditorState = useMemo(() => {
     if (!editorTarget) return null;
 
@@ -669,6 +807,9 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
         searchTerm: worksheet.pictogramSearchTerm || '',
         selectedUrl: worksheet.selectedPictoUrl || '',
         pictoOptions: worksheet.pictoOptions || [],
+        renderMode: worksheet.pictogramRenderMode || 'auto',
+        spelledLetterTerms: worksheet.spelledLetterTerms || [],
+        spelledLetterUrls: worksheet.spelledLetterUrls || [],
       };
     }
 
@@ -684,6 +825,9 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
         searchTerm: picto?.searchTerm || picto?.content || '',
         selectedUrl: picto?.url || '',
         pictoOptions: picto?.url ? [picto.url] : [],
+        renderMode: picto?.pictogramRenderMode || 'auto',
+        spelledLetterTerms: picto?.spelledLetterTerms || [],
+        spelledLetterUrls: picto?.spelledLetterUrls || [],
       };
     }
 
@@ -699,6 +843,9 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
       searchTerm: item.searchTerm || item.content || '',
       selectedUrl: item.selectedPictoUrl || '',
       pictoOptions: item.pictoOptions || [],
+      renderMode: item.pictogramRenderMode || 'auto',
+      spelledLetterTerms: item.spelledLetterTerms || [],
+      spelledLetterUrls: item.spelledLetterUrls || [],
     };
   }, [editorTarget, worksheet]);
 
@@ -728,6 +875,9 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
           currentSearchTerm={currentEditorState.searchTerm}
           currentSelectedUrl={currentEditorState.selectedUrl}
           currentPictoOptions={currentEditorState.pictoOptions}
+          currentRenderMode={currentEditorState.renderMode}
+          currentSpelledLetterTerms={currentEditorState.spelledLetterTerms}
+          currentSpelledLetterUrls={currentEditorState.spelledLetterUrls}
           onSave={handleSavePictogramEdit}
         />
       )}
@@ -772,22 +922,26 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
 
       <div className="space-y-4">
         <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="grid gap-4 md:grid-cols-[80px_minmax(0,1fr)] md:items-center">
-            <button onClick={() => setEditorTarget({ type: 'main' })} className="relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-slate-300 bg-white transition hover:border-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600 group">
-              {worksheet.selectedPictoUrl || worksheet.pictoOptions?.[0] || worksheet.pictogramSearchTerm ? (
-                <EditorPictogramPreview
-                  src={worksheet.selectedPictoUrl || worksheet.pictoOptions?.[0]}
-                  searchTerm={worksheet.pictogramSearchTerm}
-                  altText={worksheet.pictogramSearchTerm}
-                  className="max-h-12 max-w-12"
-                />
-              ) : (
-                <PlaceholderPicto label="Sin pictograma" />
-              )}
+          <div className="grid gap-4 md:grid-cols-[max-content_minmax(0,1fr)] md:items-center">
+            <AdaptivePreviewButton
+              src={worksheet.selectedPictoUrl || worksheet.pictoOptions?.[0]}
+              searchTerm={worksheet.pictogramSearchTerm}
+              altText={worksheet.pictogramSearchTerm}
+              renderMode={worksheet.pictogramRenderMode}
+              letterTerms={worksheet.spelledLetterTerms}
+              letterUrls={worksheet.spelledLetterUrls}
+              className="relative flex min-h-16 items-center justify-center rounded-2xl border-2 border-slate-300 bg-white p-2 transition hover:border-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600 group"
+              onClick={() => setEditorTarget({ type: 'main' })}
+              defaultWidthRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.defaultWidthRem}
+              fallbackMinRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackMinRem}
+              fallbackBaseRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackBaseRem}
+              fallbackStepRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackStepRem}
+              fallbackMaxRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackMaxRem}
+            >
               <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                 <span className="text-white font-bold text-xs">Editar</span>
               </div>
-            </button>
+            </AdaptivePreviewButton>
             <input
               type="text"
               value={worksheet.title}
@@ -909,22 +1063,28 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
                               </button>
                             </div>
                             
-                            <button
-                              className="group relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-slate-200 bg-white p-1 hover:border-sky-500"
+                            <AdaptivePreviewButton
+                              src={picto.url}
+                              searchTerm={picto.searchTerm || picto.content}
+                              altText={picto.content}
+                              renderMode={picto.pictogramRenderMode}
+                              letterTerms={picto.spelledLetterTerms}
+                              letterUrls={picto.spelledLetterUrls}
+                              className="group relative flex min-h-16 items-center justify-center rounded-2xl border-2 border-slate-200 bg-white px-1 py-2 hover:border-sky-500"
                               onClick={() => setEditorTarget({ type: 'instruction', sectionIndex, pictoIndex })}
+                              defaultWidthRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.defaultWidthRem}
+                              fallbackMinRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackMinRem}
+                              fallbackBaseRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackBaseRem}
+                              fallbackStepRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackStepRem}
+                              fallbackMaxRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackMaxRem}
                             >
-                              {picto.url ? (
-                                <img src={picto.url} alt={picto.content} className="max-h-12 max-w-12 object-contain" />
-                              ) : picto.searchTerm ? (
-                                <PlaceholderPicto label="Sin pictograma" />
-                              ) : (
-                                <span className="px-2 text-center text-xs font-semibold text-gray-600 uppercase">{picto.content}</span>
-                              )}
                               <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                                 <span className="text-white font-bold text-xs">Editar</span>
                               </div>
-                            </button>
-                            <span className="mt-2 text-xs font-semibold uppercase text-slate-600">{picto.content}</span>
+                            </AdaptivePreviewButton>
+                            {picto.pictogramRenderMode !== 'spell' && (
+                              <span className="mt-2 text-xs font-semibold uppercase text-slate-600">{picto.content}</span>
+                            )}
                           </div>
                         ))}
                       </div>

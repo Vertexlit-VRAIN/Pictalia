@@ -31,12 +31,17 @@ export interface PictogramSearchResult {
   keywords?: string[];
 }
 
+export type PictogramRenderMode = 'auto' | 'spell';
+
 export interface WorksheetItem {
   type: 'image' | 'text' | 'traceable_text' | 'empty_box';
   content: string;
   searchTerm?: string;
   selectedPictoUrl?: string;
   pictoOptions?: string[];
+  pictogramRenderMode?: PictogramRenderMode;
+  spelledLetterTerms?: string[];
+  spelledLetterUrls?: string[];
 }
 
 export type WorksheetLayout = 'row' | 'column' | 'true_false' | 'sentence_building' | 'matching_horizontal';
@@ -47,6 +52,9 @@ export interface WorksheetInstructionPicto {
   searchTerm: string;
   content: string;
   url?: string | null;
+  pictogramRenderMode?: PictogramRenderMode;
+  spelledLetterTerms?: string[];
+  spelledLetterUrls?: string[];
 }
 
 export interface WorksheetInstruction {
@@ -100,6 +108,9 @@ export interface Worksheet {
   pictogramSearchTerm: string;
   selectedPictoUrl?: string;
   pictoOptions?: string[];
+  pictogramRenderMode?: PictogramRenderMode;
+  spelledLetterTerms?: string[];
+  spelledLetterUrls?: string[];
   sections: WorksheetSection[];
 }
 
