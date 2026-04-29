@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CHILD_PROFILE, APP_DATA_STORAGE_KEY, DEFAULT_AI_SETTINGS, DEFAULT_PICTOGRAM_SETTINGS, LEGACY_GEMINI_API_KEY_STORAGE_KEY } from '../constants';
-import type { Profile, AppData, Worksheet, SavedWorksheet, AISettings, PictogramSettings } from '../types';
+import type { Profile, AppData, Worksheet, SavedWorksheet, AISettings, PictogramSettings, StudentStructuredProfile } from '../types';
+import { DEFAULT_STRUCTURED_PROFILE, normalizeStructuredProfile, serializeStructuredProfile } from '../services/profileSerializer';
 
 const DEFAULT_PROFILE_ID = 'default_profile_01';
 
 const getDefaultProfile = (): Profile => ({
   id: DEFAULT_PROFILE_ID,
   name: 'Niño TEA 6 Años (Original)',
-  content: CHILD_PROFILE,
+  content: serializeStructuredProfile(DEFAULT_STRUCTURED_PROFILE),
+  structuredContent: DEFAULT_STRUCTURED_PROFILE,
   showPictogramInstructions: true,
   savedWorksheets: [],
 });
@@ -19,9 +21,34 @@ const getInitialAppData = (): AppData => ({
   pictogramSettings: { ...DEFAULT_PICTOGRAM_SETTINGS },
 });
 
+const refreshDefaultProfile = (profile: Profile): Profile => {
+  if (profile.id !== DEFAULT_PROFILE_ID) {
+    return profile;
+  }
+
+  const defaultProfile = getDefaultProfile();
+  return {
+    ...profile,
+    content: defaultProfile.content,
+    structuredContent: defaultProfile.structuredContent,
+  };
+};
+
+const getStructuredContentForEditor = (profile: Profile): StudentStructuredProfile => {
+  if (profile.structuredContent) {
+    return normalizeStructuredProfile(profile.structuredContent);
+  }
+
+  if (profile.id === DEFAULT_PROFILE_ID || profile.content?.trim() === CHILD_PROFILE.trim()) {
+    return normalizeStructuredProfile(DEFAULT_STRUCTURED_PROFILE);
+  }
+
+  return normalizeStructuredProfile(undefined);
+};
+
 export const useAppDataManager = () => {
   const [appData, setAppData] = useState<AppData | null>(null);
-  const [editorContent, setEditorContent] = useState<string>('');
+  const [editorStructuredContent, setEditorStructuredContent] = useState<StudentStructuredProfile>(() => normalizeStructuredProfile(DEFAULT_STRUCTURED_PROFILE));
   const [initialEditorContent, setInitialEditorContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [saveMessage, setSaveMessage] = useState<string>('');
@@ -49,7 +76,7 @@ export const useAppDataManager = () => {
           delete data.savedWorksheets; // Remove old top-level array
 
           data.profiles = data.profiles.map((p: any) => ({
-            ...p,
+            ...refreshDefaultProfile(p),
             savedWorksheets: p.savedWorksheets || [],
           }));
 
@@ -63,7 +90,7 @@ export const useAppDataManager = () => {
           // For data already in the new format, just ensure profiles have the array
           if (data.profiles) {
             data.profiles = data.profiles.map((p: any) => ({
-              ...p,
+              ...refreshDefaultProfile(p),
               savedWorksheets: p.savedWorksheets || [],
             }));
           }
@@ -89,8 +116,8 @@ export const useAppDataManager = () => {
       localStorage.setItem(APP_DATA_STORAGE_KEY, JSON.stringify(appData));
       const activeProfile = appData.profiles.find(p => p.id === appData.activeProfileId);
       if (activeProfile) {
-        setEditorContent(activeProfile.content);
-        setInitialEditorContent(activeProfile.content);
+        setEditorStructuredContent(getStructuredContentForEditor(activeProfile));
+        setInitialEditorContent(activeProfile.content || CHILD_PROFILE);
       }
     }
   }, [appData]);
@@ -111,23 +138,28 @@ export const useAppDataManager = () => {
 
   const updateActiveProfile = useCallback(() => {
     if (!appData?.activeProfileId) return;
+    const serializedContent = serializeStructuredProfile(editorStructuredContent);
     setAppData(prev => {
       if (!prev) return null;
       const updatedProfiles = prev.profiles.map(p =>
-        p.id === prev.activeProfileId ? { ...p, content: editorContent } : p
+        p.id === prev.activeProfileId
+          ? { ...p, content: serializedContent, structuredContent: editorStructuredContent }
+          : p
       );
       return { ...prev, profiles: updatedProfiles };
     });
-    setInitialEditorContent(editorContent);
+    setInitialEditorContent(serializedContent);
     showSaveMessage('Perfil actualizado con éxito.');
-  }, [editorContent, appData]);
+  }, [editorStructuredContent, appData]);
 
   const saveNewProfile = useCallback((name: string) => {
     if (!name.trim() || !appData) return;
+    const serializedContent = serializeStructuredProfile(editorStructuredContent);
     const newProfile: Profile = {
       id: `profile_${Date.now()}`,
       name: name.trim(),
-      content: editorContent,
+      content: serializedContent,
+      structuredContent: editorStructuredContent,
       showPictogramInstructions: true,
       savedWorksheets: [],
     };
@@ -137,7 +169,7 @@ export const useAppDataManager = () => {
         return { ...prev, profiles: newProfiles, activeProfileId: newProfile.id };
     });
     showSaveMessage('Nuevo perfil guardado.');
-  }, [editorContent, appData]);
+  }, [editorStructuredContent, appData]);
   
   const deleteProfile = useCallback((idToDelete: string) => {
     if (!appData || appData.profiles.length <= 1) {
@@ -156,7 +188,7 @@ export const useAppDataManager = () => {
 
   const restoreDefault = useCallback(() => {
     if (window.confirm('¿Estás seguro de que quieres restaurar el contenido del perfil original? Perderás los cambios no guardados.')) {
-      setEditorContent(getDefaultProfile().content);
+      setEditorStructuredContent(normalizeStructuredProfile(DEFAULT_STRUCTURED_PROFILE));
     }
   }, []);
   
@@ -265,14 +297,14 @@ export const useAppDataManager = () => {
   }, []);
 
   const activeProfile = appData?.profiles.find(p => p.id === appData.activeProfileId) || null;
-  const hasChanges = editorContent !== initialEditorContent;
+  const hasChanges = serializeStructuredProfile(editorStructuredContent) !== initialEditorContent;
 
   return {
     isLoading,
     profiles: appData?.profiles || [],
     activeProfile,
-    editorContent,
-    setEditorContent,
+    editorStructuredContent,
+    setEditorStructuredContent,
     hasChanges,
     saveMessage,
     selectProfile,

@@ -3,8 +3,30 @@ export interface Profile {
   id: string;
   name: string;
   content: string;
+  structuredContent?: StudentStructuredProfile;
   showPictogramInstructions: boolean;
   savedWorksheets: SavedWorksheet[];
+}
+
+export interface StudentProfileBlock {
+  summary: string;
+}
+
+export interface StudentStructuredProfile {
+  general: {
+    age: string;
+    schoolStage: string;
+    diagnosis: string;
+    priorityGoals: string;
+    additionalComments: string;
+  };
+  blocks: {
+    comprehensionAccess: StudentProfileBlock;
+    responseModality: StudentProfileBlock;
+    cognitiveProcessing: StudentProfileBlock;
+    attentionSelfRegulation: StudentProfileBlock;
+    motivationInterests: StudentProfileBlock;
+  };
 }
 
 export type AIProvider = 'gemini' | 'ollama';
