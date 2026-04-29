@@ -81,8 +81,8 @@ const normalizeInstruction = (instruction: WorksheetSection['instruction'] | und
   }
 
   return {
-    // Preserve intermediate spaces while the user types in the editor.
-    text: instruction.text.toUpperCase(),
+    // Preserve the exact input while the user edits to avoid caret jumps in controlled inputs.
+    text: instruction.text,
     pictograms: instruction.pictograms?.map(picto => ({
       searchTerm: picto.searchTerm || picto.content || '',
       content: picto.content || picto.searchTerm || '',
