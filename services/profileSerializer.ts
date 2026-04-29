@@ -184,7 +184,7 @@ const toBullet = (label: string, value: string): string | null => {
 };
 
 export const serializeStructuredProfile = (structuredContent: StudentStructuredProfile): string => {
-  const lines: string[] = ['Perfil del Alumno:'];
+  const lines: string[] = [];
 
   const generalFields = [
     toBullet('Edad', structuredContent.general.age),

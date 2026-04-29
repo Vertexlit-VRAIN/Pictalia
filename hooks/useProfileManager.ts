@@ -21,29 +21,39 @@ const getInitialAppData = (): AppData => ({
   pictogramSettings: { ...DEFAULT_PICTOGRAM_SETTINGS },
 });
 
-const refreshDefaultProfile = (profile: Profile): Profile => {
-  if (profile.id !== DEFAULT_PROFILE_ID) {
-    return profile;
+const cloneStructuredContent = (structuredContent: StudentStructuredProfile): StudentStructuredProfile =>
+  normalizeStructuredProfile(structuredContent);
+
+const getStructuredContentFromLegacyProfile = (profile: Profile): StudentStructuredProfile => {
+  if (profile.id === DEFAULT_PROFILE_ID || profile.content?.trim() === CHILD_PROFILE.trim()) {
+    return cloneStructuredContent(DEFAULT_STRUCTURED_PROFILE);
   }
 
-  const defaultProfile = getDefaultProfile();
+  const structuredProfile = normalizeStructuredProfile(undefined);
+  structuredProfile.general.additionalComments = profile.content || '';
+  return structuredProfile;
+};
+
+const normalizeLoadedProfile = (profile: Profile): Profile => {
+  const structuredContent = profile.structuredContent
+    ? cloneStructuredContent(profile.structuredContent)
+    : getStructuredContentFromLegacyProfile(profile);
+
   return {
     ...profile,
-    content: defaultProfile.content,
-    structuredContent: defaultProfile.structuredContent,
+    content: profile.content?.trim() ? profile.content : serializeStructuredProfile(structuredContent),
+    structuredContent,
+    showPictogramInstructions: profile.showPictogramInstructions ?? true,
+    savedWorksheets: profile.savedWorksheets || [],
   };
 };
 
 const getStructuredContentForEditor = (profile: Profile): StudentStructuredProfile => {
   if (profile.structuredContent) {
-    return normalizeStructuredProfile(profile.structuredContent);
+    return cloneStructuredContent(profile.structuredContent);
   }
 
-  if (profile.id === DEFAULT_PROFILE_ID || profile.content?.trim() === CHILD_PROFILE.trim()) {
-    return normalizeStructuredProfile(DEFAULT_STRUCTURED_PROFILE);
-  }
-
-  return normalizeStructuredProfile(undefined);
+  return getStructuredContentFromLegacyProfile(profile);
 };
 
 export const useAppDataManager = () => {
@@ -75,24 +85,24 @@ export const useAppDataManager = () => {
           const migratedWorksheets = data.savedWorksheets;
           delete data.savedWorksheets; // Remove old top-level array
 
-          data.profiles = data.profiles.map((p: any) => ({
-            ...refreshDefaultProfile(p),
-            savedWorksheets: p.savedWorksheets || [],
-          }));
+          data.profiles = data.profiles.map((p: any) => normalizeLoadedProfile(p as Profile));
 
           // Add migrated worksheets to the first profile as a fallback
           if (data.profiles.length > 0) {
             data.profiles[0].savedWorksheets.unshift(...migratedWorksheets);
+          }
+          if (!data.activeProfileId || !data.profiles.some((p: Profile) => p.id === data.activeProfileId)) {
+            data.activeProfileId = data.profiles[0]?.id || DEFAULT_PROFILE_ID;
           }
           setAppData(data);
 
         } else {
           // For data already in the new format, just ensure profiles have the array
           if (data.profiles) {
-            data.profiles = data.profiles.map((p: any) => ({
-              ...refreshDefaultProfile(p),
-              savedWorksheets: p.savedWorksheets || [],
-            }));
+            data.profiles = data.profiles.map((p: any) => normalizeLoadedProfile(p as Profile));
+          }
+          if (!data.activeProfileId || !data.profiles.some((p: Profile) => p.id === data.activeProfileId)) {
+            data.activeProfileId = data.profiles[0]?.id || DEFAULT_PROFILE_ID;
           }
           setAppData(data);
         }
@@ -139,11 +149,12 @@ export const useAppDataManager = () => {
   const updateActiveProfile = useCallback(() => {
     if (!appData?.activeProfileId) return;
     const serializedContent = serializeStructuredProfile(editorStructuredContent);
+    const persistedStructuredContent = cloneStructuredContent(editorStructuredContent);
     setAppData(prev => {
       if (!prev) return null;
       const updatedProfiles = prev.profiles.map(p =>
         p.id === prev.activeProfileId
-          ? { ...p, content: serializedContent, structuredContent: editorStructuredContent }
+          ? { ...p, content: serializedContent, structuredContent: persistedStructuredContent }
           : p
       );
       return { ...prev, profiles: updatedProfiles };
@@ -155,12 +166,13 @@ export const useAppDataManager = () => {
   const saveNewProfile = useCallback((name: string) => {
     if (!name.trim() || !appData) return;
     const serializedContent = serializeStructuredProfile(editorStructuredContent);
+    const persistedStructuredContent = cloneStructuredContent(editorStructuredContent);
     const newProfile: Profile = {
       id: `profile_${Date.now()}`,
       name: name.trim(),
       content: serializedContent,
-      structuredContent: editorStructuredContent,
-      showPictogramInstructions: true,
+      structuredContent: persistedStructuredContent,
+      showPictogramInstructions: appData.profiles.find(p => p.id === appData.activeProfileId)?.showPictogramInstructions ?? true,
       savedWorksheets: [],
     };
     setAppData(prev => {
