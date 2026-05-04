@@ -194,7 +194,7 @@ const renderTraceableGuide = (item: WorksheetItem, index: number, hidePicto?: bo
               stroke="none"
               fontSize="94"
               fontWeight={solidText ? '500' : '400'}
-              fontFamily="'Patrick Hand Local', 'Patrick Hand', cursive"
+              fontFamily="'Comic Sans MS', cursive, sans-serif"
               fontKerning="none"
               textRendering="geometricPrecision"
             >
