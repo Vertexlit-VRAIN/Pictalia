@@ -182,6 +182,21 @@ const ensureTraceableItem = (item: WorksheetItem | undefined, fallbackContent: s
   return { ...cloneItem(item), type: 'traceable_text', content: item.content || fallbackContent };
 };
 
+const dedupeCopiarItems = (model: WorksheetItem, copies: WorksheetItem[]): WorksheetItem[] => {
+  const seen = new Set<string>();
+  seen.add(normalizeText(model.content));
+
+  return copies.filter(item => {
+    const key = normalizeText(item.content);
+    if (!key || seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+};
+
 const normalizeRepasarExercise = (exercise: RepasarExercise | undefined, items: WorksheetItem[]): RepasarExercise => {
   const sourceItems = items.length > 0 ? items : (exercise?.prompts || []);
   const prompts = sourceItems.length > 0
@@ -259,22 +274,29 @@ const normalizeCopiarExercise = (exercise: CopiarExercise | undefined, items: Wo
   const isHydrated = items.length > 0;
 
   if (exercise?.model) {
+    const model = hydrateItem(ensureTraceableItem(exercise.model, 'A'), isHydrated ? items[0] : exercise.model);
+    const copies = exercise.copies?.length
+      ? exercise.copies.map((item, index) => hydrateItem(ensureTraceableItem(item, String.fromCharCode(65 + index)), isHydrated ? items[index + 1] : item))
+      : [hydrateItem(ensureTraceableItem(undefined, exercise.model.content || 'A'), isHydrated ? items[1] : undefined)];
+
     return {
       type: 'copiar',
-      model: hydrateItem(ensureTraceableItem(exercise.model, 'A'), isHydrated ? items[0] : exercise.model),
-      copies: exercise.copies?.length
-        ? exercise.copies.map((item, index) => hydrateItem(ensureTraceableItem(item, String.fromCharCode(65 + index)), isHydrated ? items[index + 1] : item))
-        : [hydrateItem(ensureTraceableItem(undefined, exercise.model.content || 'A'), isHydrated ? items[1] : undefined)],
+      model,
+      copies: dedupeCopiarItems(model, copies),
     };
   }
 
   const sourceItems = items.length > 0 ? items : [{ type: 'traceable_text', content: 'A' }];
   const [model, ...rest] = sourceItems;
+  const normalizedModel = hydrateItem(ensureTraceableItem(model, 'A'), model);
+  const normalizedCopies = (rest.length > 0 ? rest : [model]).map((item, index) =>
+    hydrateItem(ensureTraceableItem(item, String.fromCharCode(65 + index)), item)
+  );
 
   return {
     type: 'copiar',
-    model: hydrateItem(ensureTraceableItem(model, 'A'), model),
-    copies: (rest.length > 0 ? rest : [model]).map((item, index) => hydrateItem(ensureTraceableItem(item, String.fromCharCode(65 + index)), item)),
+    model: normalizedModel,
+    copies: dedupeCopiarItems(normalizedModel, normalizedCopies),
   };
 };
 

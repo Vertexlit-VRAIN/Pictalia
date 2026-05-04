@@ -73,6 +73,7 @@ REGLAS GENERALES:
 - Puedes repetir tipos si aporta valor pedagógico.
 - Evita una ficha demasiado corta o pobre en contenido.
 - Si incluyes "copiar" y también "repasar", coloca "copiar" después de "repasar".
+- En ejercicios de "copiar", cada palabra esperada debe ser distinta; no repitas contenidos entre "model" y "copies".
 - Usa castellano de España en todo el contenido.
 - Evita regionalismos de otros países (ej: "computadora", "carro", "manejar").
 - Usa términos habituales en España (ej: "ordenador", "coche", "conducir").
@@ -201,6 +202,7 @@ REGLAS:
 - Corrige contenido fuera de tema o demasiado genérico.
 - Si el tema no es lectoescritura, no uses letras o vocales sueltas.
 - Ajusta los ejercicios al perfil del alumno.
+- En ejercicios de "copiar", cada palabra esperada debe ser distinta; no repitas contenidos entre "model" y "copies".
 - ${instructionPrompt}
 - Devuelve solo JSON válido.
 

@@ -22,6 +22,7 @@ VALIDACIÓN INTERNA ANTES DE RESPONDER:
 - ¿exercise.type coincide exactamente con exerciseType?
 - ¿todo el contenido pertenece al tema?
 - ¿las actividades son adecuadas para el perfil?
+- si hay un ejercicio "copiar", ¿todas las palabras de model y copies son distintas entre sí?
 - ¿no hay texto fuera del JSON?
 `;
 
@@ -53,7 +54,7 @@ export const COPIAR_VARIANTS_EXAMPLE = `
 - copiar:
   - usar "model" como ejemplo visual de escritura
   - usar "copies" como palabras que el alumno debe copiar
-  - las palabras de "copies" pueden ser iguales o distintas según el objetivo pedagógico
+  - todas las palabras de "model" y "copies" deben ser distintas entre sí
   - usar vocabulario funcional del tema
   - generar entre 2 y 4 palabras en total entre model y copies cuando sea posible
 `;
