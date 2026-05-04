@@ -531,7 +531,7 @@ export const ProfileView: React.FC = () => {
                       type="text"
                       value={aiSettings.geminiModel}
                       onChange={(e) => updateAISettings({ geminiModel: e.target.value })}
-                      placeholder="gemini-2.5-flash"
+                      placeholder="gemini-3.1-flash-lite-preview"
                       className="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
                     />
                   </div>
