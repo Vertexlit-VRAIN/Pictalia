@@ -20,6 +20,7 @@ export interface PromptOptions {
   adaptationDescription?: string;
   adaptationTextContent?: string;
   hasImage?: boolean;
+  requestedExerciseCount?: number;
 }
 
 const buildInstructionPrompt = (showPictogramInstructions: boolean): string => {
@@ -59,12 +60,20 @@ Usa este texto como referencia para entender el contenido original.
 `;
 };
 
-const buildCommonRules = (instructionPrompt: string): string => `
+const buildExerciseCountRule = (requestedExerciseCount?: number): string =>
+  requestedExerciseCount && requestedExerciseCount > 0
+    ? `- El profesor ha pedido exactamente ${requestedExerciseCount} ejercicios en "sections": respeta esa cantidad.`
+    : '- Adapta el número de ejercicios al perfil del alumno; no fuerces una cantidad fija.';
+
+const buildCommonRules = (instructionPrompt: string, requestedExerciseCount?: number): string => `
 REGLAS GENERALES:
 - Devuelve solo JSON válido.
 - Usa solo estos tipos: repasar, unir, rodear, copiar.
 - Cada sección del JSON corresponde a un ejercicio.
-- Genera una ficha con al menos 4 ejercicios.
+- ${buildExerciseCountRule(requestedExerciseCount)}
+- Si no hay una cantidad exacta indicada por el profesor, prioriza la adaptación al perfil del alumno.
+- Si sí hay una cantidad exacta indicada por el profesor, esa cantidad prevalece sobre la adaptación libre del número de ejercicios.
+- En ausencia de cantidad exacta, genera al menos 4 ejercicios.
 - La ficha debe tener suficiente contenido para ser útil como material de trabajo.
 - Selecciona los tipos de ejercicio más adecuados según el perfil del alumno.
 - Adapta la dificultad, el número de elementos y el tipo de actividad al perfil.
@@ -109,7 +118,7 @@ INSTRUCCIONES:
 
 ${PEDAGOGOGICAL_BLOCK_SAFE(PEDAGOGICAL_PRIORITIES)}
 
-${buildCommonRules(instructionPrompt)}
+${buildCommonRules(instructionPrompt, options.requestedExerciseCount)}
 
 ${PROFILE_SELECTION_GUIDE}
 
@@ -142,7 +151,7 @@ ${pedagogicalContext || ''}
 
 ${PEDAGOGOGICAL_BLOCK_SAFE(PEDAGOGICAL_PRIORITIES)}
 
-${buildCommonRules(instructionPrompt)}
+${buildCommonRules(instructionPrompt, options.requestedExerciseCount)}
 
 ${PROFILE_SELECTION_GUIDE}
 
@@ -202,6 +211,7 @@ REGLAS:
 - Corrige contenido fuera de tema o demasiado genérico.
 - Si el tema no es lectoescritura, no uses letras o vocales sueltas.
 - Ajusta los ejercicios al perfil del alumno.
+- ${buildExerciseCountRule(options.requestedExerciseCount)}
 - En ejercicios de "copiar", cada palabra esperada debe ser distinta; no repitas contenidos entre "model" y "copies".
 - ${instructionPrompt}
 - Devuelve solo JSON válido.
@@ -220,6 +230,54 @@ ${INTERNAL_VALIDATION_CHECKLIST}
 
 SALIDA ORIGINAL:
 ${rawText}
+`;
+};
+
+export const buildExerciseCountRepairPrompt = (
+  jsonWorksheetContent: string,
+  requestedExerciseCount: number,
+  options: PromptOptions,
+  childProfile: string,
+  showPictogramInstructions: boolean
+): string => {
+  const instructionPrompt = buildInstructionPrompt(showPictogramInstructions);
+  const pedagogicalContext = buildPedagogicalContext(options);
+
+  return `
+TAREA:
+Corrige esta ficha porque tiene menos ejercicios de los solicitados.
+
+PERFIL DEL ALUMNO:
+${childProfile}
+
+${pedagogicalContext || ''}
+
+FICHA ACTUAL:
+${jsonWorksheetContent}
+
+REGLAS:
+- El profesor ha pedido exactamente ${requestedExerciseCount} ejercicios en "sections": respeta esa cantidad.
+- Conserva el tema, el nivel de dificultad y el estilo pedagógico de la ficha actual.
+- Mantén los ejercicios ya válidos y añade solo los necesarios para completar la cantidad pedida.
+- Usa solo estos tipos: repasar, unir, rodear, copiar.
+- Devuelve solo JSON válido.
+- ${instructionPrompt}
+
+${PEDAGOGOGICAL_BLOCK_SAFE(PEDAGOGICAL_PRIORITIES)}
+
+${CONTENT_CONSISTENCY_RULES}
+
+${EXERCISE_VARIANTS_FEW_SHOT}
+
+EJEMPLO DE JSON:
+${WORKSHEET_JSON_EXAMPLE}
+
+ESQUEMA:
+${WORKSHEET_JSON_SHAPE}
+
+${WORKSHEET_OUTPUT_RULES}
+
+${INTERNAL_VALIDATION_CHECKLIST}
 `;
 };
 

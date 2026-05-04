@@ -1,7 +1,13 @@
 import { APP_DATA_STORAGE_KEY, CHILD_PROFILE, DEFAULT_AI_SETTINGS } from '../constants';
 import type { Worksheet, Profile, AppData, SavedWorksheet, AISettings } from '../types';
 import { normalizeWorksheet } from './worksheetNormalizer';
-import { buildWorksheetPrompt, buildRefinementPrompt, buildSemanticRepairPrompt, buildJsonRepairPrompt } from './prompts/builder';
+import {
+  buildWorksheetPrompt,
+  buildRefinementPrompt,
+  buildSemanticRepairPrompt,
+  buildJsonRepairPrompt,
+  buildExerciseCountRepairPrompt,
+} from './prompts/builder';
 
 interface GenerateWorksheetOptions {
   topic?: string;
@@ -14,6 +20,12 @@ interface GenerateWorksheetOptions {
     data: string;
   };
 }
+
+const EXERCISE_COUNT_PATTERNS = [
+  /\b(\d{1,2})\s+(?:ejercicios?|actividades?|secciones?)\b/i,
+  /\b(?:con|de|tenga|tener|incluye?|incluya|quiero|necesito)\s+(\d{1,2})\s+(?:ejercicios?|actividades?|secciones?)\b/i,
+  /\b(\d{1,2})\s+(?:exercises?|activities?|sections?)\b/i,
+];
 
 const getAppData = (): AppData | null => {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -142,6 +154,30 @@ const getSemanticContext = (options: GenerateWorksheetOptions): string =>
     .join(' ')
     .toLowerCase();
 
+const extractRequestedExerciseCount = (options: GenerateWorksheetOptions): number | undefined => {
+  const textBlocks = [
+    options.topic,
+    options.goal,
+    options.extraDetails,
+    options.adaptationDescription,
+    options.adaptationTextContent,
+  ].filter(Boolean) as string[];
+
+  for (const text of textBlocks) {
+    for (const pattern of EXERCISE_COUNT_PATTERNS) {
+      const match = text.match(pattern);
+      if (!match) continue;
+
+      const count = Number.parseInt(match[1], 10);
+      if (Number.isFinite(count) && count > 0) {
+        return count;
+      }
+    }
+  }
+
+  return undefined;
+};
+
 const isLiteracyTopic = (context: string): boolean =>
   /\b(letra|letras|vocal|vocales|silaba|silabas|sílaba|sílabas|abecedario|fonema|fonemas|lectura|escritura|lectoescritura)\b/i.test(context);
 
@@ -167,9 +203,30 @@ const needsSemanticRepair = (worksheet: Worksheet, options: GenerateWorksheetOpt
   return singleLetterCount > 0 && singleLetterCount >= Math.ceil(repasarTokens.length / 2);
 };
 
+const needsExerciseCountRepair = (worksheet: Worksheet, requestedExerciseCount?: number): boolean =>
+  !!requestedExerciseCount && worksheet.sections.length < requestedExerciseCount;
+
 const repairSemanticMismatch = async (rawText: string, options: GenerateWorksheetOptions): Promise<Worksheet> => {
   const { content: childProfile, showPictogramInstructions } = getActiveProfileData();
   const repairPrompt = buildSemanticRepairPrompt(rawText, options, childProfile, showPictogramInstructions);
+
+  const repairedText = await runProviderPrompt(repairPrompt, options.adaptationImage);
+  return normalizeWorksheetPayload(parseJsonPayload(repairedText));
+};
+
+const repairExerciseCountMismatch = async (
+  worksheet: Worksheet,
+  options: GenerateWorksheetOptions,
+  requestedExerciseCount: number
+): Promise<Worksheet> => {
+  const { content: childProfile, showPictogramInstructions } = getActiveProfileData();
+  const repairPrompt = buildExerciseCountRepairPrompt(
+    JSON.stringify(worksheet, null, 2),
+    requestedExerciseCount,
+    options,
+    childProfile,
+    showPictogramInstructions
+  );
 
   const repairedText = await runProviderPrompt(repairPrompt, options.adaptationImage);
   return normalizeWorksheetPayload(parseJsonPayload(repairedText));
@@ -348,6 +405,7 @@ const runProviderPrompt = async (promptText: string, adaptationImage?: GenerateW
 
 export const generateWorksheet = async (options: GenerateWorksheetOptions): Promise<Worksheet> => {
   const { content: childProfile, showPictogramInstructions } = getActiveProfileData();
+  const requestedExerciseCount = extractRequestedExerciseCount(options);
 
   try {
     const promptText = buildWorksheetPrompt(
@@ -358,17 +416,25 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
         adaptationDescription: options.adaptationDescription,
         adaptationTextContent: options.adaptationTextContent,
         hasImage: !!options.adaptationImage,
+        requestedExerciseCount,
       },
       childProfile,
       showPictogramInstructions
     );
 
     const rawText = await runProviderPrompt(promptText, options.adaptationImage);
-    const worksheet = await parseWorksheetResponse(rawText);
+    let worksheet = await parseWorksheetResponse(rawText);
 
     if (needsSemanticRepair(worksheet, options)) {
       console.warn('La ficha generada no respeta el tema. Intentando corrección semántica automática.');
-      return await repairSemanticMismatch(rawText, options);
+      worksheet = await repairSemanticMismatch(rawText, {
+        ...options,
+      });
+    }
+
+    if (needsExerciseCountRepair(worksheet, requestedExerciseCount)) {
+      console.warn('La ficha generada tiene menos ejercicios de los solicitados. Intentando ampliación automática.');
+      worksheet = await repairExerciseCountMismatch(worksheet, options, requestedExerciseCount as number);
     }
 
     return worksheet;
