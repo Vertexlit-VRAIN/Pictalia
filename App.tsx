@@ -54,10 +54,10 @@ const LibraryView: React.FC = () => {
     setEditingWorksheet(null);
   };
   
-  const handleSaveChanges = () => {
+  const handleSaveChanges = (worksheetToSave: SavedWorksheet) => {
     if (editingWorksheet) {
-      updateWorksheet(editingWorksheet);
-      setSelectedWorksheet(editingWorksheet);
+      updateWorksheet(worksheetToSave);
+      setSelectedWorksheet(worksheetToSave);
       setIsEditing(false);
       setEditingWorksheet(null);
     }

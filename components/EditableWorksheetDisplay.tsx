@@ -1,15 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { produce } from 'immer';
-import type { ExerciseType, PictogramRenderMode, PictogramSearchResult, SavedWorksheet, WorksheetItem, WorksheetSection } from '../types';
+import type { ExerciseType, PictogramRenderMode, PictogramSearchResult, SavedWorksheet, WorksheetItem, WorksheetOperation, WorksheetSection } from '../types';
 import { searchPictograms } from '../services/pictogramService';
-import { normalizeWorksheet, normalizeWorksheetSection } from '../services/worksheetNormalizer';
+import { normalizeWorksheetSection } from '../services/worksheetNormalizer';
+import { describeWorksheetOperations, ensureWorksheetInternalIds } from '../services/worksheetOperations';
 import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, PlusIcon, MinusIcon, XIcon, SaveIcon } from './Icons';
 import { EXERCISE_TYPE_OPTIONS, getSectionItems, getExerciseTypeLabel } from './editorUtils';
 import { Pictogram, getAdaptiveSpelledBoxStyle } from './PictogramRenderer';
 
 type EditableWorksheetProps = {
   worksheet: SavedWorksheet;
-  onWorksheetChange: (newWorksheet: SavedWorksheet) => void;
+  onWorksheetChange: (operations: WorksheetOperation[], actionLabel?: string) => void;
+  highlightedSectionIds?: string[];
 };
 
 import { EditorTarget } from './editors/types';
@@ -147,9 +149,15 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+    return (
+  <div
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+    onClick={onClose}
+  >
+    <div
+      className="relative z-[101] max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-xl"
+      onClick={(e) => e.stopPropagation()}
+    >
         <h3 className="text-lg font-bold text-slate-900">{title}</h3>
         <p className="mt-1 text-sm text-slate-500">
           {helperText || 'Cambia el texto, la búsqueda visual y la presentación sin salir del editor.'}
@@ -258,14 +266,24 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <button onClick={onClose} className="inline-flex items-center gap-2 rounded-2xl bg-slate-200 px-4 py-2.5 font-semibold text-slate-700 hover:bg-slate-300">
-            <XIcon className="h-4 w-4" />
-            Cancelar
+        <div className="relative z-20 mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="relative z-20 flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-slate-200 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600 sm:w-auto sm:min-w-[120px]"
+          >
+            <XIcon className="h-4 w-4 pointer-events-none" />
+            <span className="pointer-events-none">Cancelar</span>
           </button>
-          <button onClick={handleSave} disabled={!displayedTerm.trim()} className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 font-semibold text-white hover:bg-slate-800 disabled:bg-slate-300">
-            <SaveIcon className="h-4 w-4" />
-            Guardar
+
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!displayedTerm.trim()}
+            className="relative z-20 flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto sm:min-w-[140px]"
+          >
+            <SaveIcon className="h-4 w-4 pointer-events-none" />
+            <span className="pointer-events-none">Guardar</span>
           </button>
         </div>
       </div>
@@ -389,7 +407,7 @@ export const EditorPictogramPreview: React.FC<{
   );
 };
 
-const getFallbackDisplayTerm = (item: WorksheetItem): string => item.searchTerm || item.content || '';
+const getFallbackDisplayTerm = (item?: WorksheetItem): string => item?.searchTerm || item?.content || '';
 
 const createImageItem = (content: string): WorksheetItem => ({
   type: 'image',
@@ -406,6 +424,12 @@ const createTraceableItem = (content: string): WorksheetItem => ({
   type: 'traceable_text',
   content,
 });
+
+const isWorksheetItem = (item: unknown): item is WorksheetItem =>
+  typeof item === 'object' &&
+  item !== null &&
+  !Array.isArray(item) &&
+  typeof (item as WorksheetItem).type === 'string';
 
 const cloneWorksheetItem = (item: WorksheetItem | undefined, fallbackContent: string): WorksheetItem => {
   if (!item) {
@@ -465,7 +489,11 @@ const removeIndexFromList = (indexes: number[], removedIndex: number): number[] 
     .filter(index => index !== removedIndex)
     .map(index => (index > removedIndex ? index - 1 : index));
 
-export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ worksheet, onWorksheetChange }) => {
+export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
+  worksheet,
+  onWorksheetChange,
+  highlightedSectionIds = [],
+}) => {
   const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<number[]>([]);
   const [sectionPendingDelete, setSectionPendingDelete] = useState<number | null>(null);
@@ -481,30 +509,55 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
   };
 
   const getSectionSummary = (section: WorksheetSection): string => {
-    const items = getSectionItems(section);
+    const items = getSectionItems(section).filter(isWorksheetItem);
     const firstLabel = items[0]?.content || section.instruction.text || 'Sin contenido';
     const countLabel = items.length === 1 ? '1 elemento' : `${items.length} elementos`;
     return `${countLabel} · ${firstLabel}`;
   };
 
-  const updateWorksheet = (recipe: (draft: SavedWorksheet) => void) => {
-    const nextWorksheet = produce(worksheet, draft => {
-      recipe(draft);
-      draft.sections.forEach(section => {
-        section.exercise = undefined;
-      });
-    });
-    onWorksheetChange(normalizeWorksheet(nextWorksheet));
+  const commitOperations = (operations: WorksheetOperation[], actionLabel?: string) => {
+    onWorksheetChange(operations, actionLabel || describeWorksheetOperations(operations));
   };
 
-  const handleTextChange = (path: (string | number)[], value: string) => {
-    updateWorksheet(draft => {
-      let current: any = draft;
-      path.slice(0, -1).forEach(segment => {
-        current = current[segment];
-      });
-      current[path[path.length - 1]] = value;
-    });
+  const updateWorksheetMetadata = (
+    recipe: (draft: SavedWorksheet) => void,
+    actionLabel = 'Edición de ficha'
+  ) => {
+    const nextWorksheet = produce(ensureWorksheetInternalIds(worksheet), recipe);
+    commitOperations([{
+      type: 'update_worksheet',
+      changes: {
+        title: nextWorksheet.title,
+        pictogramSearchTerm: nextWorksheet.pictogramSearchTerm,
+        selectedPictoUrl: nextWorksheet.selectedPictoUrl,
+        pictoOptions: nextWorksheet.pictoOptions,
+        pictogramRenderMode: nextWorksheet.pictogramRenderMode,
+        spelledLetterTerms: nextWorksheet.spelledLetterTerms,
+        spelledLetterUrls: nextWorksheet.spelledLetterUrls,
+      },
+    }], actionLabel);
+  };
+
+  const updateSectionByIndex = (
+    sectionIndex: number,
+    recipe: (draft: WorksheetSection) => void,
+    actionLabel = 'Edición de ejercicio'
+  ) => {
+    const sourceSection = worksheet.sections[sectionIndex];
+    if (!sourceSection?.internalId) return;
+
+    const nextSection = produce(sourceSection, recipe);
+    const normalizedSection = ensureWorksheetInternalIds({
+      title: worksheet.title,
+      pictogramSearchTerm: worksheet.pictogramSearchTerm,
+      sections: [normalizeWorksheetSection(nextSection)],
+    }).sections[0];
+
+    commitOperations([{
+      type: 'update_section',
+      sectionId: sourceSection.internalId,
+      section: normalizedSection,
+    }], actionLabel);
   };
 
   const applyGlobalPictoUpdate = (
@@ -540,7 +593,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
         }
       });
 
-      (section.items || []).forEach(item => {
+      (section.items || []).filter(isWorksheetItem).forEach(item => {
         if (item.type === 'image' && item.selectedPictoUrl === oldPictoUrl && (item.searchTerm === oldDisplayedTerm || item.content === oldDisplayedTerm)) {
           item.selectedPictoUrl = newPictoUrl;
           item.pictoOptions = newPictoOptions;
@@ -575,8 +628,8 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
   }) => {
     if (!editorTarget) return;
 
-    updateWorksheet(draft => {
-      if (editorTarget.type === 'main') {
+    if (editorTarget.type === 'main') {
+      updateWorksheetMetadata(draft => {
         const originalPictoUrl = draft.selectedPictoUrl || '';
         const originalDisplayedTerm = draft.pictogramSearchTerm || '';
 
@@ -590,15 +643,15 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
         if (applyToAll) {
           applyGlobalPictoUpdate(draft, originalPictoUrl, selectedUrl, pictoOptions, originalDisplayedTerm, displayedTerm, searchTerm, renderMode, spelledLetterTerms, spelledLetterUrls);
         }
-        return;
-      }
+      }, 'Edición de ficha');
+      setEditorTarget(null);
+      return;
+    }
 
-      if (editorTarget.type === 'instruction') {
-        const instructionPicto = draft.sections[editorTarget.sectionIndex].instruction.pictograms?.[editorTarget.pictoIndex];
+    if (editorTarget.type === 'instruction') {
+      updateSectionByIndex(editorTarget.sectionIndex, sectionDraft => {
+        const instructionPicto = sectionDraft.instruction.pictograms?.[editorTarget.pictoIndex];
         if (!instructionPicto) return;
-
-        const originalPictoUrl = instructionPicto.url || '';
-        const originalDisplayedTerm = instructionPicto.searchTerm || instructionPicto.content || '';
 
         instructionPicto.content = displayedTerm;
         instructionPicto.searchTerm = searchTerm;
@@ -606,104 +659,117 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
         instructionPicto.pictogramRenderMode = renderMode;
         instructionPicto.spelledLetterTerms = spelledLetterTerms;
         instructionPicto.spelledLetterUrls = spelledLetterUrls;
+      });
+      setEditorTarget(null);
+      return;
+    }
 
-        if (applyToAll) {
-          applyGlobalPictoUpdate(draft, originalPictoUrl, selectedUrl, pictoOptions, originalDisplayedTerm, displayedTerm, searchTerm, renderMode, spelledLetterTerms, spelledLetterUrls);
-        }
-        return;
-      }
+    updateSectionByIndex(editorTarget.sectionIndex, sectionDraft => {
+      const items = getSectionItems(sectionDraft).filter(isWorksheetItem);
+      const item = items[editorTarget.itemIndex];
 
-      const item = draft.sections[editorTarget.sectionIndex].items?.[editorTarget.itemIndex];
       if (!item || item.type === 'empty_box') return;
 
-      const originalPictoUrl = item.selectedPictoUrl || '';
-      const originalDisplayedTerm = item.searchTerm || item.content || '';
-
       item.content = displayedTerm;
-      item.searchTerm = searchTerm;
-      item.selectedPictoUrl = renderMode === 'spell' ? '' : selectedUrl;
-      item.pictoOptions = pictoOptions;
-      item.pictogramRenderMode = renderMode;
-      item.spelledLetterTerms = spelledLetterTerms;
-      item.spelledLetterUrls = spelledLetterUrls;
 
-      if (applyToAll) {
-        applyGlobalPictoUpdate(draft, originalPictoUrl, selectedUrl, pictoOptions, originalDisplayedTerm, displayedTerm, searchTerm, renderMode, spelledLetterTerms, spelledLetterUrls);
+      if (item.type === 'image') {
+        item.searchTerm = searchTerm;
+        item.selectedPictoUrl = renderMode === 'spell' ? '' : selectedUrl;
+        item.pictoOptions = pictoOptions;
+        item.pictogramRenderMode = renderMode;
+        item.spelledLetterTerms = spelledLetterTerms;
+        item.spelledLetterUrls = spelledLetterUrls;
       }
+
+      if (item.type === 'traceable_text') {
+        item.content = displayedTerm.toUpperCase();
+      }
+
+      sectionDraft.items = items;
     });
 
     setEditorTarget(null);
   };
 
   const handleExerciseTypeChange = (sectionIndex: number, exerciseType: ExerciseType) => {
-    updateWorksheet(draft => {
-      const currentSection = draft.sections[sectionIndex];
-      draft.sections[sectionIndex] = normalizeWorksheetSection({
-        ...currentSection,
-        exerciseType,
-        exercise: undefined,
-        items: undefined,
-        layout: undefined,
-        instruction: {
-          text: exerciseType.toUpperCase(),
-          pictograms: undefined,
-        },
-      });
+    const currentSection = worksheet.sections[sectionIndex];
+    if (!currentSection?.internalId) return;
+
+    const nextSection = normalizeWorksheetSection({
+      ...currentSection,
+      exerciseType,
+      exercise: undefined,
+      items: undefined,
+      layout: undefined,
+      instruction: {
+        text: exerciseType.toUpperCase(),
+        pictograms: undefined,
+      },
     });
+
+    commitOperations([{
+      type: 'update_section',
+      sectionId: currentSection.internalId,
+      section: ensureWorksheetInternalIds({
+        title: worksheet.title,
+        pictogramSearchTerm: worksheet.pictogramSearchTerm,
+        sections: [nextSection],
+      }).sections[0],
+    }], 'Cambio de tipo de ejercicio');
   };
 
   const handleAddSection = (exerciseType: ExerciseType) => {
-    updateWorksheet(draft => {
-      draft.sections.push(normalizeWorksheetSection({ exerciseType }));
-    });
+    commitOperations([{
+      type: 'create_section',
+      afterSectionId: worksheet.sections[worksheet.sections.length - 1]?.internalId,
+      section: normalizeWorksheetSection({ exerciseType }),
+    }], 'Creación de ejercicio');
   };
 
   const handleRemoveSection = (sectionIndex: number) => {
     if (worksheet.sections.length <= 1) return;
+    const sectionId = worksheet.sections[sectionIndex]?.internalId;
+    if (!sectionId) return;
 
-    updateWorksheet(draft => {
-      draft.sections.splice(sectionIndex, 1);
-    });
+    commitOperations([{ type: 'delete_section', sectionId }], 'Borrado de ejercicio');
     setCollapsedSections(current => removeIndexFromList(current, sectionIndex));
     setSectionPendingDelete(null);
   };
 
   const handleMoveSection = (sectionIndex: number, direction: -1 | 1) => {
     const targetIndex = sectionIndex + direction;
-    if (targetIndex < 0 || targetIndex >= worksheet.sections.length) return;
+    const sectionId = worksheet.sections[sectionIndex]?.internalId;
+    if (!sectionId || targetIndex < 0 || targetIndex >= worksheet.sections.length) return;
 
-    updateWorksheet(draft => {
-      moveItemInArray(draft.sections, sectionIndex, targetIndex);
-    });
+    commitOperations([{ type: 'move_section', sectionId, toIndex: targetIndex }], 'Reordenación de ejercicios');
     setCollapsedSections(current => moveIndexInList(current, sectionIndex, targetIndex));
   };
 
   const handleAddInstructionPicto = (sectionIndex: number) => {
-    updateWorksheet(draft => {
-      const pictograms = draft.sections[sectionIndex].instruction.pictograms || (draft.sections[sectionIndex].instruction.pictograms = []);
+    updateSectionByIndex(sectionIndex, sectionDraft => {
+      const pictograms = sectionDraft.instruction.pictograms || (sectionDraft.instruction.pictograms = []);
       pictograms.push(createInstructionPicto('nuevo'));
     });
   };
 
   const handleRemoveInstructionPicto = (sectionIndex: number, pictoIndex: number) => {
-    updateWorksheet(draft => {
-      const pictograms = draft.sections[sectionIndex].instruction.pictograms;
+    updateSectionByIndex(sectionIndex, sectionDraft => {
+      const pictograms = sectionDraft.instruction.pictograms;
       if (!pictograms || pictograms.length <= 1) return;
       pictograms.splice(pictoIndex, 1);
     });
   };
 
   const handleMoveInstructionPicto = (sectionIndex: number, pictoIndex: number, direction: -1 | 1) => {
-    updateWorksheet(draft => {
-      const pictograms = draft.sections[sectionIndex].instruction.pictograms;
+    updateSectionByIndex(sectionIndex, sectionDraft => {
+      const pictograms = sectionDraft.instruction.pictograms;
       if (!pictograms) return;
       moveItemInArray(pictograms, pictoIndex, pictoIndex + direction);
     });
   };
 
   const handleAddItem = (sectionIndex: number) => {
-    updateWorksheet(draft => {
-      const section = draft.sections[sectionIndex];
+    updateSectionByIndex(sectionIndex, section => {
       const items = section.items || (section.items = []);
       const exerciseType = section.exerciseType || 'rodear';
 
@@ -716,8 +782,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
       }
 
       if (exerciseType === 'copiar') {
-        const modelContent = items[0]?.content || 'A';
-        items.push(cloneWorksheetItem(items[0], modelContent));
+        items.push(createTraceableItem(`PALABRA ${items.length + 1}`));
         return;
       }
 
@@ -731,8 +796,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
   };
 
   const handleAddPictogramItem = (sectionIndex: number) => {
-    updateWorksheet(draft => {
-      const section = draft.sections[sectionIndex];
+    updateSectionByIndex(sectionIndex, section => {
       const items = section.items || (section.items = []);
       const exerciseType = section.exerciseType || 'rodear';
 
@@ -749,8 +813,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
   };
 
   const handleRemoveItem = (sectionIndex: number, itemIndex: number) => {
-    updateWorksheet(draft => {
-      const section = draft.sections[sectionIndex];
+    updateSectionByIndex(sectionIndex, section => {
       const items = section.items || [];
       const exerciseType = section.exerciseType || 'rodear';
 
@@ -763,16 +826,15 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
         return;
       }
 
-      const minimumItems = exerciseType === 'copiar' ? 2 : exerciseType === 'repasar' ? 1 : 2;
-      if (items.length <= minimumItems) return;
+      const minimumItems = exerciseType === 'copiar' ? 1 : exerciseType === 'repasar' ? 1 : 2;      if (items.length <= minimumItems) return;
       items.splice(itemIndex, 1);
     });
   };
 
   const handleMoveItem = (sectionIndex: number, itemIndex: number, direction: -1 | 1) => {
-    updateWorksheet(draft => {
-      const section = draft.sections[sectionIndex];
-      const items = section.items || [];
+    updateSectionByIndex(sectionIndex, section => {
+      const items = (section.items || []).filter(isWorksheetItem);
+      section.items = items;
       const exerciseType = section.exerciseType || 'rodear';
 
       if (exerciseType === 'unir') {
@@ -794,7 +856,11 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
   };
 
   const handleItemTextChange = (sectionIndex: number, itemIndex: number, value: string) => {
-    handleTextChange(['sections', sectionIndex, 'items', itemIndex, 'content'], value);
+    updateSectionByIndex(sectionIndex, section => {
+      const item = section.items?.[itemIndex];
+      if (!isWorksheetItem(item)) return;
+      item.content = section.exerciseType === 'copiar' ? value.toUpperCase() : value;
+    });
   };
 
   const currentEditorState = useMemo(() => {
@@ -831,7 +897,9 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
       };
     }
 
-    const item = worksheet.sections[editorTarget.sectionIndex].items?.[editorTarget.itemIndex];
+    const section = worksheet.sections[editorTarget.sectionIndex];
+    const item = section ? getSectionItems(section).filter(isWorksheetItem)[editorTarget.itemIndex] : undefined;
+
     if (!item || item.type === 'empty_box') return null;
 
     return {
@@ -945,7 +1013,9 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
             <input
               type="text"
               value={worksheet.title}
-              onChange={(e) => handleTextChange(['title'], e.target.value)}
+              onChange={(e) => updateWorksheetMetadata(draft => {
+                draft.title = e.target.value;
+              })}
               className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-2xl font-extrabold uppercase tracking-wider text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
             />
           </div>
@@ -953,11 +1023,21 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
 
         {worksheet.sections.map((section, sectionIndex) => {
           const exerciseType = section.exerciseType || 'rodear';
+          const isHighlighted = Boolean(
+            section.internalId && highlightedSectionIds.includes(section.internalId)
+          );
           const addLabel = EXERCISE_TYPE_OPTIONS.find(option => option.value === exerciseType)?.addLabel || 'Añadir elemento';
           const instructionPictograms = section.instruction.pictograms || [];
 
           return (
-            <div key={sectionIndex} className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+              <div
+                key={section.internalId || sectionIndex}
+                className={`rounded-[24px] border p-4 shadow-sm transition ${
+                  isHighlighted
+                    ? 'border-sky-500 bg-sky-50/40 ring-4 ring-sky-200'
+                    : 'border-slate-200 bg-white'
+                }`}
+              >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex-1 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
@@ -1022,7 +1102,9 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({ wor
                     <input
                       type="text"
                       value={section.instruction.text}
-                      onChange={(e) => handleTextChange(['sections', sectionIndex, 'instruction', 'text'], e.target.value)}
+                      onChange={(e) => updateSectionByIndex(sectionIndex, sectionDraft => {
+                        sectionDraft.instruction.text = e.target.value;
+                      })}
                       className="w-full rounded-2xl border border-slate-300 px-3 py-2 text-lg font-bold uppercase tracking-wide text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
                     />
                   </div>

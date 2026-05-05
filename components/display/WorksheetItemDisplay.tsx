@@ -207,7 +207,12 @@ const renderTraceableGuide = (item: WorksheetItem, index: number, hidePicto?: bo
   );
 };
 
-export const WorksheetItemDisplay: React.FC<{ item: WorksheetItem; index: number; hidePicto?: boolean; hideText?: boolean; solidText?: boolean }> = ({ item, index, hidePicto, hideText, solidText }) => {
+export const WorksheetItemDisplay: React.FC<{ item?: WorksheetItem; index: number; hidePicto?: boolean; hideText?: boolean; solidText?: boolean }> = ({ item, index, hidePicto, hideText, solidText }) => {
+  if (!item) {
+    console.warn('WorksheetItemDisplay recibió un item inválido o undefined.');
+    return null;
+  }
+
   switch (item.type) {
     case 'image':
       return <ImageItemCard item={item} index={index} hidePicto={hidePicto} hideText={hideText} />;

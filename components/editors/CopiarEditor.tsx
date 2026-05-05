@@ -16,19 +16,21 @@ export const CopiarEditor: React.FC<CommonEditorProps> = ({
   return (
     <div className="space-y-4">
       <div className="rounded-[20px] border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-        Cada bloque funciona como un modelo de copia independiente. Puedes añadir varios modelos con su pictograma y texto.
+        Cada bloque es una palabra que el alumno debe copiar. Las palabras se guardan dentro de <strong>copies</strong>, sin usar modelo.
       </div>
+
       {items.length > 0 && (
         <div className="space-y-4">
           {items.map((item, itemIndex) => (
-            <div key={`${sectionIndex}-copy-model-${itemIndex}`}>
+            <div key={`${sectionIndex}-copy-${itemIndex}`}>
               <WorksheetItemEditor
                 item={item}
                 section={section}
                 sectionIndex={sectionIndex}
                 itemIndex={itemIndex}
                 options={{
-                  description: 'Referencia visual completa para copiar.',
+                  title: `Palabra ${itemIndex + 1}`,
+                  description: 'Palabra en mayúsculas para copiar.',
                   fullWidth: true,
                 }}
                 handleMoveItem={handleMoveItem}

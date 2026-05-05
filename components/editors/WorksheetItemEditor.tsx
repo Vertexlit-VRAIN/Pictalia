@@ -24,6 +24,7 @@ interface WorksheetItemEditorProps {
     hideMoveButtons?: boolean;
     moveBackDisabled?: boolean;
     moveForwardDisabled?: boolean;
+    fullWidth?: boolean;
   };
   handleMoveItem: (sectionIndex: number, itemIndex: number, direction: -1 | 1) => void;
   handleRemoveItem: (sectionIndex: number, itemIndex: number) => void;
@@ -56,7 +57,7 @@ export const WorksheetItemEditor: React.FC<WorksheetItemEditorProps> = ({
   const disableRemove = exerciseType === 'unir'
     ? itemCount <= 4
     : exerciseType === 'copiar'
-      ? itemCount <= 2
+      ? itemCount <= 1
       : exerciseType === 'repasar'
         ? itemCount <= 1
         : itemCount <= 2;

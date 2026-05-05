@@ -1,12 +1,21 @@
 import { APP_DATA_STORAGE_KEY, CHILD_PROFILE, DEFAULT_AI_SETTINGS } from '../constants';
-import type { Worksheet, Profile, AppData, SavedWorksheet, AISettings } from '../types';
+import type { Worksheet, Profile, AppData, SavedWorksheet, AISettings, WorksheetOperationRequest } from '../types';
 import { normalizeWorksheet } from './worksheetNormalizer';
+import {
+  buildWorksheetEditingContext,
+  parseWorksheetOperationRequest,
+  validateOperationsAgainstInstruction,
+  validateOperationsForTargetSection,
+} from './worksheetOperations';
+
+
 import {
   buildWorksheetPrompt,
   buildRefinementPrompt,
   buildSemanticRepairPrompt,
   buildJsonRepairPrompt,
   buildExerciseCountRepairPrompt,
+  buildExerciseRefinementPrompt,
 } from './prompts/builder';
 
 interface GenerateWorksheetOptions {
@@ -232,7 +241,7 @@ const repairExerciseCountMismatch = async (
   return normalizeWorksheetPayload(parseJsonPayload(repairedText));
 };
 
-const repairJsonResponse = async (rawText: string, mode: 'worksheet' | 'refinement'): Promise<unknown> => {
+const repairJsonResponse = async (rawText: string, mode: 'worksheet' | 'refinement' | 'operations'): Promise<unknown> => {
   let errorMsg = 'unknown parsing error';
   try {
     JSON.parse(extractJsonObject(rawText));
@@ -260,6 +269,15 @@ const parseRefinementResponse = async (rawText: string): Promise<Partial<Workshe
   } catch (error) {
     console.warn('Fallo al parsear el refinado inicial. Intentando reparación automática.', error);
     return normalizeRefinementPayload(await repairJsonResponse(rawText, 'refinement'));
+  }
+};
+
+const parseOperationResponse = async (rawText: string): Promise<WorksheetOperationRequest> => {
+  try {
+    return parseWorksheetOperationRequest(parseJsonPayload(rawText));
+  } catch (error) {
+    console.warn('Fallo al parsear las operaciones iniciales. Intentando reparación automática.', error);
+    return parseWorksheetOperationRequest(await repairJsonResponse(rawText, 'operations'));
   }
 };
 
@@ -437,6 +455,11 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
       worksheet = await repairExerciseCountMismatch(worksheet, options, requestedExerciseCount as number);
     }
 
+    // Guardamos el contexto original para que esté disponible durante la edición
+    worksheet.originalTopic = options.adaptationDescription || options.topic;
+    worksheet.originalGoal = options.goal;
+    worksheet.originalExtraDetails = options.extraDetails || options.adaptationTextContent;
+
     return worksheet;
   } catch (error) {
     console.error('Error al generar la ficha:', error);
@@ -459,5 +482,45 @@ export const refineWorksheet = async (originalWorksheet: SavedWorksheet, instruc
   } catch (error) {
     console.error('Error al refinar la ficha:', error);
     throw new Error(error instanceof Error ? error.message : 'No se pudo refinar la ficha. Por favor, inténtalo de nuevo.');
+  }
+};
+
+export const refineExercise = async (
+  originalWorksheet: SavedWorksheet,
+  instruction: string,
+  targetSectionId?: string
+): Promise<WorksheetOperationRequest> => {
+  const { content: childProfile } = getActiveProfileData();
+  const { worksheetPayload, worksheetContextSummary, targetSectionContent } = buildWorksheetEditingContext(
+    originalWorksheet,
+    targetSectionId
+  );
+
+  const prompt = buildExerciseRefinementPrompt(
+    worksheetPayload,
+    instruction,
+    childProfile,
+    originalWorksheet.originalTopic,
+    originalWorksheet.originalGoal,
+    originalWorksheet.originalExtraDetails,
+    targetSectionId,
+    targetSectionContent,
+    worksheetContextSummary
+  );
+
+  try {
+    const rawText = await runProviderPrompt(prompt);
+    const response = await parseOperationResponse(rawText);
+    return {
+      operations: validateOperationsAgainstInstruction(
+        originalWorksheet,
+        validateOperationsForTargetSection(response.operations, targetSectionId),
+        instruction,
+        targetSectionId
+      ),
+    };
+  } catch (error) {
+    console.error('Error al refinar el ejercicio:', error);
+    throw new Error(error instanceof Error ? error.message : 'No se pudieron interpretar las operaciones de edición. Por favor, inténtalo de nuevo.');
   }
 };

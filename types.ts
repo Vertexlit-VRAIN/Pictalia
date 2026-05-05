@@ -55,7 +55,10 @@ export interface PictogramSearchResult {
 
 export type PictogramRenderMode = 'auto' | 'spell';
 
+export type WorksheetEntityId = string;
+
 export interface WorksheetItem {
+  internalId?: WorksheetEntityId;
   type: 'image' | 'text' | 'traceable_text' | 'empty_box';
   content: string;
   searchTerm?: string;
@@ -71,6 +74,7 @@ export type WorksheetLayout = 'row' | 'column' | 'true_false' | 'sentence_buildi
 export type ExerciseType = 'repasar' | 'unir' | 'rodear' | 'copiar';
 
 export interface WorksheetInstructionPicto {
+  internalId?: WorksheetEntityId;
   searchTerm: string;
   content: string;
   url?: string | null;
@@ -105,9 +109,9 @@ export interface RodearExercise {
   options: WorksheetItem[];
 }
 
+// TODO: Borrar model a futuro
 export interface CopiarExercise {
   type: 'copiar';
-  model: WorksheetItem;
   copies: WorksheetItem[];
 }
 
@@ -118,6 +122,7 @@ export type WorksheetExercise =
   | CopiarExercise;
 
 export interface WorksheetSection {
+  internalId?: WorksheetEntityId;
   instruction: WorksheetInstruction;
   exerciseType?: ExerciseType;
   exercise?: WorksheetExercise;
@@ -134,12 +139,24 @@ export interface Worksheet {
   spelledLetterTerms?: string[];
   spelledLetterUrls?: string[];
   sections: WorksheetSection[];
+  originalTopic?: string;
+  originalGoal?: string;
+  originalExtraDetails?: string;
 }
 
 export interface SavedWorksheet extends Worksheet {
   id: string;
   createdAt: string; // ISO string
   sourceDescription: string; // e.g., 'el número 5' or 'Ficha Adaptada de PDF'
+  editHistory?: PersistedWorksheetHistoryEntry[];
+  editHistoryIndex?: number;
+}
+
+export interface PersistedWorksheetHistoryEntry {
+  state: SavedWorksheet;
+  actionLabel: string;
+  timestamp: string;
+  operations: WorksheetOperation[];
 }
 
 export interface AppData {
@@ -147,4 +164,43 @@ export interface AppData {
   activeProfileId: string | null;
   aiSettings: AISettings;
   pictogramSettings: PictogramSettings;
+}
+
+export interface UpdateWorksheetOperation {
+  type: 'update_worksheet';
+  changes: Partial<Pick<Worksheet, 'title' | 'pictogramSearchTerm' | 'selectedPictoUrl' | 'pictoOptions' | 'pictogramRenderMode' | 'spelledLetterTerms' | 'spelledLetterUrls'>>;
+}
+
+export interface CreateSectionOperation {
+  type: 'create_section';
+  afterSectionId?: WorksheetEntityId;
+  section: Partial<WorksheetSection>;
+}
+
+export interface UpdateSectionOperation {
+  type: 'update_section';
+  sectionId: WorksheetEntityId;
+  section: Partial<WorksheetSection>;
+}
+
+export interface DeleteSectionOperation {
+  type: 'delete_section';
+  sectionId: WorksheetEntityId;
+}
+
+export interface MoveSectionOperation {
+  type: 'move_section';
+  sectionId: WorksheetEntityId;
+  toIndex: number;
+}
+
+export type WorksheetOperation =
+  | UpdateWorksheetOperation
+  | CreateSectionOperation
+  | UpdateSectionOperation
+  | DeleteSectionOperation
+  | MoveSectionOperation;
+
+export interface WorksheetOperationRequest {
+  operations: WorksheetOperation[];
 }

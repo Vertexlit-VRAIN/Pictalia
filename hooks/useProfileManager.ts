@@ -268,7 +268,15 @@ export const useAppDataManager = () => {
       const updatedProfiles = prev.profiles.map(p => {
         if (p.id === prev.activeProfileId) {
           const updatedWorksheets = p.savedWorksheets.map(ws =>
-            ws.id === worksheetToUpdate.id ? worksheetToUpdate : ws
+            ws.id === worksheetToUpdate.id
+              ? {
+                ...worksheetToUpdate,
+                editHistory: worksheetToUpdate.editHistory ?? ws.editHistory,
+                editHistoryIndex: typeof worksheetToUpdate.editHistoryIndex === 'number'
+                  ? worksheetToUpdate.editHistoryIndex
+                  : ws.editHistoryIndex,
+              }
+              : ws
           );
           return { ...p, savedWorksheets: updatedWorksheets };
         }

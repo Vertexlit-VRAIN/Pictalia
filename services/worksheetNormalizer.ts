@@ -42,14 +42,10 @@ const isExerciseType = (value: unknown): value is ExerciseType =>
   value === 'repasar' || value === 'unir' || value === 'rodear' || value === 'copiar';
 
 const toExerciseType = (value: unknown): ExerciseType | null => {
-  if (isExerciseType(value)) {
-    return value;
-  }
-
+  if (isExerciseType(value)) return value;
   if (typeof value === 'string' && LEGACY_EXERCISE_TYPE_MAP[value]) {
     return LEGACY_EXERCISE_TYPE_MAP[value];
   }
-
   return null;
 };
 
@@ -65,7 +61,9 @@ const getDefaultInstruction = (exerciseType: ExerciseType): WorksheetInstruction
 
 const hydrateItem = (base: WorksheetItem, hydrated?: WorksheetItem): WorksheetItem => {
   if (!hydrated) return base;
+
   const result = { ...base };
+  if (hydrated.internalId !== undefined) result.internalId = hydrated.internalId;
   if (hydrated.selectedPictoUrl !== undefined) result.selectedPictoUrl = hydrated.selectedPictoUrl;
   if (hydrated.pictoOptions !== undefined) result.pictoOptions = hydrated.pictoOptions;
   if (hydrated.searchTerm !== undefined) result.searchTerm = hydrated.searchTerm;
@@ -75,15 +73,18 @@ const hydrateItem = (base: WorksheetItem, hydrated?: WorksheetItem): WorksheetIt
   return result;
 };
 
-const normalizeInstruction = (instruction: WorksheetSection['instruction'] | undefined, exerciseType: ExerciseType): WorksheetInstruction => {
+const normalizeInstruction = (
+  instruction: WorksheetSection['instruction'] | undefined,
+  exerciseType: ExerciseType
+): WorksheetInstruction => {
   if (!instruction?.text?.trim()) {
     return getDefaultInstruction(exerciseType);
   }
 
   return {
-    // Preserve the exact input while the user edits to avoid caret jumps in controlled inputs.
     text: instruction.text,
     pictograms: instruction.pictograms?.map(picto => ({
+      internalId: picto.internalId,
       searchTerm: picto.searchTerm || picto.content || '',
       content: picto.content || picto.searchTerm || '',
       url: picto.url,
@@ -99,64 +100,43 @@ const inferExerciseTypeFromInstruction = (
   pictograms?: WorksheetInstruction['pictograms']
 ): ExerciseType | null => {
   const normalizedInstruction = normalizeText(instructionText);
-  const pictogramTerms = (pictograms || []).map(picto => normalizeText(picto.searchTerm || picto.content)).join(' ');
+  const pictogramTerms = (pictograms || [])
+    .map(picto => normalizeText(picto.searchTerm || picto.content))
+    .join(' ');
   const combined = `${normalizedInstruction} ${pictogramTerms}`.trim();
 
-  if (combined.includes('unir') || combined.includes('relacion') || combined.includes('flecha')) {
-    return 'unir';
-  }
-  if (combined.includes('repasa') || combined.includes('traza')) {
-    return 'repasar';
-  }
-  if (combined.includes('copia') || combined.includes('escribe')) {
-    return 'copiar';
-  }
-  if (combined.includes('rodea') || combined.includes('encierra') || combined.includes('senala') || combined.includes('marca')) {
-    return 'rodear';
-  }
+  if (combined.includes('unir') || combined.includes('relacion') || combined.includes('flecha')) return 'unir';
+  if (combined.includes('repasa') || combined.includes('traza')) return 'repasar';
+  if (combined.includes('copia') || combined.includes('escribe')) return 'copiar';
+  if (combined.includes('rodea') || combined.includes('encierra') || combined.includes('senala') || combined.includes('marca')) return 'rodear';
 
   return null;
 };
 
 const inferExerciseTypeFromLayout = (layout?: WorksheetLayout): ExerciseType | null => {
-  if (layout === 'matching_horizontal') {
-    return 'unir';
-  }
-  if (layout === 'column') {
-    return 'repasar';
-  }
-  if (layout === 'sentence_building' || layout === 'true_false') {
-    return 'copiar';
-  }
-  if (layout === 'row') {
-    return 'rodear';
-  }
+  if (layout === 'matching_horizontal') return 'unir';
+  if (layout === 'column') return 'repasar';
+  if (layout === 'sentence_building' || layout === 'true_false') return 'copiar';
+  if (layout === 'row') return 'rodear';
   return null;
 };
 
 const inferExerciseTypeFromItems = (items: WorksheetItem[]): ExerciseType => {
   const hasTraceable = items.some(item => item.type === 'traceable_text');
-  if (hasTraceable) {
-    return items.length > 1 ? 'copiar' : 'repasar';
-  }
+  if (hasTraceable) return items.length > 1 ? 'copiar' : 'repasar';
 
   const hasOnlyImages = items.length > 0 && items.every(item => item.type === 'image');
-  if (hasOnlyImages && items.length % 2 === 0 && items.length >= 4) {
-    return 'unir';
-  }
+  if (hasOnlyImages && items.length % 2 === 0 && items.length >= 4) return 'unir';
 
   return 'rodear';
 };
 
-const inferExerciseType = (section: Partial<WorksheetSection>): ExerciseType => {
-  return (
-    toExerciseType(section.exercise?.type) ||
-    toExerciseType(section.exerciseType) ||
-    inferExerciseTypeFromInstruction(section.instruction?.text || '', section.instruction?.pictograms) ||
-    inferExerciseTypeFromLayout(section.layout) ||
-    inferExerciseTypeFromItems(section.items || [])
-  );
-};
+const inferExerciseType = (section: Partial<WorksheetSection>): ExerciseType =>
+  toExerciseType(section.exercise?.type) ||
+  toExerciseType(section.exerciseType) ||
+  inferExerciseTypeFromInstruction(section.instruction?.text || '', section.instruction?.pictograms) ||
+  inferExerciseTypeFromLayout(section.layout) ||
+  inferExerciseTypeFromItems(section.items || []);
 
 const ensureImageItem = (item: WorksheetItem | undefined, fallbackContent: string): WorksheetItem => {
   if (!item) {
@@ -164,7 +144,11 @@ const ensureImageItem = (item: WorksheetItem | undefined, fallbackContent: strin
   }
 
   if (item.type === 'empty_box') {
-    return { type: 'image', content: item.content || fallbackContent, searchTerm: item.searchTerm || item.content || fallbackContent.toLowerCase() };
+    return {
+      type: 'image',
+      content: item.content || fallbackContent,
+      searchTerm: item.searchTerm || item.content || fallbackContent.toLowerCase(),
+    };
   }
 
   return cloneItem(item);
@@ -179,55 +163,58 @@ const ensureTraceableItem = (item: WorksheetItem | undefined, fallbackContent: s
     return cloneItem(item);
   }
 
-  return { ...cloneItem(item), type: 'traceable_text', content: item.content || fallbackContent };
+  return {
+    type: 'traceable_text',
+    content: (item.content || item.searchTerm || fallbackContent).toUpperCase(),
+  };
 };
 
-const dedupeCopiarItems = (model: WorksheetItem, copies: WorksheetItem[]): WorksheetItem[] => {
-  const seen = new Set<string>();
-  seen.add(normalizeText(model.content));
+const normalizeRepasarExercise = (
+  exercise: RepasarExercise | undefined,
+  items: WorksheetItem[]
+): RepasarExercise => {
+  const sourceItems = items.length > 0 ? items : exercise?.prompts || [];
 
-  return copies.filter(item => {
-    const key = normalizeText(item.content);
-    if (!key || seen.has(key)) {
-      return false;
-    }
-
-    seen.add(key);
-    return true;
-  });
-};
-
-const normalizeRepasarExercise = (exercise: RepasarExercise | undefined, items: WorksheetItem[]): RepasarExercise => {
-  const sourceItems = items.length > 0 ? items : (exercise?.prompts || []);
   const prompts = sourceItems.length > 0
     ? sourceItems.map((item, index) => {
-      const hydratedItem = items.length > 0 && exercise?.prompts?.length ? items[index] : undefined;
-      let base;
-      if (item.type === 'image') {
-        base = cloneItem(item);
-      } else {
-        base = ensureTraceableItem(item, item.content || 'A');
-      }
-      return hydrateItem(base, hydratedItem || item);
-    })
+        const hydratedItem = items.length > 0 && exercise?.prompts?.length ? items[index] : undefined;
+        const base = item.type === 'image'
+          ? cloneItem(item)
+          : ensureTraceableItem(item, item.content || 'A');
+
+        return hydrateItem(base, hydratedItem || item);
+      })
     : [{ type: 'traceable_text', content: 'A' }];
 
   return { type: 'repasar', prompts };
 };
 
-const normalizeUnirExercise = (exercise: UnirExercise | undefined, items: WorksheetItem[]): UnirExercise => {
+const normalizeUnirExercise = (
+  exercise: UnirExercise | undefined,
+  items: WorksheetItem[]
+): UnirExercise => {
   if (exercise?.pairs?.length) {
     const isHydrated = items.length === exercise.pairs.length * 2;
+
     return {
       type: 'unir',
       pairs: exercise.pairs.map((pair, index) => ({
-        left: hydrateItem(ensureImageItem(pair.left, `opcion ${index * 2 + 1}`), isHydrated ? items[index] : pair.left),
-        right: hydrateItem(ensureImageItem(pair.right, `opcion ${index * 2 + 2}`), isHydrated ? items[index + exercise.pairs.length] : pair.right),
+        left: hydrateItem(
+          ensureImageItem(pair.left, `opcion ${index * 2 + 1}`),
+          isHydrated ? items[index] : pair.left
+        ),
+        right: hydrateItem(
+          ensureImageItem(pair.right, `opcion ${index * 2 + 2}`),
+          isHydrated ? items[index + exercise.pairs.length] : pair.right
+        ),
       })),
     };
   }
 
-  const normalized = items.map((item, index) => hydrateItem(ensureImageItem(item, `opcion ${index + 1}`), item));
+  const normalized = items.map((item, index) =>
+    hydrateItem(ensureImageItem(item, `opcion ${index + 1}`), item)
+  );
+
   if (normalized.length % 2 !== 0) {
     normalized.pop();
   }
@@ -235,13 +222,14 @@ const normalizeUnirExercise = (exercise: UnirExercise | undefined, items: Worksh
   const usable = normalized.length >= 4
     ? normalized
     : [
-      { type: 'image', content: 'sol', searchTerm: 'sol' },
-      { type: 'image', content: 'luna', searchTerm: 'luna' },
-      { type: 'image', content: 'sol', searchTerm: 'sol' },
-      { type: 'image', content: 'luna', searchTerm: 'luna' },
-    ];
+        { type: 'image', content: 'sol', searchTerm: 'sol' },
+        { type: 'image', content: 'luna', searchTerm: 'luna' },
+        { type: 'image', content: 'sol', searchTerm: 'sol' },
+        { type: 'image', content: 'luna', searchTerm: 'luna' },
+      ];
 
   const midPoint = usable.length / 2;
+
   return {
     type: 'unir',
     pairs: usable.slice(0, midPoint).map((left, index) => ({
@@ -251,56 +239,80 @@ const normalizeUnirExercise = (exercise: UnirExercise | undefined, items: Worksh
   };
 };
 
-const normalizeRodearExercise = (exercise: RodearExercise | undefined, items: WorksheetItem[]): RodearExercise => {
+const normalizeRodearExercise = (
+  exercise: RodearExercise | undefined,
+  items: WorksheetItem[]
+): RodearExercise => {
   const sourceOptions = exercise?.options?.length ? exercise.options : items;
   const hasPrompt = !!exercise?.prompt;
   const isHydrated = items.length === sourceOptions.length + (hasPrompt ? 1 : 0);
 
   const options = sourceOptions.length > 0
-    ? sourceOptions.map((item, index) => hydrateItem(ensureImageItem(item, `opcion ${index + 1}`), isHydrated ? items[index + (hasPrompt ? 1 : 0)] : item))
+    ? sourceOptions.map((item, index) =>
+        hydrateItem(
+          ensureImageItem(item, `opcion ${index + 1}`),
+          isHydrated ? items[index + (hasPrompt ? 1 : 0)] : item
+        )
+      )
     : [
-      { type: 'image', content: 'opcion 1', searchTerm: 'opcion' },
-      { type: 'image', content: 'opcion 2', searchTerm: 'opcion' },
-    ];
+        { type: 'image', content: 'opcion 1', searchTerm: 'opcion' },
+        { type: 'image', content: 'opcion 2', searchTerm: 'opcion' },
+      ];
 
   return {
     type: 'rodear',
-    prompt: exercise?.prompt ? hydrateItem(cloneItem(exercise.prompt), isHydrated ? items[0] : exercise.prompt) : null,
+    prompt: exercise?.prompt
+      ? hydrateItem(cloneItem(exercise.prompt), isHydrated ? items[0] : exercise.prompt)
+      : null,
     options,
   };
 };
 
-const normalizeCopiarExercise = (exercise: CopiarExercise | undefined, items: WorksheetItem[]): CopiarExercise => {
-  const isHydrated = items.length > 0;
+const normalizeCopiarExercise = (
+  exercise: CopiarExercise | undefined,
+  items: WorksheetItem[]
+): CopiarExercise => {
+  const legacyModelItems = exercise?.model
+    ? Array.isArray(exercise.model)
+      ? exercise.model
+      : [exercise.model]
+    : [];
 
-  if (exercise?.model) {
-    const model = hydrateItem(ensureTraceableItem(exercise.model, 'A'), isHydrated ? items[0] : exercise.model);
-    const copies = exercise.copies?.length
-      ? exercise.copies.map((item, index) => hydrateItem(ensureTraceableItem(item, String.fromCharCode(65 + index)), isHydrated ? items[index + 1] : item))
-      : [hydrateItem(ensureTraceableItem(undefined, exercise.model.content || 'A'), isHydrated ? items[1] : undefined)];
+  const sourceItems = [
+    ...legacyModelItems,
+    ...(exercise?.copies || []),
+    ...(legacyModelItems.length === 0 && !exercise?.copies?.length ? items : []),
+  ].filter(Boolean);
 
-    return {
-      type: 'copiar',
-      model,
-      copies: dedupeCopiarItems(model, copies),
-    };
-  }
+  const copies = (sourceItems.length > 0
+    ? sourceItems
+    : [{ type: 'traceable_text', content: 'PALABRA' } as WorksheetItem]
+  )
+    .map((item, index) => {
+      const content = item.content || item.searchTerm || `PALABRA ${index + 1}`;
 
-  const sourceItems = items.length > 0 ? items : [{ type: 'traceable_text', content: 'A' }];
-  const [model, ...rest] = sourceItems;
-  const normalizedModel = hydrateItem(ensureTraceableItem(model, 'A'), model);
-  const normalizedCopies = (rest.length > 0 ? rest : [model]).map((item, index) =>
-    hydrateItem(ensureTraceableItem(item, String.fromCharCode(65 + index)), item)
-  );
+      return {
+        type: 'traceable_text' as const,
+        content: content.toUpperCase(),
+      };
+    })
+    .filter((item, index, array) =>
+      item.content.trim() &&
+      array.findIndex(other => normalizeText(other.content) === normalizeText(item.content)) === index
+    );
 
   return {
     type: 'copiar',
-    model: normalizedModel,
-    copies: dedupeCopiarItems(normalizedModel, normalizedCopies),
+    copies: copies.length > 0
+      ? copies
+      : [{ type: 'traceable_text', content: 'PALABRA' }],
   };
 };
 
-const normalizeExercise = (section: Partial<WorksheetSection>, exerciseType: ExerciseType): WorksheetExercise => {
+const normalizeExercise = (
+  section: Partial<WorksheetSection>,
+  exerciseType: ExerciseType
+): WorksheetExercise => {
   const items = section.items || [];
 
   switch (exerciseType) {
@@ -331,7 +343,7 @@ export const getFlattenedItemsFromExercise = (exercise: WorksheetExercise): Work
         ...exercise.options.map(cloneItem),
       ];
     case 'copiar':
-      return [cloneItem(exercise.model), ...exercise.copies.map(cloneItem)];
+      return exercise.copies.map(cloneItem);
   }
 };
 
@@ -353,6 +365,7 @@ export const normalizeWorksheetSection = (section: Partial<WorksheetSection>): W
   const exercise = normalizeExercise(section, exerciseType);
 
   return {
+    internalId: section.internalId,
     instruction: normalizeInstruction(section.instruction, exerciseType),
     exerciseType,
     exercise,
@@ -369,4 +382,5 @@ export const normalizeWorksheet = (worksheet: Worksheet): Worksheet => ({
   sections: (worksheet.sections || []).map(section => normalizeWorksheetSection(section)),
 });
 
-export const getExerciseTypeLabel = (exerciseType: ExerciseType): string => EXERCISE_TYPE_LABELS[exerciseType];
+export const getExerciseTypeLabel = (exerciseType: ExerciseType): string =>
+  EXERCISE_TYPE_LABELS[exerciseType];
