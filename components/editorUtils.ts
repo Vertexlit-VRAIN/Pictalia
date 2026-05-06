@@ -14,6 +14,10 @@ const isWorksheetItem = (item: unknown): item is WorksheetItem =>
   typeof (item as WorksheetItem).type === 'string';
 
 export const getSectionItems = (section: WorksheetSection): WorksheetItem[] => {
+  if (section.items?.length) {
+    return section.items.filter(isWorksheetItem);
+  }
+
   if (section.exercise) {
     switch (section.exercise.type) {
       case 'repasar':

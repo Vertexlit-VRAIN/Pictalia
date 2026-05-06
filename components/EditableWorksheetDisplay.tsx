@@ -448,6 +448,21 @@ const cloneWorksheetItem = (item: WorksheetItem | undefined, fallbackContent: st
   };
 };
 
+const getMutableSectionItems = (section: WorksheetSection): WorksheetItem[] => {
+  const currentItems = (section.items || []).filter(isWorksheetItem);
+  if (currentItems.length > 0 || !section.exercise) {
+    section.items = currentItems;
+    return currentItems;
+  }
+
+  const flattenedItems = getSectionItems(section)
+    .filter(isWorksheetItem)
+    .map((item, index) => cloneWorksheetItem(item, item.content || `ITEM ${index + 1}`));
+
+  section.items = flattenedItems;
+  return flattenedItems;
+};
+
 const createInstructionPicto = (content: string) => ({
   content,
   searchTerm: content.toLowerCase(),
@@ -547,10 +562,16 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
     if (!sourceSection?.internalId) return;
 
     const nextSection = produce(sourceSection, recipe);
+    const sectionForNormalization = {
+      ...nextSection,
+      // The editor mutates the flattened items array; rebuild exercise from it
+      // so manual changes are not overwritten by a stale exercise payload.
+      exercise: undefined,
+    };
     const normalizedSection = ensureWorksheetInternalIds({
       title: worksheet.title,
       pictogramSearchTerm: worksheet.pictogramSearchTerm,
-      sections: [normalizeWorksheetSection(nextSection)],
+      sections: [normalizeWorksheetSection(sectionForNormalization)],
     }).sections[0];
 
     commitOperations([{
@@ -665,7 +686,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
     }
 
     updateSectionByIndex(editorTarget.sectionIndex, sectionDraft => {
-      const items = getSectionItems(sectionDraft).filter(isWorksheetItem);
+      const items = getMutableSectionItems(sectionDraft);
       const item = items[editorTarget.itemIndex];
 
       if (!item || item.type === 'empty_box') return;
@@ -683,6 +704,12 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
 
       if (item.type === 'traceable_text') {
         item.content = displayedTerm.toUpperCase();
+        item.searchTerm = searchTerm;
+        item.selectedPictoUrl = renderMode === 'spell' ? '' : selectedUrl;
+        item.pictoOptions = pictoOptions;
+        item.pictogramRenderMode = renderMode;
+        item.spelledLetterTerms = spelledLetterTerms;
+        item.spelledLetterUrls = spelledLetterUrls;
       }
 
       sectionDraft.items = items;
@@ -770,7 +797,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
 
   const handleAddItem = (sectionIndex: number) => {
     updateSectionByIndex(sectionIndex, section => {
-      const items = section.items || (section.items = []);
+      const items = getMutableSectionItems(section);
       const exerciseType = section.exerciseType || 'rodear';
 
       if (exerciseType === 'unir') {
@@ -797,7 +824,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
 
   const handleAddPictogramItem = (sectionIndex: number) => {
     updateSectionByIndex(sectionIndex, section => {
-      const items = section.items || (section.items = []);
+      const items = getMutableSectionItems(section);
       const exerciseType = section.exerciseType || 'rodear';
 
       if (exerciseType === 'unir') {
@@ -814,7 +841,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
 
   const handleRemoveItem = (sectionIndex: number, itemIndex: number) => {
     updateSectionByIndex(sectionIndex, section => {
-      const items = section.items || [];
+      const items = getMutableSectionItems(section);
       const exerciseType = section.exerciseType || 'rodear';
 
       if (exerciseType === 'unir') {
@@ -833,8 +860,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
 
   const handleMoveItem = (sectionIndex: number, itemIndex: number, direction: -1 | 1) => {
     updateSectionByIndex(sectionIndex, section => {
-      const items = (section.items || []).filter(isWorksheetItem);
-      section.items = items;
+      const items = getMutableSectionItems(section);
       const exerciseType = section.exerciseType || 'rodear';
 
       if (exerciseType === 'unir') {
@@ -857,9 +883,11 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
 
   const handleItemTextChange = (sectionIndex: number, itemIndex: number, value: string) => {
     updateSectionByIndex(sectionIndex, section => {
-      const item = section.items?.[itemIndex];
+      const items = getMutableSectionItems(section);
+      const item = items[itemIndex];
       if (!isWorksheetItem(item)) return;
       item.content = section.exerciseType === 'copiar' ? value.toUpperCase() : value;
+      section.items = items;
     });
   };
 

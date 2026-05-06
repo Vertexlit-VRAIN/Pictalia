@@ -51,6 +51,19 @@ const toExerciseType = (value: unknown): ExerciseType | null => {
 
 const cloneItem = (item: WorksheetItem): WorksheetItem => ({ ...item });
 
+const withPictogramFields = (
+  item: WorksheetItem,
+  overrides: Partial<WorksheetItem>
+): WorksheetItem => ({
+  ...overrides,
+  searchTerm: overrides.searchTerm ?? item.searchTerm,
+  selectedPictoUrl: overrides.selectedPictoUrl ?? item.selectedPictoUrl,
+  pictoOptions: overrides.pictoOptions ?? item.pictoOptions,
+  pictogramRenderMode: overrides.pictogramRenderMode ?? item.pictogramRenderMode,
+  spelledLetterTerms: overrides.spelledLetterTerms ?? item.spelledLetterTerms,
+  spelledLetterUrls: overrides.spelledLetterUrls ?? item.spelledLetterUrls,
+});
+
 const getDefaultInstruction = (exerciseType: ExerciseType): WorksheetInstruction => ({
   text: EXERCISE_TYPE_LABELS[exerciseType],
   pictograms: EXERCISE_TYPE_TERMS[exerciseType].map(term => ({
@@ -144,11 +157,11 @@ const ensureImageItem = (item: WorksheetItem | undefined, fallbackContent: strin
   }
 
   if (item.type === 'empty_box') {
-    return {
+    return withPictogramFields(item, {
       type: 'image',
       content: item.content || fallbackContent,
       searchTerm: item.searchTerm || item.content || fallbackContent.toLowerCase(),
-    };
+    });
   }
 
   return cloneItem(item);
@@ -163,10 +176,10 @@ const ensureTraceableItem = (item: WorksheetItem | undefined, fallbackContent: s
     return cloneItem(item);
   }
 
-  return {
+  return withPictogramFields(item, {
     type: 'traceable_text',
     content: (item.content || item.searchTerm || fallbackContent).toUpperCase(),
-  };
+  });
 };
 
 const normalizeRepasarExercise = (
@@ -288,14 +301,17 @@ const normalizeCopiarExercise = (
     ? sourceItems
     : [{ type: 'traceable_text', content: 'PALABRA' } as WorksheetItem]
   )
-    .map((item, index) => {
-      const content = item.content || item.searchTerm || `PALABRA ${index + 1}`;
-
-      return {
-        type: 'traceable_text' as const,
-        content: content.toUpperCase(),
-      };
-    })
+    .map((item, index) =>
+      hydrateItem(
+        ensureTraceableItem(item, `PALABRA ${index + 1}`),
+        item
+      )
+    )
+    .map((item, index) => ({
+      ...item,
+      type: 'traceable_text' as const,
+      content: (item.content || item.searchTerm || `PALABRA ${index + 1}`).toUpperCase(),
+    }))
     .filter((item, index, array) =>
       item.content.trim() &&
       array.findIndex(other => normalizeText(other.content) === normalizeText(item.content)) === index

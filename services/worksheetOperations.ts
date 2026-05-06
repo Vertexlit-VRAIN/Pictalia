@@ -243,8 +243,10 @@ const normalizeIncomingSection = (
   section: Partial<WorksheetSection>,
   existingSectionId?: WorksheetEntityId
 ): WorksheetSection => {
-  const sanitizedSection = sanitizeSectionForAI(section);
-  const normalizedSection = normalizeWorksheetSection(sanitizedSection);
+  // Local editor operations already provide a valid worksheet section shape and may
+  // include pictogram metadata that sanitizeSectionForAI intentionally strips for
+  // AI prompts. Normalize the incoming section directly so those fields persist.
+  const normalizedSection = normalizeWorksheetSection(section);
 
   return ensureWorksheetInternalIds({
     title: '',

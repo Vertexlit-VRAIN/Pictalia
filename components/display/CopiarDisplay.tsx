@@ -9,8 +9,8 @@ export const CopiarDisplay: React.FC<{ exercise: Extract<WorksheetExercise, { ty
     <div className="flex w-full flex-col items-center gap-6">
       {copies.map((item, index) => (
         <div key={index} className="flex w-full flex-col items-center gap-3">
-          <WorksheetItemDisplay item={item} index={index} solidText={true} />
-          <WorksheetItemDisplay item={item} index={index + 100} hidePicto={true} hideText={true} />
+          <WorksheetItemDisplay item={item} index={index} solidText={true} showMidline={true} />
+          <WorksheetItemDisplay item={item} index={index + 100} hidePicto={true} hideText={true} showMidline={true} />
         </div>
       ))}
     </div>
