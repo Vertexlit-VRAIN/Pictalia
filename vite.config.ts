@@ -32,7 +32,6 @@ const createAiDebugPlugin = (): Plugin => ({
         const payload = await readJsonBody(req);
         const promptText = String(payload?.promptText || '');
         const settings = payload?.settings || {};
-        const adaptationImage = payload?.adaptationImage;
         const provider = settings.provider === 'ollama' ? 'ollama' : 'gemini';
 
         const requestSummary = {
@@ -41,9 +40,6 @@ const createAiDebugPlugin = (): Plugin => ({
           geminiApiKey: maskApiKey(settings.geminiApiKey || ''),
           ollamaBaseUrl: settings.ollamaBaseUrl,
           ollamaModel: settings.ollamaModel,
-          hasImage: Boolean(adaptationImage?.data),
-          imageMimeType: adaptationImage?.mimeType || null,
-          imageBytes: adaptationImage?.data ? Math.round((adaptationImage.data.length * 3) / 4) : 0,
         };
 
         console.log('\n[AI DEBUG] Request settings');
@@ -67,7 +63,6 @@ const createAiDebugPlugin = (): Plugin => ({
               messages: [{
                 role: 'user',
                 content: promptText,
-                images: adaptationImage?.data ? [adaptationImage.data] : undefined,
               }],
             }),
           });
@@ -94,21 +89,9 @@ const createAiDebugPlugin = (): Plugin => ({
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                contents: adaptationImage?.data
-                  ? [{
-                      parts: [
-                        { text: promptText },
-                        {
-                          inline_data: {
-                            mime_type: adaptationImage.mimeType,
-                            data: adaptationImage.data,
-                          },
-                        },
-                      ],
-                    }]
-                  : [{
-                      parts: [{ text: promptText }],
-                    }],
+                contents: [{
+                  parts: [{ text: promptText }],
+                }],
                 generationConfig: {
                   responseMimeType: 'application/json',
                   temperature: 0.4,

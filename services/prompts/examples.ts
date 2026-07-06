@@ -7,15 +7,6 @@ GUÍA DE SELECCIÓN SEGÚN PERFIL:
 - Si el alumno tiene más competencia, combina más variedad o mayor complejidad.
 `;
 
-export const IMAGE_ADAPTATION_GUIDE = `
-ADAPTACIÓN DESDE IMAGEN O PDF:
-- Identifica el concepto principal de la ficha original.
-- No copies literalmente los ejercicios; crea una versión más accesible.
-- Conserva la intención pedagógica.
-- Transforma contenido textual en actividades visuales cuando sea posible.
-- Usa vocabulario fiel al contenido detectado.
-`;
-
 export const WORKSHEET_INTERNAL_VALIDATION_CHECKLIST = `
 VALIDACIÓN INTERNA:
 - ¿El JSON es válido?
@@ -23,7 +14,7 @@ VALIDACIÓN INTERNA:
 - ¿Cada exercise.type coincide con exerciseType?
 - ¿Todo el contenido pertenece al tema?
 - ¿Las actividades son adecuadas para el perfil?
-- Si hay "copiar", ¿usa solo copies y no usa model?
+- Si hay "copiar", ¿usa solo copies?
 - ¿No hay texto fuera del JSON?
 `;
 
@@ -33,7 +24,7 @@ VALIDACIÓN INTERNA:
 - ¿Cada exercise.type coincide con exerciseType?
 - ¿Todo el contenido modificado sigue perteneciendo al tema?
 - ¿Las actividades siguen siendo adecuadas para el perfil?
-- Si hay "copiar", ¿usa solo copies y no usa model?
+- Si hay "copiar", ¿usa solo copies?
 - ¿No hay texto fuera del JSON?
 `;
 
@@ -47,6 +38,6 @@ VALIDACIÓN INTERNA:
 - ¿Las secciones modificadas mantienen exerciseType/exercise.type coherentes?
 - ¿El contenido nuevo o modificado sigue perteneciendo al tema?
 - ¿Las actividades nuevas o modificadas siguen siendo adecuadas para el perfil?
-- Si hay "copiar", ¿usa solo copies y no usa model?
+- Si hay "copiar", ¿usa solo copies?
 - ¿No hay texto fuera del JSON?
 `;

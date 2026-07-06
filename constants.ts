@@ -1,5 +1,4 @@
 export const APP_DATA_STORAGE_KEY = 'adaptatorAppData';
-export const LEGACY_GEMINI_API_KEY_STORAGE_KEY = 'gemini_api_key';
 
 export const DEFAULT_AI_SETTINGS = {
   provider: 'gemini',

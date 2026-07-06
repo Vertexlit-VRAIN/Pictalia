@@ -2,15 +2,6 @@ import { useState, useEffect } from 'react';
 
 const isLibraryLoaded = (lib: string): boolean => {
   const windowObject = window as any;
-
-  if (lib === 'pdfjsLib') {
-    return Boolean(
-      windowObject.pdfjsLib ||
-      windowObject['pdfjs-dist/build/pdf'] ||
-      windowObject.pdfjsViewer
-    );
-  }
-
   return Boolean(windowObject[lib]);
 };
 

@@ -1,13 +1,15 @@
 import React from 'react';
-import { BrainCircuitIcon, FileTextIcon, FolderOpenIcon, ScanTextIcon, SlidersHorizontalIcon } from './Icons';
+import { BrainCircuitIcon, FileTextIcon, FolderOpenIcon, SlidersHorizontalIcon } from './Icons';
+
+type HeaderView = 'generate' | 'profile' | 'library';
 
 interface HeaderProps {
-  activeView: 'generate' | 'adapt' | 'profile' | 'library';
-  setActiveView: (view: 'generate' | 'adapt' | 'profile' | 'library') => void;
+  activeView: HeaderView;
+  setActiveView: (view: HeaderView) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ activeView, setActiveView }) => {
-  const getButtonClasses = (view: 'generate' | 'adapt' | 'profile' | 'library') => {
+  const getButtonClasses = (view: HeaderView) => {
     const baseClasses = "group flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600";
     if (activeView === view) {
       return `${baseClasses} bg-sky-100 text-sky-900 shadow-sm ring-1 ring-sky-200`;
@@ -28,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({ activeView, setActiveView }) => 
                 Adaptador TEA
               </h1>
               <p className="text-sm text-slate-600">
-                Genera, adapta y edita fichas visuales con una navegación más clara y usable.
+                Genera, organiza y edita fichas visuales con una navegación más clara y usable.
               </p>
             </div>
           </div>
@@ -40,14 +42,6 @@ export const Header: React.FC<HeaderProps> = ({ activeView, setActiveView }) => 
             >
               <FileTextIcon className="h-5 w-5" />
               <span>Generar Ficha</span>
-            </button>
-            <button
-              onClick={() => setActiveView('adapt')}
-              className={getButtonClasses('adapt')}
-              aria-current={activeView === 'adapt' ? 'page' : undefined}
-            >
-              <ScanTextIcon className="h-5 w-5" />
-              <span>Adaptar Ficha</span>
             </button>
             <button
               onClick={() => setActiveView('library')}

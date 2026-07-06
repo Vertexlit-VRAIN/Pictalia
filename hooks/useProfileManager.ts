@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CHILD_PROFILE, APP_DATA_STORAGE_KEY, DEFAULT_AI_SETTINGS, DEFAULT_PICTOGRAM_SETTINGS, LEGACY_GEMINI_API_KEY_STORAGE_KEY } from '../constants';
+import { APP_DATA_STORAGE_KEY, DEFAULT_AI_SETTINGS, DEFAULT_PICTOGRAM_SETTINGS } from '../constants';
 import type { Profile, AppData, Worksheet, SavedWorksheet, AISettings, PictogramSettings, StudentStructuredProfile } from '../types';
 import { DEFAULT_STRUCTURED_PROFILE, normalizeStructuredProfile, serializeStructuredProfile } from '../services/profileSerializer';
 
@@ -24,20 +24,10 @@ const getInitialAppData = (): AppData => ({
 const cloneStructuredContent = (structuredContent: StudentStructuredProfile): StudentStructuredProfile =>
   normalizeStructuredProfile(structuredContent);
 
-const getStructuredContentFromLegacyProfile = (profile: Profile): StudentStructuredProfile => {
-  if (profile.id === DEFAULT_PROFILE_ID || profile.content?.trim() === CHILD_PROFILE.trim()) {
-    return cloneStructuredContent(DEFAULT_STRUCTURED_PROFILE);
-  }
-
-  const structuredProfile = normalizeStructuredProfile(undefined);
-  structuredProfile.general.additionalComments = profile.content || '';
-  return structuredProfile;
-};
-
 const normalizeLoadedProfile = (profile: Profile): Profile => {
   const structuredContent = profile.structuredContent
     ? cloneStructuredContent(profile.structuredContent)
-    : getStructuredContentFromLegacyProfile(profile);
+    : cloneStructuredContent(DEFAULT_STRUCTURED_PROFILE);
 
   return {
     ...profile,
@@ -53,7 +43,7 @@ const getStructuredContentForEditor = (profile: Profile): StudentStructuredProfi
     return cloneStructuredContent(profile.structuredContent);
   }
 
-  return getStructuredContentFromLegacyProfile(profile);
+  return cloneStructuredContent(DEFAULT_STRUCTURED_PROFILE);
 };
 
 export const useAppDataManager = () => {
@@ -67,49 +57,26 @@ export const useAppDataManager = () => {
     try {
       const savedDataRaw = localStorage.getItem(APP_DATA_STORAGE_KEY);
       if (savedDataRaw) {
-        let data = JSON.parse(savedDataRaw);
-        const legacyGeminiApiKey = localStorage.getItem(LEGACY_GEMINI_API_KEY_STORAGE_KEY) || '';
+        const parsedData = JSON.parse(savedDataRaw) as Partial<AppData>;
+        const profiles = Array.isArray(parsedData.profiles) && parsedData.profiles.length > 0
+          ? parsedData.profiles.map(profile => normalizeLoadedProfile(profile as Profile))
+          : [getDefaultProfile()];
+        const activeProfileId = parsedData.activeProfileId && profiles.some(profile => profile.id === parsedData.activeProfileId)
+          ? parsedData.activeProfileId
+          : profiles[0].id;
 
-        data.aiSettings = {
-          ...DEFAULT_AI_SETTINGS,
-          ...data.aiSettings,
-          geminiApiKey: data.aiSettings?.geminiApiKey || legacyGeminiApiKey || '',
-        };
-        data.pictogramSettings = {
-          ...DEFAULT_PICTOGRAM_SETTINGS,
-          ...data.pictogramSettings,
-        };
-
-        // Migration logic: Check for top-level savedWorksheets (old format)
-        if (data.savedWorksheets) {
-          const migratedWorksheets = data.savedWorksheets;
-          delete data.savedWorksheets; // Remove old top-level array
-
-          data.profiles = data.profiles.map((p: any) => normalizeLoadedProfile(p as Profile));
-
-          // Add migrated worksheets to the first profile as a fallback
-          if (data.profiles.length > 0) {
-            data.profiles[0].savedWorksheets.unshift(...migratedWorksheets);
-          }
-          if (!data.activeProfileId || !data.profiles.some((p: Profile) => p.id === data.activeProfileId)) {
-            data.activeProfileId = data.profiles[0]?.id || DEFAULT_PROFILE_ID;
-          }
-          setAppData(data);
-
-        } else {
-          // For data already in the new format, just ensure profiles have the array
-          if (data.profiles) {
-            data.profiles = data.profiles.map((p: any) => normalizeLoadedProfile(p as Profile));
-          }
-          if (!data.activeProfileId || !data.profiles.some((p: Profile) => p.id === data.activeProfileId)) {
-            data.activeProfileId = data.profiles[0]?.id || DEFAULT_PROFILE_ID;
-          }
-          setAppData(data);
-        }
-
-        if (legacyGeminiApiKey) {
-          localStorage.removeItem(LEGACY_GEMINI_API_KEY_STORAGE_KEY);
-        }
+        setAppData({
+          profiles,
+          activeProfileId,
+          aiSettings: {
+            ...DEFAULT_AI_SETTINGS,
+            ...parsedData.aiSettings,
+          },
+          pictogramSettings: {
+            ...DEFAULT_PICTOGRAM_SETTINGS,
+            ...parsedData.pictogramSettings,
+          },
+        });
       } else {
         setAppData(getInitialAppData());
       }
@@ -124,10 +91,10 @@ export const useAppDataManager = () => {
   useEffect(() => {
     if (appData) {
       localStorage.setItem(APP_DATA_STORAGE_KEY, JSON.stringify(appData));
-      const activeProfile = appData.profiles.find(p => p.id === appData.activeProfileId);
+        const activeProfile = appData.profiles.find(p => p.id === appData.activeProfileId);
       if (activeProfile) {
         setEditorStructuredContent(getStructuredContentForEditor(activeProfile));
-        setInitialEditorContent(activeProfile.content || CHILD_PROFILE);
+        setInitialEditorContent(activeProfile.content || serializeStructuredProfile(DEFAULT_STRUCTURED_PROFILE));
       }
     }
   }, [appData]);

@@ -8,28 +8,17 @@ import type {
   WorksheetExercise,
   WorksheetInstruction,
   WorksheetItem,
-  WorksheetLayout,
   WorksheetSection,
 } from '../types';
-
-const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
-  repasar: 'REPASAR',
-  unir: 'UNIR',
-  rodear: 'RODEAR',
-  copiar: 'COPIAR',
-};
-
-const EXERCISE_TYPE_TERMS: Record<ExerciseType, string[]> = {
-  repasar: ['repasar'],
-  unir: ['unir', 'flecha'],
-  rodear: ['rodear'],
-  copiar: ['copiar'],
-};
-
-const LEGACY_EXERCISE_TYPE_MAP: Record<string, ExerciseType> = {
-  relacionar: 'unir',
-  pintar: 'rodear',
-};
+import {
+  createDefaultExercise,
+  createImageWorksheetItem,
+  createTraceableWorksheetItem,
+  getCanonicalLayout,
+  getDefaultInstruction,
+  getExerciseTypeLabel,
+  toExerciseType,
+} from './exerciseRepository';
 
 const normalizeText = (value: string | undefined | null): string =>
   (value || '')
@@ -38,23 +27,13 @@ const normalizeText = (value: string | undefined | null): string =>
     .toLowerCase()
     .trim();
 
-const isExerciseType = (value: unknown): value is ExerciseType =>
-  value === 'repasar' || value === 'unir' || value === 'rodear' || value === 'copiar';
-
-const toExerciseType = (value: unknown): ExerciseType | null => {
-  if (isExerciseType(value)) return value;
-  if (typeof value === 'string' && LEGACY_EXERCISE_TYPE_MAP[value]) {
-    return LEGACY_EXERCISE_TYPE_MAP[value];
-  }
-  return null;
-};
-
 const cloneItem = (item: WorksheetItem): WorksheetItem => ({ ...item });
 
 const withPictogramFields = (
   item: WorksheetItem,
   overrides: Partial<WorksheetItem>
 ): WorksheetItem => ({
+  ...item,
   ...overrides,
   searchTerm: overrides.searchTerm ?? item.searchTerm,
   selectedPictoUrl: overrides.selectedPictoUrl ?? item.selectedPictoUrl,
@@ -62,14 +41,6 @@ const withPictogramFields = (
   pictogramRenderMode: overrides.pictogramRenderMode ?? item.pictogramRenderMode,
   spelledLetterTerms: overrides.spelledLetterTerms ?? item.spelledLetterTerms,
   spelledLetterUrls: overrides.spelledLetterUrls ?? item.spelledLetterUrls,
-});
-
-const getDefaultInstruction = (exerciseType: ExerciseType): WorksheetInstruction => ({
-  text: EXERCISE_TYPE_LABELS[exerciseType],
-  pictograms: EXERCISE_TYPE_TERMS[exerciseType].map(term => ({
-    searchTerm: term,
-    content: term.toUpperCase(),
-  })),
 });
 
 const hydrateItem = (base: WorksheetItem, hydrated?: WorksheetItem): WorksheetItem => {
@@ -108,52 +79,25 @@ const normalizeInstruction = (
   };
 };
 
-const inferExerciseTypeFromInstruction = (
-  instructionText: string,
-  pictograms?: WorksheetInstruction['pictograms']
-): ExerciseType | null => {
-  const normalizedInstruction = normalizeText(instructionText);
-  const pictogramTerms = (pictograms || [])
-    .map(picto => normalizeText(picto.searchTerm || picto.content))
-    .join(' ');
-  const combined = `${normalizedInstruction} ${pictogramTerms}`.trim();
+const resolveExerciseType = (section: Partial<WorksheetSection>): ExerciseType => {
+  const declaredType = toExerciseType(section.exerciseType);
+  const exerciseType = toExerciseType(section.exercise?.type);
 
-  if (combined.includes('unir') || combined.includes('relacion') || combined.includes('flecha')) return 'unir';
-  if (combined.includes('repasa') || combined.includes('traza')) return 'repasar';
-  if (combined.includes('copia') || combined.includes('escribe')) return 'copiar';
-  if (combined.includes('rodea') || combined.includes('encierra') || combined.includes('senala') || combined.includes('marca')) return 'rodear';
+  if (declaredType && exerciseType && declaredType !== exerciseType) {
+    throw new Error(`La sección mezcla exerciseType "${declaredType}" con exercise.type "${exerciseType}".`);
+  }
 
-  return null;
+  const resolvedType = declaredType || exerciseType;
+  if (!resolvedType) {
+    throw new Error('La sección no contiene un exerciseType válido.');
+  }
+
+  return resolvedType;
 };
-
-const inferExerciseTypeFromLayout = (layout?: WorksheetLayout): ExerciseType | null => {
-  if (layout === 'matching_horizontal') return 'unir';
-  if (layout === 'column') return 'repasar';
-  if (layout === 'sentence_building' || layout === 'true_false') return 'copiar';
-  if (layout === 'row') return 'rodear';
-  return null;
-};
-
-const inferExerciseTypeFromItems = (items: WorksheetItem[]): ExerciseType => {
-  const hasTraceable = items.some(item => item.type === 'traceable_text');
-  if (hasTraceable) return items.length > 1 ? 'copiar' : 'repasar';
-
-  const hasOnlyImages = items.length > 0 && items.every(item => item.type === 'image');
-  if (hasOnlyImages && items.length % 2 === 0 && items.length >= 4) return 'unir';
-
-  return 'rodear';
-};
-
-const inferExerciseType = (section: Partial<WorksheetSection>): ExerciseType =>
-  toExerciseType(section.exercise?.type) ||
-  toExerciseType(section.exerciseType) ||
-  inferExerciseTypeFromInstruction(section.instruction?.text || '', section.instruction?.pictograms) ||
-  inferExerciseTypeFromLayout(section.layout) ||
-  inferExerciseTypeFromItems(section.items || []);
 
 const ensureImageItem = (item: WorksheetItem | undefined, fallbackContent: string): WorksheetItem => {
   if (!item) {
-    return { type: 'image', content: fallbackContent, searchTerm: fallbackContent.toLowerCase() };
+    return createImageWorksheetItem(fallbackContent);
   }
 
   if (item.type === 'empty_box') {
@@ -169,7 +113,7 @@ const ensureImageItem = (item: WorksheetItem | undefined, fallbackContent: strin
 
 const ensureTraceableItem = (item: WorksheetItem | undefined, fallbackContent: string): WorksheetItem => {
   if (!item) {
-    return { type: 'traceable_text', content: fallbackContent };
+    return createTraceableWorksheetItem(fallbackContent);
   }
 
   if (item.type === 'traceable_text') {
@@ -197,7 +141,7 @@ const normalizeRepasarExercise = (
 
         return hydrateItem(base, hydratedItem || item);
       })
-    : [{ type: 'traceable_text', content: 'A' }];
+    : [createTraceableWorksheetItem('A')];
 
   return { type: 'repasar', prompts };
 };
@@ -234,12 +178,7 @@ const normalizeUnirExercise = (
 
   const usable = normalized.length >= 4
     ? normalized
-    : [
-        { type: 'image', content: 'sol', searchTerm: 'sol' },
-        { type: 'image', content: 'luna', searchTerm: 'luna' },
-        { type: 'image', content: 'sol', searchTerm: 'sol' },
-        { type: 'image', content: 'luna', searchTerm: 'luna' },
-      ];
+    : getFlattenedItemsFromExercise(createDefaultExercise('unir'));
 
   const midPoint = usable.length / 2;
 
@@ -267,10 +206,7 @@ const normalizeRodearExercise = (
           isHydrated ? items[index + (hasPrompt ? 1 : 0)] : item
         )
       )
-    : [
-        { type: 'image', content: 'opcion 1', searchTerm: 'opcion' },
-        { type: 'image', content: 'opcion 2', searchTerm: 'opcion' },
-      ];
+    : getFlattenedItemsFromExercise(createDefaultExercise('rodear'));
 
   return {
     type: 'rodear',
@@ -285,21 +221,11 @@ const normalizeCopiarExercise = (
   exercise: CopiarExercise | undefined,
   items: WorksheetItem[]
 ): CopiarExercise => {
-  const legacyModelItems = exercise?.model
-    ? Array.isArray(exercise.model)
-      ? exercise.model
-      : [exercise.model]
-    : [];
-
-  const sourceItems = [
-    ...legacyModelItems,
-    ...(exercise?.copies || []),
-    ...(legacyModelItems.length === 0 && !exercise?.copies?.length ? items : []),
-  ].filter(Boolean);
+  const sourceItems = exercise?.copies?.length ? exercise.copies : items;
 
   const copies = (sourceItems.length > 0
     ? sourceItems
-    : [{ type: 'traceable_text', content: 'PALABRA' } as WorksheetItem]
+    : [createTraceableWorksheetItem('PALABRA')]
   )
     .map((item, index) =>
       hydrateItem(
@@ -321,7 +247,7 @@ const normalizeCopiarExercise = (
     type: 'copiar',
     copies: copies.length > 0
       ? copies
-      : [{ type: 'traceable_text', content: 'PALABRA' }],
+      : [createTraceableWorksheetItem('PALABRA')],
   };
 };
 
@@ -363,21 +289,8 @@ export const getFlattenedItemsFromExercise = (exercise: WorksheetExercise): Work
   }
 };
 
-export const getCanonicalLayout = (exerciseType: ExerciseType): WorksheetLayout => {
-  switch (exerciseType) {
-    case 'unir':
-      return 'matching_horizontal';
-    case 'repasar':
-    case 'copiar':
-      return 'column';
-    case 'rodear':
-    default:
-      return 'row';
-  }
-};
-
 export const normalizeWorksheetSection = (section: Partial<WorksheetSection>): WorksheetSection => {
-  const exerciseType = inferExerciseType(section);
+  const exerciseType = resolveExerciseType(section);
   const exercise = normalizeExercise(section, exerciseType);
 
   return {
@@ -398,5 +311,4 @@ export const normalizeWorksheet = (worksheet: Worksheet): Worksheet => ({
   sections: (worksheet.sections || []).map(section => normalizeWorksheetSection(section)),
 });
 
-export const getExerciseTypeLabel = (exerciseType: ExerciseType): string =>
-  EXERCISE_TYPE_LABELS[exerciseType];
+export { getCanonicalLayout, getExerciseTypeLabel };

@@ -1,5 +1,6 @@
 import { produce } from 'immer';
 import type {
+  CopiarExercise,
   SavedWorksheet,
   Worksheet,
   WorksheetEntityId,
@@ -25,9 +26,6 @@ const randomId = (): WorksheetEntityId => {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const unwrapFirst = (value: unknown): unknown =>
-  Array.isArray(value) ? value[0] : value;
 
 const textFromAIItem = (value: unknown, fallback: string): string => {
   if (!isRecord(value)) {
@@ -148,19 +146,10 @@ const sanitizeItemForAI = (item: WorksheetItem): WorksheetItem => {
 };
 
 const sanitizeCopiarSectionForAI = (
-  section: Partial<WorksheetSection>,
+  exercise: CopiarExercise,
   instruction: WorksheetSection['instruction']
 ) => {
-  const rawExercise = isRecord(section.exercise) ? section.exercise : {};
-  const rawModel = unwrapFirst(rawExercise.model);
-  const rawCopies = Array.isArray(rawExercise.copies) ? rawExercise.copies : [];
-
-  const allCopyItems = [
-    rawModel,
-    ...rawCopies,
-  ].filter(Boolean);
-
-  const copies = allCopyItems
+  const copies = exercise.copies
     .map((item, index) => toTraceableTextFromAIItem(item, `PALABRA ${index + 1}`))
     .filter((item, index, array) =>
       item.content.trim() &&
@@ -191,10 +180,6 @@ const sanitizeSectionForAI = (section: Partial<WorksheetSection>) => {
     text: normalizedSection.instruction.text,
     pictograms: normalizedSection.instruction.pictograms?.map(sanitizeInstructionPictogramForAI) || [],
   };
-
-  if (section.exerciseType === 'copiar' || section.exercise?.type === 'copiar') {
-    return sanitizeCopiarSectionForAI(section, instruction);
-  }
 
   switch (normalizedSection.exercise.type) {
     case 'repasar':
@@ -235,7 +220,7 @@ const sanitizeSectionForAI = (section: Partial<WorksheetSection>) => {
 
     case 'copiar':
     default:
-      return sanitizeCopiarSectionForAI(normalizedSection, instruction);
+      return sanitizeCopiarSectionForAI(normalizedSection.exercise, instruction);
   }
 };
 

@@ -4,8 +4,15 @@ import type { ExerciseType, PictogramRenderMode, PictogramSearchResult, SavedWor
 import { searchPictograms } from '../services/pictogramService';
 import { normalizeWorksheetSection } from '../services/worksheetNormalizer';
 import { describeWorksheetOperations, ensureWorksheetInternalIds } from '../services/worksheetOperations';
+import {
+  createImageWorksheetItem,
+  createInstructionPictogram,
+  createTraceableWorksheetItem,
+  getDefaultInstruction,
+  getExerciseTypeAddLabel,
+} from '../services/exerciseRepository';
 import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, PlusIcon, MinusIcon, XIcon, SaveIcon } from './Icons';
-import { EXERCISE_TYPE_OPTIONS, getSectionItems, getExerciseTypeLabel } from './editorUtils';
+import { EXERCISE_TYPE_OPTIONS, getSectionItems } from './editorUtils';
 import { Pictogram, getAdaptiveSpelledBoxStyle } from './PictogramRenderer';
 
 type EditableWorksheetProps = {
@@ -409,22 +416,6 @@ export const EditorPictogramPreview: React.FC<{
 
 const getFallbackDisplayTerm = (item?: WorksheetItem): string => item?.searchTerm || item?.content || '';
 
-const createImageItem = (content: string): WorksheetItem => ({
-  type: 'image',
-  content,
-  searchTerm: content.toLowerCase(),
-  selectedPictoUrl: '',
-  pictoOptions: [],
-  pictogramRenderMode: 'auto',
-  spelledLetterTerms: [],
-  spelledLetterUrls: [],
-});
-
-const createTraceableItem = (content: string): WorksheetItem => ({
-  type: 'traceable_text',
-  content,
-});
-
 const isWorksheetItem = (item: unknown): item is WorksheetItem =>
   typeof item === 'object' &&
   item !== null &&
@@ -433,7 +424,7 @@ const isWorksheetItem = (item: unknown): item is WorksheetItem =>
 
 const cloneWorksheetItem = (item: WorksheetItem | undefined, fallbackContent: string): WorksheetItem => {
   if (!item) {
-    return createTraceableItem(fallbackContent);
+    return createTraceableWorksheetItem(fallbackContent);
   }
 
   return {
@@ -462,17 +453,6 @@ const getMutableSectionItems = (section: WorksheetSection): WorksheetItem[] => {
   section.items = flattenedItems;
   return flattenedItems;
 };
-
-const createInstructionPicto = (content: string) => ({
-  content,
-  searchTerm: content.toLowerCase(),
-  url: '',
-  pictogramRenderMode: 'auto' as PictogramRenderMode,
-  spelledLetterTerms: [content],
-  spelledLetterUrls: [],
-});
-
-
 
 const moveItemInArray = <T,>(items: T[], fromIndex: number, toIndex: number) => {
   if (toIndex < 0 || toIndex >= items.length || fromIndex === toIndex) {
@@ -538,7 +518,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
     recipe: (draft: SavedWorksheet) => void,
     actionLabel = 'Edición de ficha'
   ) => {
-    const nextWorksheet = produce(ensureWorksheetInternalIds(worksheet), recipe);
+    const nextWorksheet = produce<SavedWorksheet>(ensureWorksheetInternalIds(worksheet), recipe);
     commitOperations([{
       type: 'update_worksheet',
       changes: {
@@ -728,10 +708,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
       exercise: undefined,
       items: undefined,
       layout: undefined,
-      instruction: {
-        text: exerciseType.toUpperCase(),
-        pictograms: undefined,
-      },
+      instruction: getDefaultInstruction(exerciseType),
     });
 
     commitOperations([{
@@ -775,7 +752,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
   const handleAddInstructionPicto = (sectionIndex: number) => {
     updateSectionByIndex(sectionIndex, sectionDraft => {
       const pictograms = sectionDraft.instruction.pictograms || (sectionDraft.instruction.pictograms = []);
-      pictograms.push(createInstructionPicto('nuevo'));
+      pictograms.push(createInstructionPictogram('nuevo'));
     });
   };
 
@@ -803,22 +780,22 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
       if (exerciseType === 'unir') {
         const nextPairNumber = items.length / 2 + 1;
         const midpoint = items.length / 2;
-        items.splice(midpoint, 0, createImageItem(`opcion ${nextPairNumber}`));
-        items.push(createImageItem(`opcion ${nextPairNumber}`));
+        items.splice(midpoint, 0, createImageWorksheetItem(`opcion ${nextPairNumber}`));
+        items.push(createImageWorksheetItem(`opcion ${nextPairNumber}`));
         return;
       }
 
       if (exerciseType === 'copiar') {
-        items.push(createTraceableItem(`PALABRA ${items.length + 1}`));
+        items.push(createTraceableWorksheetItem(`PALABRA ${items.length + 1}`));
         return;
       }
 
       if (exerciseType === 'repasar') {
-        items.push(createTraceableItem('A'));
+        items.push(createTraceableWorksheetItem('A'));
         return;
       }
 
-      items.push(createImageItem(`opcion ${items.length + 1}`));
+      items.push(createImageWorksheetItem(`opcion ${items.length + 1}`));
     });
   };
 
@@ -830,12 +807,12 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
       if (exerciseType === 'unir') {
         const nextPairNumber = items.length / 2 + 1;
         const midpoint = items.length / 2;
-        items.splice(midpoint, 0, createImageItem(`pictograma ${nextPairNumber}`));
-        items.push(createImageItem(`pictograma ${nextPairNumber}`));
+        items.splice(midpoint, 0, createImageWorksheetItem(`pictograma ${nextPairNumber}`));
+        items.push(createImageWorksheetItem(`pictograma ${nextPairNumber}`));
         return;
       }
 
-      items.push(createImageItem(`pictograma ${items.length + 1}`));
+      items.push(createImageWorksheetItem(`pictograma ${items.length + 1}`));
     });
   };
 
@@ -1054,7 +1031,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
           const isHighlighted = Boolean(
             section.internalId && highlightedSectionIds.includes(section.internalId)
           );
-          const addLabel = EXERCISE_TYPE_OPTIONS.find(option => option.value === exerciseType)?.addLabel || 'Añadir elemento';
+          const addLabel = getExerciseTypeAddLabel(exerciseType);
           const instructionPictograms = section.instruction.pictograms || [];
 
           return (

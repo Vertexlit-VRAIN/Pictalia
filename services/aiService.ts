@@ -22,12 +22,6 @@ interface GenerateWorksheetOptions {
   topic?: string;
   goal?: string;
   extraDetails?: string;
-  adaptationDescription?: string;
-  adaptationTextContent?: string;
-  adaptationImage?: {
-    mimeType: string;
-    data: string;
-  };
 }
 
 const EXERCISE_COUNT_PATTERNS = [
@@ -111,7 +105,7 @@ const normalizeWorksheetPayload = (payload: unknown): Worksheet => {
 
   const title = typeof payload.title === 'string' && payload.title.trim()
     ? payload.title.trim()
-    : 'Ficha adaptada';
+    : 'Ficha visual';
   const pictogramSearchTerm = typeof payload.pictogramSearchTerm === 'string' && payload.pictogramSearchTerm.trim()
     ? payload.pictogramSearchTerm.trim()
     : title;
@@ -128,7 +122,7 @@ const normalizeWorksheetPayload = (payload: unknown): Worksheet => {
     title,
     pictogramSearchTerm,
     sections,
-  } as Worksheet);
+  } as unknown as Worksheet);
 };
 
 const normalizeRefinementPayload = (payload: unknown): Partial<Worksheet> => {
@@ -158,7 +152,7 @@ const normalizeRefinementPayload = (payload: unknown): Partial<Worksheet> => {
 };
 
 const getSemanticContext = (options: GenerateWorksheetOptions): string =>
-  [options.topic, options.goal, options.extraDetails, options.adaptationDescription, options.adaptationTextContent]
+  [options.topic, options.goal, options.extraDetails]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
@@ -168,8 +162,6 @@ const extractRequestedExerciseCount = (options: GenerateWorksheetOptions): numbe
     options.topic,
     options.goal,
     options.extraDetails,
-    options.adaptationDescription,
-    options.adaptationTextContent,
   ].filter(Boolean) as string[];
 
   for (const text of textBlocks) {
@@ -219,7 +211,7 @@ const repairSemanticMismatch = async (rawText: string, options: GenerateWorkshee
   const { content: childProfile, showPictogramInstructions } = getActiveProfileData();
   const repairPrompt = buildSemanticRepairPrompt(rawText, options, childProfile, showPictogramInstructions);
 
-  const repairedText = await runProviderPrompt(repairPrompt, options.adaptationImage);
+  const repairedText = await runProviderPrompt(repairPrompt);
   return normalizeWorksheetPayload(parseJsonPayload(repairedText));
 };
 
@@ -237,7 +229,7 @@ const repairExerciseCountMismatch = async (
     showPictogramInstructions
   );
 
-  const repairedText = await runProviderPrompt(repairPrompt, options.adaptationImage);
+  const repairedText = await runProviderPrompt(repairPrompt);
   return normalizeWorksheetPayload(parseJsonPayload(repairedText));
 };
 
@@ -281,27 +273,15 @@ const parseOperationResponse = async (rawText: string): Promise<WorksheetOperati
   }
 };
 
-const callGemini = async (promptText: string, settings: AISettings, adaptationImage?: GenerateWorksheetOptions['adaptationImage']): Promise<string> => {
+const callGemini = async (promptText: string, settings: AISettings): Promise<string> => {
   if (!settings.geminiApiKey.trim()) {
     throw new Error('Configura una clave de API de Gemini en el perfil para usar este proveedor.');
   }
 
   const body: Record<string, unknown> = {
-    contents: adaptationImage
-      ? [{
-        parts: [
-          { text: promptText },
-          {
-            inline_data: {
-              mime_type: adaptationImage.mimeType,
-              data: adaptationImage.data,
-            },
-          },
-        ],
-      }]
-      : [{
-        parts: [{ text: promptText }],
-      }],
+    contents: [{
+      parts: [{ text: promptText }],
+    }],
     generationConfig: {
       responseMimeType: 'application/json',
       temperature: 0.4,
@@ -339,7 +319,7 @@ const callGemini = async (promptText: string, settings: AISettings, adaptationIm
 
 const normalizeOllamaBaseUrl = (baseUrl: string): string => baseUrl.replace(/\/+$/, '');
 
-const callOllama = async (promptText: string, settings: AISettings, adaptationImage?: GenerateWorksheetOptions['adaptationImage']): Promise<string> => {
+const callOllama = async (promptText: string, settings: AISettings): Promise<string> => {
   const baseUrl = normalizeOllamaBaseUrl(settings.ollamaBaseUrl);
   if (!baseUrl) {
     throw new Error('Configura la URL base de Ollama en el perfil para usar este proveedor.');
@@ -357,7 +337,6 @@ const callOllama = async (promptText: string, settings: AISettings, adaptationIm
       messages: [{
         role: 'user',
         content: promptText,
-        images: adaptationImage ? [adaptationImage.data] : undefined,
       }],
     }),
   });
@@ -376,7 +355,7 @@ const callOllama = async (promptText: string, settings: AISettings, adaptationIm
   return text;
 };
 
-const callDebugProxy = async (promptText: string, settings: AISettings, adaptationImage?: GenerateWorksheetOptions['adaptationImage']): Promise<string> => {
+const callDebugProxy = async (promptText: string, settings: AISettings): Promise<string> => {
   const response = await fetch('/__ai-debug', {
     method: 'POST',
     headers: {
@@ -385,12 +364,6 @@ const callDebugProxy = async (promptText: string, settings: AISettings, adaptati
     body: JSON.stringify({
       promptText,
       settings,
-      adaptationImage: adaptationImage
-        ? {
-          mimeType: adaptationImage.mimeType,
-          data: adaptationImage.data,
-        }
-        : null,
     }),
   });
 
@@ -407,18 +380,18 @@ const callDebugProxy = async (promptText: string, settings: AISettings, adaptati
   return payload.text as string;
 };
 
-const runProviderPrompt = async (promptText: string, adaptationImage?: GenerateWorksheetOptions['adaptationImage']): Promise<string> => {
+const runProviderPrompt = async (promptText: string): Promise<string> => {
   const settings = getAISettings();
 
   if (import.meta.env.DEV) {
-    return callDebugProxy(promptText, settings, adaptationImage);
+    return callDebugProxy(promptText, settings);
   }
 
   if (settings.provider === 'ollama') {
-    return callOllama(promptText, settings, adaptationImage);
+    return callOllama(promptText, settings);
   }
 
-  return callGemini(promptText, settings, adaptationImage);
+  return callGemini(promptText, settings);
 };
 
 export const generateWorksheet = async (options: GenerateWorksheetOptions): Promise<Worksheet> => {
@@ -431,16 +404,13 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
         topic: options.topic,
         goal: options.goal,
         extraDetails: options.extraDetails,
-        adaptationDescription: options.adaptationDescription,
-        adaptationTextContent: options.adaptationTextContent,
-        hasImage: !!options.adaptationImage,
         requestedExerciseCount,
       },
       childProfile,
       showPictogramInstructions
     );
 
-    const rawText = await runProviderPrompt(promptText, options.adaptationImage);
+    const rawText = await runProviderPrompt(promptText);
     let worksheet = await parseWorksheetResponse(rawText);
 
     if (needsSemanticRepair(worksheet, options)) {
@@ -456,9 +426,9 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
     }
 
     // Guardamos el contexto original para que esté disponible durante la edición
-    worksheet.originalTopic = options.adaptationDescription || options.topic;
+    worksheet.originalTopic = options.topic;
     worksheet.originalGoal = options.goal;
-    worksheet.originalExtraDetails = options.extraDetails || options.adaptationTextContent;
+    worksheet.originalExtraDetails = options.extraDetails;
 
     return worksheet;
   } catch (error) {

@@ -69,7 +69,7 @@ export interface WorksheetItem {
   spelledLetterUrls?: string[];
 }
 
-export type WorksheetLayout = 'row' | 'column' | 'true_false' | 'sentence_building' | 'matching_horizontal';
+export type WorksheetLayout = 'row' | 'column' | 'matching_horizontal';
 
 export type ExerciseType = 'repasar' | 'unir' | 'rodear' | 'copiar';
 
@@ -109,7 +109,6 @@ export interface RodearExercise {
   options: WorksheetItem[];
 }
 
-// TODO: Borrar model a futuro
 export interface CopiarExercise {
   type: 'copiar';
   copies: WorksheetItem[];
@@ -124,10 +123,10 @@ export type WorksheetExercise =
 export interface WorksheetSection {
   internalId?: WorksheetEntityId;
   instruction: WorksheetInstruction;
-  exerciseType?: ExerciseType;
-  exercise?: WorksheetExercise;
-  items?: WorksheetItem[];
-  layout?: WorksheetLayout;
+  exerciseType: ExerciseType;
+  exercise: WorksheetExercise;
+  items: WorksheetItem[];
+  layout: WorksheetLayout;
 }
 
 export interface Worksheet {
@@ -147,7 +146,7 @@ export interface Worksheet {
 export interface SavedWorksheet extends Worksheet {
   id: string;
   createdAt: string; // ISO string
-  sourceDescription: string; // e.g., 'el número 5' or 'Ficha Adaptada de PDF'
+  sourceDescription: string; // e.g., 'el número 5' or 'tema generado por IA'
   editHistory?: PersistedWorksheetHistoryEntry[];
   editHistoryIndex?: number;
 }

@@ -6,7 +6,6 @@ import {
   WORKSHEET_OPERATION_JSON_SCHEMA,
 } from './schemas';
 import {
-  IMAGE_ADAPTATION_GUIDE,
   OPERATIONS_INTERNAL_VALIDATION_CHECKLIST,
   PROFILE_SELECTION_GUIDE,
   REFINEMENT_INTERNAL_VALIDATION_CHECKLIST,
@@ -30,9 +29,6 @@ export interface PromptOptions {
   topic?: string;
   goal?: string;
   extraDetails?: string;
-  adaptationDescription?: string;
-  adaptationTextContent?: string;
-  hasImage?: boolean;
   requestedExerciseCount?: number;
 }
 
@@ -54,11 +50,7 @@ const buildInstructionPrompt = (showPictogramInstructions: boolean): string =>
 
 const buildPedagogicalContext = (options: PromptOptions): string => {
   const lines = [
-    options.adaptationDescription?.trim()
-      ? `Tema: ${options.adaptationDescription.trim()}`
-      : options.topic?.trim()
-        ? `Tema: ${options.topic.trim()}`
-        : '',
+    options.topic?.trim() ? `Tema: ${options.topic.trim()}` : '',
     options.goal?.trim() ? `Objetivo: ${options.goal.trim()}` : '',
     options.extraDetails?.trim() ? `Detalles: ${options.extraDetails.trim()}` : '',
   ].filter(Boolean);
@@ -66,17 +58,6 @@ const buildPedagogicalContext = (options: PromptOptions): string => {
   return lines.length > 0
     ? compact('CONTEXTO PEDAGÓGICO:', lines.join('\n'))
     : '';
-};
-
-const buildTextExtractionBlock = (text?: string): string => {
-  if (!text?.trim()) return '';
-
-  return `TEXTO EXTRAÍDO:
-"""
-${text.trim()}
-"""
-
-Usa este texto como referencia para entender el contenido original.`;
 };
 
 const buildExerciseCountRule = (requestedExerciseCount?: number): string =>
@@ -144,29 +125,13 @@ export const buildWorksheetPrompt = (
   options: PromptOptions,
   childProfile: string,
   showPictogramInstructions: boolean
-): string => {
-  if (options.hasImage) {
-    return buildGenerationPromptBase(
-      [
-        'Analiza la imagen y genera una ficha educativa adaptada.',
-        '- Detecta el tema principal de la ficha original.',
-        '- Simplifica y adapta el contenido al nivel del alumno.',
-        '- Convierte contenido textual en actividades visuales cuando sea posible.',
-      ].join('\n'),
-      options,
-      childProfile,
-      showPictogramInstructions,
-      compact(buildTextExtractionBlock(options.adaptationTextContent), IMAGE_ADAPTATION_GUIDE)
-    );
-  }
-
-  return buildGenerationPromptBase(
+): string =>
+  buildGenerationPromptBase(
     'Genera una ficha educativa adaptada.',
     options,
     childProfile,
     showPictogramInstructions
   );
-};
 
 export const buildSemanticRepairPrompt = (
   rawText: string,
@@ -178,8 +143,6 @@ export const buildSemanticRepairPrompt = (
     options.topic,
     options.goal,
     options.extraDetails,
-    options.adaptationDescription,
-    options.adaptationTextContent,
   ].filter(Boolean).join(' ') || 'tema original';
 
   return compact(

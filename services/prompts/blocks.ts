@@ -1,3 +1,5 @@
+import { exerciseTypesForPrompt } from '../exerciseRepository';
+
 export const JSON_ONLY_RULE = `
 Devuelve SOLO JSON válido.
 No uses markdown.
@@ -31,6 +33,8 @@ REGLAS DE PICTOGRAMAS:
 - La IA NO devuelve URLs.
 - La IA NO devuelve resultados de ARASAAC ni de ninguna base de datos.
 - El sistema buscará después los pictogramas usando "searchTerm".
+- Si el contenido visible es un número, "searchTerm" debe ser el mismo número en dígitos.
+- Nunca conviertas números a palabras dentro de "searchTerm".
 - Para imágenes usa siempre:
   { "type": "image", "content": "texto visible", "searchTerm": "término de búsqueda" }
 - Para pictogramas de instrucción usa siempre:
@@ -94,7 +98,6 @@ ESTRUCTURA OBLIGATORIA POR TIPO:
 }
 
 REGLAS ESPECÍFICAS DE "copiar":
-- No uses "model".
 - Todas las palabras que el alumno debe copiar van dentro de "copies".
 - Cada elemento de "copies" debe ser "traceable_text".
 - No uses "image" dentro de "copiar".
@@ -107,7 +110,7 @@ export const SECTION_OUTPUT_RULES = `
 REGLAS DE SECCIÓN:
 - Cada sección debe contener exactamente estas claves:
   "exerciseType", "instruction", "exercise".
-- "exerciseType" solo puede ser: "repasar", "unir", "rodear", "copiar".
+- "exerciseType" solo puede ser: ${exerciseTypesForPrompt()}.
 - "exercise.type" debe coincidir exactamente con "exerciseType".
 - No uses claves alternativas como "activities", "tasks", "blocks", "pages" o "elements".
 `;

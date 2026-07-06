@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import type { PersistedWorksheetHistoryEntry, SavedWorksheet, WorksheetOperation } from '../types';
+import type { SavedWorksheet, WorksheetOperation } from '../types';
 import { EditableWorksheetDisplay } from './EditableWorksheetDisplay';
 import { refineExercise } from '../services/aiService';
 import { searchPictograms } from '../services/pictogramService';
 import { Spinner } from './Spinner';
 import { Wand2Icon, SaveIcon, XIcon, PencilRulerIcon, HistoryIcon, CheckCircleIcon } from './Icons';
 import { produce } from 'immer';
-import { normalizeWorksheet } from '../services/worksheetNormalizer';
 import { useWorksheetHistory } from '../hooks/useWorksheetHistory';
 import { applyWorksheetOperations } from '../services/worksheetOperations';
 
@@ -33,15 +32,12 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
     commitChange,
     commitOperations,
     goToHistoryIndex,
-    replaceInitialState,
-    replaceHistory,
     serializeHistory,
   } = useWorksheetHistory(initialWorksheet);
 
   const [refinementInstruction, setRefinementInstruction] = useState('');
   const [isRefining, setIsRefining] = useState(false);
   const [refinementError, setRefinementError] = useState<string | null>(null);
-  const [isMigrating, setIsMigrating] = useState(true);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [refinementContext, setRefinementContext] = useState<string>('all');
   const [suggestedWorksheet, setSuggestedWorksheet] = useState<SavedWorksheet | null>(null);
@@ -56,97 +52,6 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
       editHistoryIndex: currentIndex,
     });
   }, [worksheet, currentIndex, serializeHistory, setWorksheet]);
-
-  useEffect(() => {
-    const migrateWorksheet = async () => {
-      const migrateSingleWorksheet = async (worksheetToMigrate: SavedWorksheet): Promise<SavedWorksheet> => {
-        const normalizedWorksheet = normalizeWorksheet(worksheetToMigrate);
-        const needsStructureMigration = worksheetToMigrate.sections.some(
-          section => !section.exercise || !section.exerciseType || !section.items || !section.layout
-        );
-
-        const needsSectionSync = worksheetToMigrate.sections.some((section, sectionIndex) => {
-          const currentItems = JSON.stringify(section.items || []);
-          const normalizedItems = JSON.stringify(normalizedWorksheet.sections[sectionIndex]?.items || []);
-          return currentItems !== normalizedItems;
-        });
-
-        let baseForMigration = worksheetToMigrate;
-        if (needsStructureMigration || needsSectionSync) {
-          baseForMigration = normalizedWorksheet;
-        }
-
-        if (typeof normalizedWorksheet.selectedPictoUrl !== 'undefined') {
-          return baseForMigration;
-        }
-
-        const searchTerms: { type: 'main' | 'item'; path: (number | string)[]; term: string }[] = [];
-
-        searchTerms.push({
-          type: 'main',
-          path: [],
-          term: normalizedWorksheet.pictogramSearchTerm,
-        });
-
-        normalizedWorksheet.sections.forEach((section, sectionIndex) => {
-          (section.items || []).forEach((item, itemIndex) => {
-            if (shouldResolveItemPictogram(item)) {
-              searchTerms.push({
-                type: 'item',
-                path: [sectionIndex, itemIndex],
-                term: item.searchTerm || item.content,
-              });
-            }
-          });
-        });
-
-        const pictogramPromises = searchTerms.map(st => searchPictograms(st.term));
-        const pictogramResults = await Promise.all(pictogramPromises);
-
-        return produce(normalizedWorksheet, draft => {
-          searchTerms.forEach((st, index) => {
-            const pictos = pictogramResults[index];
-            const urls = pictos.map(p => p.url);
-
-            if (st.type === 'main') {
-              draft.pictoOptions = urls;
-              draft.selectedPictoUrl = urls.length > 0 ? urls[0] : '';
-              return;
-            }
-
-            const [sectionIndex, itemIndex] = st.path;
-            const item = draft.sections[sectionIndex as number].items[itemIndex as number];
-
-            item.searchTerm = st.term;
-            item.pictoOptions = urls;
-            item.selectedPictoUrl = urls.length > 0 ? urls[0] : '';
-          });
-        }) as SavedWorksheet;
-      };
-
-      setIsMigrating(true);
-
-      if (initialWorksheet.editHistory?.length) {
-        const migratedHistory: PersistedWorksheetHistoryEntry[] = await Promise.all(
-          initialWorksheet.editHistory.map(async entry => ({
-            ...entry,
-            state: await migrateSingleWorksheet(entry.state),
-          }))
-        );
-
-        replaceHistory(migratedHistory, initialWorksheet.editHistoryIndex || 0);
-        setIsMigrating(false);
-        return;
-      }
-
-      const migratedWorksheet = await migrateSingleWorksheet(initialWorksheet);
-      replaceInitialState(migratedWorksheet);
-      setIsMigrating(false);
-    };
-
-    migrateWorksheet();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const getHighlightedSectionIds = (): string[] => {
     if (!suggestedOperations) return [];
@@ -268,15 +173,6 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
     setSuggestedWorksheet(null);
     setSuggestedOperations(null);
   };
-
-  if (isMigrating) {
-    return (
-      <div className="flex h-96 items-center justify-center rounded-[28px] border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
-        <Spinner className="text-sky-600" />
-        <p className="ml-4 text-slate-600">Actualizando formato de la ficha...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="mt-6 space-y-6">

@@ -1,6 +1,6 @@
 # Adaptator TEA
 
-Aplicación web para generar, adaptar y editar fichas educativas con apoyo visual para alumnado con TEA.
+Aplicación web para generar, editar y organizar fichas educativas con apoyo visual para alumnado con TEA.
 
 ## Requisitos
 
@@ -70,12 +70,6 @@ La app ya está preparada para usar una API privada compatible con búsqueda de 
 2. Escribe el tema
 3. Pulsa `Generar`
 
-### Adaptar una ficha PDF
-
-1. Ve a `Adaptar Ficha`
-2. Sube un PDF
-3. Pulsa `Adaptar con IA`
-
 ### Editar una ficha guardada
 
 1. Ve a `Biblioteca`
@@ -96,8 +90,22 @@ Cuando ejecutas `npm run dev`, la app muestra logs útiles para depurar:
 
 Las llamadas de IA en desarrollo pasan por un endpoint interno de Vite para que puedas ver esos logs en la terminal.
 
+## Catálogo de ejercicios
+
+Los tipos de ejercicio viven centralizados en `services/exerciseRepository.ts`.
+
+Actualmente el catálogo incluye:
+
+- `repasar`
+- `unir`
+- `rodear`
+- `copiar`
+
+Cada tipo define su etiqueta, instrucción por defecto, layout canónico, términos de inferencia y plantilla inicial. Esta estructura prepara el proyecto para que más adelante un docente pueda generar nuevas plantillas o ejercicios con ayuda de IA sin dispersar la lógica por componentes, normalizadores y prompts.
+
 ## Notas
 
 - La app no bloquea el arranque si falta configuración de IA.
 - Si el proveedor seleccionado no está bien configurado, fallarán solo las acciones de IA.
 - Para usar Ollama desde el navegador, el endpoint debe ser accesible desde tu máquina y permitir el origen si aplica.
+- La antigua adaptación de PDF se ha retirado. El futuro flujo de traducción de pictogramas a texto debe implementarse como una vista nueva y separada.

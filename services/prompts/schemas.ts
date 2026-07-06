@@ -9,6 +9,7 @@ export const REPASAR_SCHEMA = `{
   "exercise": {
     "type": "repasar",
     "prompts": [
+      { "type": "traceable_text", "content": "3" },
       { "type": "traceable_text", "content": "FLOR" },
       { "type": "traceable_text", "content": "HOJA" },
       { "type": "traceable_text", "content": "RAÍZ" }

@@ -4,18 +4,18 @@
 
 Diseñar una orquestación que mantenga un catálogo cerrado de ejercicios:
 
-- `RODEAR`
-- `PINTAR`
-- `RELACIONAR`
-- `REPASAR`
+- `repasar`
+- `unir`
+- `rodear`
+- `copiar`
 
 La arquitectura debe seguir haciendo lo mismo que el sistema actual:
 
 - generar fichas nuevas
-- adaptar fichas PDF
 - refinar fichas existentes
 - buscar pictogramas
 - permitir edición humana
+- preparar un flujo separado de traducción de pictogramas a texto
 
 Pero con más control, menos deriva del modelo y mejor capacidad de revisión.
 
@@ -34,13 +34,13 @@ Usar una tubería multiagente con contratos estrictos entre etapas.
 ### Agente 1: `Classifier`
 
 Responsabilidad:
-- entender el tema o el PDF
+- entender el tema solicitado
 - extraer intención pedagógica
 - detectar nivel de dificultad
 - producir una lista breve de objetivos visuales
 
 Entrada:
-- tema libre o texto extraído del PDF
+- tema libre, objetivo o detalles del docente
 - perfil del alumno
 
 Salida:
@@ -54,7 +54,7 @@ Nunca genera ejercicios.
 
 Responsabilidad:
 - decidir cuántas secciones tendrá la ficha
-- repartirlas entre `rodear`, `pintar`, `relacionar` y `repasar`
+- repartirlas entre los tipos registrados en `services/exerciseRepository.ts`
 - secuenciar dificultad y fatiga cognitiva
 
 Entrada:
@@ -135,10 +135,10 @@ Responsabilidad:
 - validar el esquema final antes de guardar o renderizar
 
 Checks mínimos:
-- solo existen los 4 `exerciseType`
-- `relacionar` tiene número par de elementos
+- solo existen los `exerciseType` registrados
+- `unir` tiene parejas completas
 - `repasar` usa trazos legibles
-- no quedan layouts legacy
+- cada sección usa el layout canónico de su tipo
 - no hay secciones vacías
 
 Debe ser determinista y local, no LLM.
@@ -170,15 +170,14 @@ Debe trabajar sección a sección, no reescribir toda la ficha sin control.
 6. `Structural Validator`
 7. render/edición humana
 
-### Adaptación desde PDF
+### Traducción de pictogramas a texto
 
-1. OCR o extracción de texto
-2. `Classifier` con texto + imagen
-3. `Planner`
-4. `Exercise Generator` por sección
-5. `Pedagogical Critic`
-6. `Pictogram Resolver`
-7. `Structural Validator`
+Este flujo sustituirá a la antigua adaptación desde PDF y debe implementarse como un producto separado.
+
+1. `Pictogram Reader` para recibir o seleccionar pictogramas.
+2. `Semantic Interpreter` para proponer texto claro y funcional.
+3. `Pedagogical Critic` para ajustar el texto al perfil.
+4. revisión humana.
 
 ### Refinado desde biblioteca
 
@@ -205,9 +204,9 @@ Regla clave:
 Mapa canónico:
 
 - `rodear` -> `row`
-- `pintar` -> `row`
-- `relacionar` -> `matching_horizontal`
+- `unir` -> `matching_horizontal`
 - `repasar` -> `column`
+- `copiar` -> `column`
 
 ## Qué conviene implementar después
 
@@ -224,7 +223,7 @@ Mapa canónico:
 
 El refactor actual ya deja preparada la pieza crítica:
 
-- el dominio se ha cerrado a cuatro tipos
+- el dominio se centraliza en `services/exerciseRepository.ts`
 - la ficha se normaliza localmente
 - la IA ya no puede introducir formatos abiertos sin ser reconducida
 

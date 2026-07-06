@@ -6,10 +6,10 @@ import {
 } from '../EditableWorksheetDisplay';
 import { getAdaptiveSpelledBoxWidth } from '../PictogramRenderer';
 import {
-  EXERCISE_TYPE_OPTIONS,
   getExerciseTypeLabel,
   getSectionItems
 } from '../editorUtils';
+import { getExerciseTypeAddLabel } from '../../services/exerciseRepository';
 import { EditorTarget } from './types';
 import { ArrowDownIcon, ArrowUpIcon, MinusIcon, PencilRulerIcon } from '../Icons';
 
@@ -48,7 +48,7 @@ export const WorksheetItemEditor: React.FC<WorksheetItemEditorProps> = ({
   const exerciseType = section.exerciseType || 'rodear';
   const isFullWidth = (exerciseType === 'repasar' && item.type === 'traceable_text') || options?.fullWidth;
   const previewPictoUrl = item.selectedPictoUrl || item.pictoOptions?.[0] || '';
-  const addLabel = EXERCISE_TYPE_OPTIONS.find(option => option.value === exerciseType)?.addLabel || 'Añadir elemento';
+  const addLabel = getExerciseTypeAddLabel(exerciseType);
   const itemCount = getSectionItems(section).length;
   const pairCount = exerciseType === 'unir' ? itemCount / 2 : 0;
   const pairIndex = exerciseType === 'unir' ? (itemIndex < pairCount ? itemIndex : itemIndex - pairCount) : itemIndex;

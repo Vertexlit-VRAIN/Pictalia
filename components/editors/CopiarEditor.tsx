@@ -16,7 +16,7 @@ export const CopiarEditor: React.FC<CommonEditorProps> = ({
   return (
     <div className="space-y-4">
       <div className="rounded-[20px] border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-        Cada bloque es una palabra que el alumno debe copiar. Las palabras se guardan dentro de <strong>copies</strong>, sin usar modelo.
+        Cada bloque es una palabra que el alumno debe copiar. Las palabras se guardan dentro de <strong>copies</strong>.
       </div>
 
       {items.length > 0 && (

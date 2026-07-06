@@ -105,26 +105,6 @@ export const useWorksheetHistory = (initialWorksheet: SavedWorksheet) => {
     goToHistoryIndex,
     canUndo: state.currentIndex > 0,
     canRedo: state.currentIndex < state.history.length - 1,
-    // Provide a way to completely replace history (e.g. on migration)
-    replaceInitialState: useCallback((newState: SavedWorksheet) => {
-      setState({
-        history: [{ state: ensureWorksheetInternalIds(stripWorksheetHistoryMeta(newState)), actionLabel: 'Formato actualizado', timestamp: new Date(), operations: [] }],
-        currentIndex: 0
-      });
-    }, []),
-    replaceHistory: useCallback((historyEntries: PersistedWorksheetHistoryEntry[], currentIndex: number) => {
-      const history = historyEntries.map(entry => ({
-        state: ensureWorksheetInternalIds(stripWorksheetHistoryMeta(entry.state)),
-        actionLabel: entry.actionLabel,
-        timestamp: new Date(entry.timestamp),
-        operations: entry.operations || [],
-      }));
-
-      setState({
-        history,
-        currentIndex: Math.max(0, Math.min(currentIndex, history.length - 1)),
-      });
-    }, []),
     serializeHistory: useCallback((): PersistedWorksheetHistoryEntry[] =>
       state.history.map(entry => ({
         state: stripWorksheetHistoryMeta(entry.state),

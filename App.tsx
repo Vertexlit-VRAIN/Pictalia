@@ -1,17 +1,16 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { GenerateWorksheetView } from './components/GenerateWorksheetView';
-import { AdaptWorksheetView } from './components/AdaptWorksheetView';
 import { ProfileView } from './components/ProfileView';
 import { useAppDataManager } from './hooks/useProfileManager';
 import type { SavedWorksheet } from './types';
 import { WorksheetResult } from './components/WorksheetResult';
-import { Trash2, FolderOpenIcon, PencilRulerIcon, DownloadIcon, CheckCircleIcon } from './components/Icons';
+import { Trash2, FolderOpenIcon, DownloadIcon, CheckCircleIcon } from './components/Icons';
 import { useDynamicLibraries } from './hooks/useDynamicLibraries';
-import { exportWorksheetAsPdf } from './lib/pdfUtils';
+import { exportWorksheetAsPdf } from './lib/worksheetExport';
 import { WorksheetEditor } from './components/WorksheetEditor';
 
-type View = 'generate' | 'adapt' | 'profile' | 'library';
+type View = 'generate' | 'profile' | 'library';
 
 // ... (LibraryView component remains unchanged)
 const LibraryView: React.FC = () => {
@@ -195,7 +194,6 @@ const App: React.FC = () => {
       <Header activeView={activeView} setActiveView={setActiveView} />
       <main id="main-content" className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
         {activeView === 'generate' && <GenerateWorksheetView />}
-        {activeView === 'adapt' && <AdaptWorksheetView />}
         {activeView === 'library' && <LibraryView />}
         {activeView === 'profile' && <ProfileView />}
       </main>

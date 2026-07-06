@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useWorksheetGenerator } from '../hooks/useWorksheetGenerator';
 import { useDynamicLibraries } from '../hooks/useDynamicLibraries';
-import { exportWorksheetAsPdf } from '../lib/pdfUtils';
+import { exportWorksheetAsPdf } from '../lib/worksheetExport';
 import { Spinner } from './Spinner';
 import { FileTextIcon } from './Icons';
 import { WorksheetResult } from './WorksheetResult';
