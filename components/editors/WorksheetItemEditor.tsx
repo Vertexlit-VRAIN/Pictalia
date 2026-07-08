@@ -10,7 +10,7 @@ import {
   getSectionItems
 } from '../editorUtils';
 import { getExerciseTypeAddLabel } from '../../services/exerciseRepository';
-import { EditorTarget } from './types';
+import { EditorTarget } from '../exercises/types';
 import { ArrowDownIcon, ArrowUpIcon, MinusIcon, PencilRulerIcon } from '../Icons';
 
 interface WorksheetItemEditorProps {

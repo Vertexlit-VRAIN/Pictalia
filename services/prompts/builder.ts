@@ -423,3 +423,85 @@ Response:
 }`
   );
 };
+
+export const buildAdpBlueprintPrompt = (
+  options: PromptOptions,
+  childProfile: string,
+  availableExerciseTypes: string[]
+): string => {
+  const languageNames = {
+    es: 'Castilian Spanish (es)',
+    val: 'Valencian/Catalan (val)',
+    en: 'English (en)',
+  };
+  const targetLang = options.language ? languageNames[options.language] : languageNames.es;
+
+  return compact(
+    `You are the Pedagogical Designer Agent (ADP) for Adaptator-TEA.
+Your role is to analyze a student's profile, a target topic, and learning goals, and design a customized worksheet structure.`,
+    `STUDENT PROFILE:
+${childProfile}`,
+    `PEDAGOGICAL GOALS:
+${buildPedagogicalContext(options)}`,
+    `AVAILABLE EXERCISE TYPES:
+${availableExerciseTypes.map(t => `- "${t}"`).join('\n')}`,
+    `EXERCISE COUNT:
+${options.requestedExerciseCount ? `Generate exactly ${options.requestedExerciseCount} exercises.` : 'Generate a recommended number of exercises (usually between 3 and 5) based on the student profile.'}`,
+    `RULES:
+1. Choose the most appropriate exercise types from the available list for this student's profile.
+2. Structure the learning progression logically (easier exercises first, e.g. repasar before copiar).
+3. For each exercise, write a clear objective, a concise instruction in uppercase, and a highly detailed content description.
+4. If appropriate for numeracy or visual matching, you can plan "unir" exercises that match text numbers with a repeated pictogram (quantity), describing it in the exercise content description.
+5. All texts (titles, instructions, description details) MUST be in ${targetLang}.
+6. Output ONLY a valid JSON object matching the schema below. No conversational text.`,
+    `OUTPUT SCHEMA:
+{
+  "title": "Short descriptive title of the worksheet in ${targetLang}",
+  "pictogramSearchTerm": "Simple noun in ${targetLang} representing the overall theme",
+  "exercisePlans": [
+    {
+      "type": "one of the available exercise types",
+      "objective": "Detailed pedagogical objective for this exercise",
+      "instruction": "SHORT INSTRUCTION IN UPPERCASE",
+      "description": "Extremely detailed description of the content to generate. E.g. 'Match number 1 with 1 flower pictogram, number 2 with 2 flower pictograms, number 3 with 3 flower pictograms. Left column has numbers, right column has repeated flower pictures.'"
+    }
+  ]
+}`,
+    `JSON ONLY. Respect Markdown JSON formatting.`
+  );
+};
+
+export const buildAcExercisePrompt = (
+  exerciseBlueprint: any,
+  exerciseSchema: string,
+  language: 'es' | 'val' | 'en'
+): string => {
+  const languageNames = {
+    es: 'Castilian Spanish (es)',
+    val: 'Valencian/Catalan (val)',
+    en: 'English (en)',
+  };
+  const targetLang = languageNames[language] || languageNames.es;
+
+  return compact(
+    `You are the Exercise Constructor Agent (AC) for Adaptator-TEA.
+Your role is to generate the exact JSON structure for a single educational exercise according to a provided pedagogical blueprint.`,
+    `PEDAGOGICAL BLUEPRINT:
+- Exercise Type: ${exerciseBlueprint.type}
+- Objective: ${exerciseBlueprint.objective}
+- Instruction: ${exerciseBlueprint.instruction}
+- Detailed Content Description: ${exerciseBlueprint.description}`,
+    `TARGET SCHEMA AND RULES:
+You must output a single JSON object matching the format below.
+${exerciseSchema}`,
+    `ADDITIONAL RULES:
+1. Generate the exact content described in the blueprint. Be precise and complete.
+2. For "repasar" (tracing) exercises, the prompts array MUST ONLY contain "traceable_text" items. Do NOT output a separate "image" item followed by a "traceable_text" item for the same concept; a single "traceable_text" item with the word or letter to trace in "content" is sufficient and will automatically display its corresponding pictogram.
+3. If the blueprint specifies matching quantity/numbers (e.g. number 2 with two flowers), set "type": "image", "searchTerm": "flor", and "quantity": 2 on the corresponding WorksheetItem. The left/text item should have the number "2".
+4. All student-facing and teacher-facing text in the JSON (instructions, contents, searchTerms, copies, etc.) MUST be written in ${targetLang}.
+5. Do NOT include any additional fields or wrapper objects. The output must be exactly the JSON section structure.
+6. Do NOT include markdown styling or text outside the JSON block. Return ONLY the JSON object.`,
+    `JSON ONLY. Respect Markdown JSON formatting.`
+  );
+};
+

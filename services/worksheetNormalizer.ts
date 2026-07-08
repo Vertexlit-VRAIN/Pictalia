@@ -41,6 +41,7 @@ const withPictogramFields = (
   pictogramRenderMode: overrides.pictogramRenderMode ?? item.pictogramRenderMode,
   spelledLetterTerms: overrides.spelledLetterTerms ?? item.spelledLetterTerms,
   spelledLetterUrls: overrides.spelledLetterUrls ?? item.spelledLetterUrls,
+  quantity: overrides.quantity !== undefined ? overrides.quantity : item.quantity,
 });
 
 const hydrateItem = (base: WorksheetItem, hydrated?: WorksheetItem): WorksheetItem => {
@@ -54,6 +55,7 @@ const hydrateItem = (base: WorksheetItem, hydrated?: WorksheetItem): WorksheetIt
   if (hydrated.pictogramRenderMode !== undefined) result.pictogramRenderMode = hydrated.pictogramRenderMode;
   if (hydrated.spelledLetterTerms !== undefined) result.spelledLetterTerms = hydrated.spelledLetterTerms;
   if (hydrated.spelledLetterUrls !== undefined) result.spelledLetterUrls = hydrated.spelledLetterUrls;
+  if (hydrated.quantity !== undefined) result.quantity = hydrated.quantity;
   return result;
 };
 
@@ -130,7 +132,31 @@ const normalizeRepasarExercise = (
   exercise: RepasarExercise | undefined,
   items: WorksheetItem[]
 ): RepasarExercise => {
-  const sourceItems = items.length > 0 ? items : exercise?.prompts || [];
+  const rawItems = items.length > 0 ? items : exercise?.prompts || [];
+
+  // Defensive merge: if generated prompts contain an 'image' card followed by a 'traceable_text' card for the same concept,
+  // merge them into a single 'traceable_text' item to avoid visual duplication on paper/screen.
+  const sourceItems: WorksheetItem[] = [];
+  for (let i = 0; i < rawItems.length; i++) {
+    const current = rawItems[i];
+    if (
+      current.type === 'image' &&
+      i + 1 < rawItems.length &&
+      rawItems[i + 1].type === 'traceable_text' &&
+      (current.content?.toUpperCase() === rawItems[i + 1].content?.toUpperCase() ||
+       current.searchTerm?.toUpperCase() === rawItems[i + 1].content?.toUpperCase())
+    ) {
+      // Merge the pictogram URLs/options from the image card into the traceable_text guide
+      const traceable = { ...rawItems[i + 1] };
+      traceable.selectedPictoUrl = current.selectedPictoUrl || traceable.selectedPictoUrl;
+      traceable.pictoOptions = current.pictoOptions || traceable.pictoOptions;
+      traceable.searchTerm = current.searchTerm || traceable.searchTerm;
+      sourceItems.push(traceable);
+      i++; // Skip the duplicate traceable_text in rawItems
+    } else {
+      sourceItems.push(current);
+    }
+  }
 
   const prompts = sourceItems.length > 0
     ? sourceItems.map((item, index) => {

@@ -1,9 +1,9 @@
 import React from 'react';
-import { CommonEditorProps } from './types';
-import { WorksheetItemEditor } from './WorksheetItemEditor';
-import { getSectionItems } from '../editorUtils';
+import { CommonEditorProps } from '../types';
+import { WorksheetItemEditor } from '../../editors/WorksheetItemEditor';
+import { getSectionItems } from '../../editorUtils';
 
-export const CopiarEditor: React.FC<CommonEditorProps> = ({
+export const CopyingEditor: React.FC<CommonEditorProps> = ({
   section,
   sectionIndex,
   handleMoveItem,

@@ -1,96 +1,14 @@
-export const REPASAR_SCHEMA = `{
-  "exerciseType": "repasar",
-  "instruction": {
-    "text": "REPASAR",
-    "pictograms": [
-      { "searchTerm": "repasar", "content": "REPASAR" }
-    ]
-  },
-  "exercise": {
-    "type": "repasar",
-    "prompts": [
-      { "type": "traceable_text", "content": "3" },
-      { "type": "traceable_text", "content": "FLOR" },
-      { "type": "traceable_text", "content": "HOJA" },
-      { "type": "traceable_text", "content": "RAÍZ" }
-    ]
-  }
-}`;
+import { EXERCISE_TYPE_ORDER, getExerciseSchema } from '../../components/exercises/registry';
 
-export const UNIR_SCHEMA = `{
-  "exerciseType": "unir",
-  "instruction": {
-    "text": "UNIR",
-    "pictograms": [
-      { "searchTerm": "unir", "content": "UNIR" },
-      { "searchTerm": "flecha", "content": "FLECHA" }
-    ]
-  },
-  "exercise": {
-    "type": "unir",
-    "pairs": [
-      {
-        "left": { "type": "image", "content": "abeja", "searchTerm": "abeja" },
-        "right": { "type": "image", "content": "flor", "searchTerm": "flor" }
-      },
-      {
-        "left": { "type": "image", "content": "vaca", "searchTerm": "vaca" },
-        "right": { "type": "image", "content": "leche", "searchTerm": "leche" }
-      },
-      {
-        "left": { "type": "image", "content": "gallina", "searchTerm": "gallina" },
-        "right": { "type": "image", "content": "huevo", "searchTerm": "huevo" }
-      }
-    ]
-  }
-}`;
-
-export const RODEAR_SCHEMA = `{
-  "exerciseType": "rodear",
-  "instruction": {
-    "text": "RODEAR FRUTAS",
-    "pictograms": [
-      { "searchTerm": "rodear", "content": "RODEAR" },
-      { "searchTerm": "fruta", "content": "FRUTAS" }
-    ]
-  },
-  "exercise": {
-    "type": "rodear",
-    "options": [
-      { "type": "image", "content": "manzana", "searchTerm": "manzana" },
-      { "type": "image", "content": "pera", "searchTerm": "pera" },
-      { "type": "image", "content": "coche", "searchTerm": "coche" },
-      { "type": "image", "content": "mesa", "searchTerm": "mesa" }
-    ]
-  }
-}`;
-
-export const COPIAR_SCHEMA = `{
-  "exerciseType": "copiar",
-  "instruction": {
-    "text": "COPIAR",
-    "pictograms": [
-      { "searchTerm": "copiar", "content": "COPIAR" }
-    ]
-  },
-  "exercise": {
-    "type": "copiar",
-    "copies": [
-      { "type": "traceable_text", "content": "SEMILLA" },
-      { "type": "traceable_text", "content": "RAÍZ" },
-      { "type": "traceable_text", "content": "TALLO" }
-    ]
-  }
-}`;
+// Dynamically compile the registered schemas to inject into example documents
+const compiledSchemas = EXERCISE_TYPE_ORDER.map(type => getExerciseSchema(type)).join(',\n');
+const circlingSchema = getExerciseSchema('rodear');
 
 export const WORKSHEET_JSON_EXAMPLE = `{
   "title": "string corto en español",
   "pictogramSearchTerm": "sustantivo simple para el pictograma principal",
   "sections": [
-    ${REPASAR_SCHEMA},
-    ${UNIR_SCHEMA},
-    ${RODEAR_SCHEMA},
-    ${COPIAR_SCHEMA}
+    ${compiledSchemas}
   ]
 }`;
 
@@ -99,7 +17,7 @@ export const WORKSHEET_JSON_SHAPE = `{
   "pictogramSearchTerm": "sustantivo simple para el pictograma principal",
   "sections": [
     {
-      "exerciseType": "repasar | unir | rodear | copiar",
+      "exerciseType": "${EXERCISE_TYPE_ORDER.join(' | ')}",
       "instruction": {
         "text": "string breve en MAYÚSCULAS",
         "pictograms": [
@@ -115,7 +33,7 @@ export const REFINEMENT_JSON_SCHEMA = `{
   "title": "string opcional",
   "pictogramSearchTerm": "string opcional",
   "sections": [
-    ${RODEAR_SCHEMA}
+    ${circlingSchema}
   ]
 }`;
 
@@ -168,7 +86,7 @@ export const WORKSHEET_OPERATION_JSON_SCHEMA = `{
         "pictogramSearchTerm": "string opcional"
       },
       "section": {
-        "exerciseType": "repasar | unir | rodear | copiar",
+        "exerciseType": "${EXERCISE_TYPE_ORDER.join(' | ')}",
         "instruction": {
           "text": "string breve en MAYÚSCULAS",
           "pictograms": [

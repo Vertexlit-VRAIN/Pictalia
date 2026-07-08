@@ -11,9 +11,13 @@ import {
   getDefaultInstruction,
   getExerciseTypeAddLabel,
 } from '../services/exerciseRepository';
-import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, PlusIcon, MinusIcon, XIcon, SaveIcon } from './Icons';
+import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, PlusIcon, MinusIcon, XIcon, SaveIcon, PencilRulerIcon } from './Icons';
 import { EXERCISE_TYPE_OPTIONS, getSectionItems } from './editorUtils';
 import { Pictogram, getAdaptiveSpelledBoxStyle } from './PictogramRenderer';
+import { TracingDisplay } from './exercises/tracing/TracingDisplay';
+import { MatchingDisplay } from './exercises/matching/MatchingDisplay';
+import { CopyingDisplay } from './exercises/copying/CopyingDisplay';
+import { CirclingDisplay } from './exercises/circling/CirclingDisplay';
 
 type EditableWorksheetProps = {
   worksheet: SavedWorksheet;
@@ -23,11 +27,11 @@ type EditableWorksheetProps = {
   onSearchLanguageChange: (lang: 'es' | 'val' | 'en') => void;
 };
 
-import { EditorTarget } from './editors/types';
-import { RepasarEditor } from './editors/RepasarEditor';
-import { UnirEditor } from './editors/UnirEditor';
-import { CopiarEditor } from './editors/CopiarEditor';
-import { RodearEditor } from './editors/RodearEditor';
+import { EditorTarget } from './exercises/types';
+import { TracingEditor } from './exercises/tracing/TracingEditor';
+import { MatchingEditor } from './exercises/matching/MatchingEditor';
+import { CopyingEditor } from './exercises/copying/CopyingEditor';
+import { CirclingEditor } from './exercises/circling/CirclingEditor';
 
 type PictogramEditorModalProps = {
   isOpen: boolean;
@@ -440,6 +444,10 @@ export const EditorPictogramPreview: React.FC<{
   );
 };
 
+const getExerciseTypeLabel = (type: string): string => {
+  return EXERCISE_TYPE_OPTIONS.find(opt => opt.value === type)?.label || type;
+};
+
 const getFallbackDisplayTerm = (item?: WorksheetItem): string => item?.searchTerm || item?.content || '';
 
 const isWorksheetItem = (item: unknown): item is WorksheetItem =>
@@ -462,6 +470,7 @@ const cloneWorksheetItem = (item: WorksheetItem | undefined, fallbackContent: st
     pictogramRenderMode: item.pictogramRenderMode,
     spelledLetterTerms: item.spelledLetterTerms ? [...item.spelledLetterTerms] : item.spelledLetterTerms,
     spelledLetterUrls: item.spelledLetterUrls ? [...item.spelledLetterUrls] : item.spelledLetterUrls,
+    quantity: item.quantity,
   };
 };
 
@@ -520,6 +529,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
   const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<number[]>([]);
   const [sectionPendingDelete, setSectionPendingDelete] = useState<number | null>(null);
+  const [activeEditingSectionIndex, setActiveEditingSectionIndex] = useState<number | null>(null);
 
   const isSectionCollapsed = (sectionIndex: number): boolean => collapsedSections.includes(sectionIndex);
 
@@ -672,7 +682,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
         if (applyToAll) {
           applyGlobalPictoUpdate(draft, originalPictoUrl, selectedUrl, pictoOptions, originalDisplayedTerm, displayedTerm, searchTerm, renderMode, spelledLetterTerms, spelledLetterUrls);
         }
-      }, 'Edición de ficha');
+      }, 'Edición de pictograma principal');
       setEditorTarget(null);
       return;
     }
@@ -688,7 +698,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
         instructionPicto.pictogramRenderMode = renderMode;
         instructionPicto.spelledLetterTerms = spelledLetterTerms;
         instructionPicto.spelledLetterUrls = spelledLetterUrls;
-      });
+      }, 'Edición de pictograma de instrucción');
       setEditorTarget(null);
       return;
     }
@@ -721,7 +731,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
       }
 
       sectionDraft.items = items;
-    });
+    }, 'Edición de pictograma de ejercicio');
 
     setEditorTarget(null);
   };
@@ -953,14 +963,14 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
   const renderExerciseEditor = (section: WorksheetSection, sectionIndex: number) => {
     switch (section.exerciseType) {
       case 'repasar':
-        return <RepasarEditor section={section} sectionIndex={sectionIndex} handleMoveItem={handleMoveItem} handleRemoveItem={handleRemoveItem} setEditorTarget={setEditorTarget} handleItemTextChange={handleItemTextChange} />;
+        return <TracingEditor section={section} sectionIndex={sectionIndex} handleMoveItem={handleMoveItem} handleRemoveItem={handleRemoveItem} setEditorTarget={setEditorTarget} handleItemTextChange={handleItemTextChange} />;
       case 'unir':
-        return <UnirEditor section={section} sectionIndex={sectionIndex} handleMoveItem={handleMoveItem} handleRemoveItem={handleRemoveItem} setEditorTarget={setEditorTarget} handleItemTextChange={handleItemTextChange} />;
+        return <MatchingEditor section={section} sectionIndex={sectionIndex} handleMoveItem={handleMoveItem} handleRemoveItem={handleRemoveItem} setEditorTarget={setEditorTarget} handleItemTextChange={handleItemTextChange} />;
       case 'copiar':
-        return <CopiarEditor section={section} sectionIndex={sectionIndex} handleMoveItem={handleMoveItem} handleRemoveItem={handleRemoveItem} setEditorTarget={setEditorTarget} handleItemTextChange={handleItemTextChange} />;
+        return <CopyingEditor section={section} sectionIndex={sectionIndex} handleMoveItem={handleMoveItem} handleRemoveItem={handleRemoveItem} setEditorTarget={setEditorTarget} handleItemTextChange={handleItemTextChange} />;
       case 'rodear':
       default:
-        return <RodearEditor section={section} sectionIndex={sectionIndex} handleMoveItem={handleMoveItem} handleRemoveItem={handleRemoveItem} setEditorTarget={setEditorTarget} handleItemTextChange={handleItemTextChange} />;
+        return <CirclingEditor section={section} sectionIndex={sectionIndex} handleMoveItem={handleMoveItem} handleRemoveItem={handleRemoveItem} setEditorTarget={setEditorTarget} handleItemTextChange={handleItemTextChange} />;
     }
   };
 
@@ -1013,7 +1023,10 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => handleRemoveSection(sectionPendingDelete)}
+                onClick={() => {
+                  handleRemoveSection(sectionPendingDelete);
+                  setActiveEditingSectionIndex(null);
+                }}
                 className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-4 py-2.5 font-semibold text-white hover:bg-rose-700"
               >
                 Eliminar
@@ -1023,214 +1036,146 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
         </div>
       )}
 
-      <div className="space-y-4">
-        <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="grid gap-4 md:grid-cols-[max-content_minmax(0,1fr)] md:items-center">
-            <AdaptivePreviewButton
-              src={worksheet.selectedPictoUrl || worksheet.pictoOptions?.[0]}
-              searchTerm={worksheet.pictogramSearchTerm}
-              altText={worksheet.pictogramSearchTerm}
-              renderMode={worksheet.pictogramRenderMode}
-              letterTerms={worksheet.spelledLetterTerms}
-              letterUrls={worksheet.spelledLetterUrls}
-              className="relative flex min-h-16 items-center justify-center rounded-2xl border-2 border-slate-300 bg-white p-2 transition hover:border-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600 group"
-              onClick={() => setEditorTarget({ type: 'main' })}
-              defaultWidthRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.defaultWidthRem}
-              fallbackMinRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackMinRem}
-              fallbackBaseRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackBaseRem}
-              fallbackStepRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackStepRem}
-              fallbackMaxRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackMaxRem}
-            >
-              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                <span className="text-white font-bold text-xs">Editar</span>
-              </div>
-            </AdaptivePreviewButton>
-            <input
-              type="text"
-              value={worksheet.title}
-              onChange={(e) => updateWorksheetMetadata(draft => {
-                draft.title = e.target.value;
-              })}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-2xl font-extrabold uppercase tracking-wider text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
-            />
-          </div>
-        </div>
-
-        {worksheet.sections.map((section, sectionIndex) => {
+      {activeEditingSectionIndex !== null ? (
+        (() => {
+          const sectionIndex = activeEditingSectionIndex;
+          const section = worksheet.sections[sectionIndex];
+          if (!section) {
+            setActiveEditingSectionIndex(null);
+            return null;
+          }
           const exerciseType = section.exerciseType || 'rodear';
-          const isHighlighted = Boolean(
-            section.internalId && highlightedSectionIds.includes(section.internalId)
-          );
           const addLabel = getExerciseTypeAddLabel(exerciseType);
           const instructionPictograms = section.instruction.pictograms || [];
 
           return (
-              <div
-                key={section.internalId || sectionIndex}
-                className={`rounded-[24px] border p-4 shadow-sm transition ${
-                  isHighlighted
-                    ? 'border-sky-500 bg-sky-50/40 ring-4 ring-sky-200'
-                    : 'border-slate-200 bg-white'
-                }`}
-              >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="flex-1 space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleSectionCollapsed(sectionIndex)}
-                        className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-sky-500 hover:text-sky-700"
-                        aria-label={isSectionCollapsed(sectionIndex) ? 'Expandir ejercicio' : 'Colapsar ejercicio'}
-                        title={isSectionCollapsed(sectionIndex) ? 'Expandir ejercicio' : 'Colapsar ejercicio'}
-                      >
-                        <ChevronDownIcon className={`h-4 w-4 transition-transform ${isSectionCollapsed(sectionIndex) ? '-rotate-90' : ''}`} />
-                      </button>
-                      <div className="truncate text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                        Ejercicio {sectionIndex + 1}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleMoveSection(sectionIndex, -1)}
-                        disabled={sectionIndex === 0}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-sky-500 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
-                        aria-label="Subir ejercicio"
-                        title="Subir ejercicio"
-                      >
-                        <ArrowUpIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMoveSection(sectionIndex, 1)}
-                        disabled={sectionIndex === worksheet.sections.length - 1}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-sky-500 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
-                        aria-label="Bajar ejercicio"
-                        title="Bajar ejercicio"
-                      >
-                        <ArrowDownIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSectionPendingDelete(sectionIndex)}
-                        disabled={worksheet.sections.length <= 1}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-white text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        aria-label="Eliminar ejercicio"
-                        title="Eliminar ejercicio"
-                      >
-                        <XIcon className="h-4 w-4" />
-                      </button>
-                    </div>
+            <div className="rounded-[28px] border-2 border-sky-200 bg-sky-50/20 p-5 shadow-inner">
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-sky-100 pb-4">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-[0.16em] text-sky-600">
+                    Modo Enfoque
                   </div>
+                  <h4 className="text-xl font-extrabold text-slate-900">
+                    Ejercicio {sectionIndex + 1}: {getExerciseTypeLabel(exerciseType).toUpperCase()}
+                  </h4>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => setActiveEditingSectionIndex(null)}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 font-semibold text-white shadow-lg transition hover:bg-slate-800"
+                >
+                  <SaveIcon className="h-5 w-5" />
+                  Guardar y Volver
+                </button>
+              </div>
 
-                  <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+              <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Tipo de actividad</label>
                     <select
                       value={exerciseType}
                       onChange={(e) => handleExerciseTypeChange(sectionIndex, e.target.value as ExerciseType)}
-                      className="rounded-2xl border border-slate-300 px-3 py-2 text-sm font-semibold focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                      className="w-full rounded-2xl border border-slate-300 px-3 py-2.5 text-sm font-semibold focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
                     >
                       {EXERCISE_TYPE_OPTIONS.map(option => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Enunciado (Instrucción)</label>
                     <input
                       type="text"
                       value={section.instruction.text}
                       onChange={(e) => updateSectionByIndex(sectionIndex, sectionDraft => {
                         sectionDraft.instruction.text = e.target.value;
                       })}
-                      className="w-full rounded-2xl border border-slate-300 px-3 py-2 text-lg font-bold uppercase tracking-wide text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                      className="w-full rounded-2xl border border-slate-300 px-4 py-2 text-lg font-bold uppercase tracking-wide text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
                     />
                   </div>
-
-                  {isSectionCollapsed(sectionIndex) ? (
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                      {getSectionSummary(section)}
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex flex-wrap gap-2">
-                        {instructionPictograms.map((picto, pictoIndex) => (
-                          <div key={pictoIndex} className="flex flex-col items-center rounded-2xl border border-slate-200 bg-slate-50 p-2">
-                            <div className="mb-2 flex items-center gap-1 self-end">
-                              <button
-                                type="button"
-                                onClick={() => handleMoveInstructionPicto(sectionIndex, pictoIndex, -1)}
-                                disabled={pictoIndex === 0}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                <ArrowUpIcon className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleMoveInstructionPicto(sectionIndex, pictoIndex, 1)}
-                                disabled={pictoIndex === instructionPictograms.length - 1}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                <ArrowDownIcon className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveInstructionPicto(sectionIndex, pictoIndex)}
-                                disabled={instructionPictograms.length <= 1}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                <MinusIcon className="h-4 w-4" />
-                              </button>
-                            </div>
-                            
-                            <AdaptivePreviewButton
-                              src={picto.url}
-                              searchTerm={picto.searchTerm || picto.content}
-                              altText={picto.content}
-                              renderMode={picto.pictogramRenderMode}
-                              letterTerms={picto.spelledLetterTerms}
-                              letterUrls={picto.spelledLetterUrls}
-                              className="group relative flex min-h-16 items-center justify-center rounded-2xl border-2 border-slate-200 bg-white px-1 py-2 hover:border-sky-500"
-                              onClick={() => setEditorTarget({ type: 'instruction', sectionIndex, pictoIndex })}
-                              defaultWidthRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.defaultWidthRem}
-                              fallbackMinRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackMinRem}
-                              fallbackBaseRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackBaseRem}
-                              fallbackStepRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackStepRem}
-                              fallbackMaxRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackMaxRem}
-                            >
-                              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                                <span className="text-white font-bold text-xs">Editar</span>
-                              </div>
-                            </AdaptivePreviewButton>
-                            {picto.pictogramRenderMode !== 'spell' && (
-                              <span className="mt-2 text-xs font-semibold uppercase text-slate-600">{picto.content}</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleAddInstructionPicto(sectionIndex)}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 hover:border-sky-500 hover:text-sky-700"
-                        >
-                          <PlusIcon className="h-4 w-4" />
-                          Añadir pictograma al enunciado
-                        </button>
-                      </div>
-                    </>
-                  )}
                 </div>
 
-                <div className="flex flex-wrap gap-2" />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Pictogramas de Enunciado</label>
+                  <div className="flex flex-wrap gap-3">
+                    {instructionPictograms.map((picto, pictoIndex) => (
+                      <div key={pictoIndex} className="flex flex-col items-center rounded-2xl border border-slate-200 bg-slate-50 p-2">
+                        <div className="mb-2 flex items-center gap-1 self-end">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveInstructionPicto(sectionIndex, pictoIndex, -1)}
+                            disabled={pictoIndex === 0}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <ArrowUpIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveInstructionPicto(sectionIndex, pictoIndex, 1)}
+                            disabled={pictoIndex === instructionPictograms.length - 1}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <ArrowDownIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveInstructionPicto(sectionIndex, pictoIndex)}
+                            disabled={instructionPictograms.length <= 1}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <MinusIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                        
+                        <AdaptivePreviewButton
+                          src={picto.url}
+                          searchTerm={picto.searchTerm || picto.content}
+                          altText={picto.content}
+                          renderMode={picto.pictogramRenderMode}
+                          letterTerms={picto.spelledLetterTerms}
+                          letterUrls={picto.spelledLetterUrls}
+                          className="group relative flex min-h-16 items-center justify-center rounded-2xl border-2 border-slate-200 bg-white px-1 py-2 hover:border-sky-500"
+                          onClick={() => setEditorTarget({ type: 'instruction', sectionIndex, pictoIndex })}
+                          defaultWidthRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.defaultWidthRem}
+                          fallbackMinRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackMinRem}
+                          fallbackBaseRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackBaseRem}
+                          fallbackStepRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackStepRem}
+                          fallbackMaxRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackMaxRem}
+                        >
+                          <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                            <span className="text-white font-bold text-xs">Editar</span>
+                          </div>
+                        </AdaptivePreviewButton>
+                        {picto.pictogramRenderMode !== 'spell' && (
+                          <span className="mt-2 text-xs font-bold uppercase text-slate-600">{picto.content}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
 
-              {!isSectionCollapsed(sectionIndex) && (
-                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => handleAddInstructionPicto(sectionIndex)}
+                    className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:border-sky-500 hover:text-sky-700"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Añadir pictograma al enunciado
+                  </button>
+                </div>
+
+                <div className="border-t border-slate-100 pt-6">
+                  <label className="block text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Contenido de la actividad</label>
                   {renderExerciseEditor(section, sectionIndex)}
-                  <div className="mt-4 flex flex-wrap gap-2">
+
+                  <div className="mt-6 flex flex-wrap gap-3">
                     {exerciseType !== 'rodear' && exerciseType !== 'unir' && (
                       <button
                         type="button"
                         onClick={() => handleAddItem(sectionIndex)}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                        className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
                       >
                         <PlusIcon className="h-4 w-4" />
                         {addLabel}
@@ -1240,7 +1185,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
                       <button
                         type="button"
                         onClick={() => handleAddPictogramItem(sectionIndex)}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                        className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
                       >
                         <PlusIcon className="h-4 w-4" />
                         {exerciseType === 'unir' ? 'Añadir pareja visual' : 'Añadir pictograma'}
@@ -1248,28 +1193,200 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
                     )}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           );
-        })}
-
-        <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-4">
-          <p className="mb-3 text-sm font-semibold text-slate-700">Añadir ejercicio nuevo</p>
-          <div className="flex flex-wrap gap-2">
-            {EXERCISE_TYPE_OPTIONS.map(option => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleAddSection(option.value)}
-                className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-sky-500 hover:text-sky-700"
+        })()
+      ) : (
+        <div className="space-y-6">
+          {/* Cabecera y Título */}
+          <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="grid gap-4 md:grid-cols-[max-content_minmax(0,1fr)] md:items-center">
+              <AdaptivePreviewButton
+                src={worksheet.selectedPictoUrl || worksheet.pictoOptions?.[0]}
+                searchTerm={worksheet.pictogramSearchTerm}
+                altText={worksheet.pictogramSearchTerm}
+                renderMode={worksheet.pictogramRenderMode}
+                letterTerms={worksheet.spelledLetterTerms}
+                letterUrls={worksheet.spelledLetterUrls}
+                className="relative flex min-h-16 items-center justify-center rounded-2xl border-2 border-slate-300 bg-white p-2 transition hover:border-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600 group"
+                onClick={() => setEditorTarget({ type: 'main' })}
+                defaultWidthRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.defaultWidthRem}
+                fallbackMinRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackMinRem}
+                fallbackBaseRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackBaseRem}
+                fallbackStepRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackStepRem}
+                fallbackMaxRem={EDITOR_LETTER_BLOCK_PREVIEW_SIZING.fallbackMaxRem}
               >
-                <PlusIcon className="h-4 w-4" />
-                {option.label}
-              </button>
-            ))}
+                <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                  <span className="text-white font-bold text-xs">Editar</span>
+                </div>
+              </AdaptivePreviewButton>
+              <input
+                type="text"
+                value={worksheet.title}
+                onChange={(e) => updateWorksheetMetadata(draft => {
+                  draft.title = e.target.value;
+                })}
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-2xl font-extrabold uppercase tracking-wider text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
+              />
+            </div>
+          </div>
+
+          {/* Listado de ejercicios con vista mixta (visualización + barra de control) */}
+          <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-5 shadow-inner">
+            <h5 className="text-sm font-black text-slate-800 mb-4 uppercase tracking-wider">Ejercicios en la Ficha</h5>
+            
+            <div className="space-y-6">
+              {worksheet.sections.map((section, sectionIndex) => {
+                const exerciseType = section.exerciseType || 'rodear';
+                const isHighlighted = Boolean(
+                  section.internalId && highlightedSectionIds.includes(section.internalId)
+                );
+                const exercise = section.exercise || {
+                  type: exerciseType,
+                  options: section.items || [],
+                };
+                const collapsed = isSectionCollapsed(sectionIndex);
+
+                return (
+                  <div
+                    key={section.internalId || sectionIndex}
+                    className={`rounded-2xl border-2 p-5 shadow-sm transition bg-white ${
+                      isHighlighted ? 'border-sky-500 bg-sky-50/15 ring-2 ring-sky-200 shadow-sky-50' : 'border-slate-200'
+                    }`}
+                  >
+                        {/* Barra de control superior para el ejercicio */}
+                        <div className={`flex flex-wrap items-center justify-between gap-3 ${collapsed ? '' : 'border-b border-slate-100 pb-3 mb-4'}`}>
+                          <div className="flex items-center gap-2 min-w-0">
+                            {/* Botón de Colapsar/Expandir */}
+                            <button
+                              type="button"
+                              onClick={() => toggleSectionCollapsed(sectionIndex)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-sky-500 transition-transform duration-200 shrink-0"
+                              style={{ transform: collapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}
+                              title={collapsed ? 'Expandir ejercicio' : 'Colapsar ejercicio'}
+                            >
+                              <ChevronDownIcon className="h-4 w-4" />
+                            </button>
+
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sm font-black text-sky-850">
+                              {sectionIndex + 1}
+                            </div>
+
+                            <span className="rounded-full bg-slate-100 px-3 py-0.5 text-xs font-black uppercase tracking-wider text-slate-600 shrink-0">
+                              {getExerciseTypeLabel(exerciseType)}
+                            </span>
+
+                            {collapsed && (
+                              <span className="text-sm font-bold text-slate-700 truncate ml-2 max-w-[200px] sm:max-w-md">
+                                {section.instruction.text || 'Sin instrucción'}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveSection(sectionIndex, -1)}
+                              disabled={sectionIndex === 0}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-sky-500 hover:text-sky-600 disabled:opacity-40"
+                              title="Subir ejercicio"
+                            >
+                              <ArrowUpIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveSection(sectionIndex, 1)}
+                              disabled={sectionIndex === worksheet.sections.length - 1}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-sky-500 hover:text-sky-600 disabled:opacity-40"
+                              title="Bajar ejercicio"
+                            >
+                              <ArrowDownIcon className="h-4 w-4" />
+                            </button>
+                            
+                            <button
+                              type="button"
+                              onClick={() => setActiveEditingSectionIndex(sectionIndex)}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-sky-700 transition"
+                            >
+                              <PencilRulerIcon className="h-3.5 w-3.5" />
+                              Editar Ejercicio
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setSectionPendingDelete(sectionIndex)}
+                              disabled={worksheet.sections.length <= 1}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                              title="Eliminar ejercicio"
+                            >
+                              <XIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Previsualización visual del ejercicio (solo se muestra si no está colapsado) */}
+                        {!collapsed && (
+                          <div className="pointer-events-none select-none rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                            {/* Cabecera del ejercicio (Instrucción y pictogramas) */}
+                            <div className="flex flex-wrap items-center gap-4 mb-4">
+                              {section.instruction.pictograms && section.instruction.pictograms.length > 0 && (
+                                <div className="flex items-center gap-1.5 p-1 bg-white border border-slate-200 rounded-lg">
+                                  {section.instruction.pictograms.map((picto, idx) => (
+                                    <div key={idx} className="flex flex-col items-center p-1 min-w-[3rem]">
+                                      <div className="h-10 w-10">
+                                        <Pictogram
+                                          searchTerm={picto.searchTerm || picto.content}
+                                          src={picto.url}
+                                          renderMode="auto"
+                                          className="max-h-full max-w-full object-contain"
+                                          letterWrapperClassName="hidden"
+                                        />
+                                      </div>
+                                      <span className="text-[9px] text-slate-500 font-bold uppercase mt-0.5 tracking-tighter truncate max-w-[48px]">{picto.content}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <h4 className="font-extrabold text-lg text-slate-800 uppercase tracking-wider">
+                                {section.instruction.text || 'SIN INSTRUCCIÓN'}
+                              </h4>
+                            </div>
+
+                            {/* Renderizado visual de la actividad */}
+                            <div className="w-full bg-white rounded-xl p-4 border border-slate-200/60 shadow-sm overflow-x-auto">
+                              {exerciseType === 'repasar' && <TracingDisplay exercise={exercise as any} />}
+                              {exerciseType === 'unir' && <MatchingDisplay exercise={exercise as any} />}
+                              {exerciseType === 'copiar' && <CopyingDisplay exercise={exercise as any} />}
+                              {exerciseType === 'rodear' && <CirclingDisplay exercise={exercise as any} />}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+            </div>
+          </div>
+
+          {/* Selector de añadir nuevo ejercicio */}
+          <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-5 shadow-sm text-center sm:text-left">
+            <p className="mb-3 text-xs font-black text-slate-500 uppercase tracking-wider">Añadir ejercicio nuevo</p>
+            <div className="flex flex-wrap justify-center sm:justify-start gap-2.5">
+              {EXERCISE_TYPE_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleAddSection(option.value)}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-sky-500 hover:text-sky-700 shadow-sm transition"
+                >
+                  <PlusIcon className="h-4 w-4 text-sky-600" />
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </>
   );
 };

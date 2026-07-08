@@ -1,9 +1,9 @@
 import React from 'react';
-import { CommonEditorProps } from './types';
-import { WorksheetItemEditor } from './WorksheetItemEditor';
-import { getSectionItems } from '../editorUtils';
+import { CommonEditorProps } from '../types';
+import { WorksheetItemEditor } from '../../editors/WorksheetItemEditor';
+import { getSectionItems } from '../../editorUtils';
 
-export const RodearEditor: React.FC<CommonEditorProps> = ({
+export const TracingEditor: React.FC<CommonEditorProps> = ({
   section,
   sectionIndex,
   handleMoveItem,
@@ -13,10 +13,10 @@ export const RodearEditor: React.FC<CommonEditorProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <div className="rounded-[20px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-        Presenta pocas opciones, muy diferenciadas y visualmente limpias para facilitar la discriminación.
+      <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        El profesor prepara trazos simples y repetitivos. Conviene usar pocas unidades visuales y letras claras.
       </div>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col gap-3">
         {getSectionItems(section).map((item, itemIndex) => (
           <WorksheetItemEditor
             key={`${sectionIndex}-${itemIndex}`}
@@ -25,8 +25,8 @@ export const RodearEditor: React.FC<CommonEditorProps> = ({
             sectionIndex={sectionIndex}
             itemIndex={itemIndex}
             options={{
-              title: `Opción ${itemIndex + 1}`,
-              description: 'Pictograma para rodear o señalar.',
+              title: `Trazo ${itemIndex + 1}`,
+              description: 'Pictograma de apoyo y palabra guía para repasar.',
             }}
             handleMoveItem={handleMoveItem}
             handleRemoveItem={handleRemoveItem}

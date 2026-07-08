@@ -18,7 +18,7 @@ export interface ExerciseTypeDefinition {
   createDefaultExercise: () => WorksheetExercise;
 }
 
-export const EXERCISE_TYPE_ORDER: ExerciseType[] = ['repasar', 'unir', 'rodear', 'copiar'];
+import { EXERCISE_TYPE_ORDER, EXERCISE_REGISTRY } from '../components/exercises/registry';
 
 export const createImageWorksheetItem = (content: string): WorksheetItem => ({
   type: 'image',
@@ -45,73 +45,21 @@ export const createInstructionPictogram = (content: string): WorksheetInstructio
   spelledLetterUrls: [],
 });
 
-export const EXERCISE_REPOSITORY: Record<ExerciseType, ExerciseTypeDefinition> = {
-  repasar: {
-    type: 'repasar',
-    label: 'Repasar',
-    instructionText: 'REPASAR',
-    addLabel: 'Añadir trazo',
-    defaultLayout: 'column',
-    instructionTerms: ['repasar'],
-    minimumItems: 1,
-    createDefaultExercise: () => ({
-      type: 'repasar',
-      prompts: [createTraceableWorksheetItem('A')],
-    }),
-  },
-  unir: {
-    type: 'unir',
-    label: 'Unir',
-    instructionText: 'UNIR',
-    addLabel: 'Añadir pareja',
-    defaultLayout: 'matching_horizontal',
-    instructionTerms: ['unir', 'flecha'],
-    minimumItems: 4,
-    createDefaultExercise: () => ({
-      type: 'unir',
-      pairs: [
-        {
-          left: createImageWorksheetItem('sol'),
-          right: createImageWorksheetItem('sol'),
-        },
-        {
-          left: createImageWorksheetItem('luna'),
-          right: createImageWorksheetItem('luna'),
-        },
-      ],
-    }),
-  },
-  rodear: {
-    type: 'rodear',
-    label: 'Rodear',
-    instructionText: 'RODEAR',
-    addLabel: 'Añadir pictograma',
-    defaultLayout: 'row',
-    instructionTerms: ['rodear'],
-    minimumItems: 2,
-    createDefaultExercise: () => ({
-      type: 'rodear',
-      prompt: null,
-      options: [
-        createImageWorksheetItem('opcion 1'),
-        createImageWorksheetItem('opcion 2'),
-      ],
-    }),
-  },
-  copiar: {
-    type: 'copiar',
-    label: 'Copiar',
-    instructionText: 'COPIAR',
-    addLabel: 'Añadir copia',
-    defaultLayout: 'column',
-    instructionTerms: ['copiar'],
-    minimumItems: 1,
-    createDefaultExercise: () => ({
-      type: 'copiar',
-      copies: [createTraceableWorksheetItem('PALABRA')],
-    }),
-  },
-};
+export const EXERCISE_REPOSITORY: Record<ExerciseType, ExerciseTypeDefinition> = {} as any;
+
+EXERCISE_TYPE_ORDER.forEach((type) => {
+  const manifest = EXERCISE_REGISTRY[type];
+  EXERCISE_REPOSITORY[type] = {
+    type,
+    label: manifest.label,
+    instructionText: manifest.instructionText,
+    addLabel: manifest.addLabel,
+    defaultLayout: manifest.defaultLayout,
+    instructionTerms: manifest.instructionTerms,
+    minimumItems: manifest.minimumItems,
+    createDefaultExercise: manifest.createDefaultExercise,
+  };
+});
 
 export const EXERCISE_TYPE_OPTIONS = EXERCISE_TYPE_ORDER.map(type => ({
   value: type,

@@ -4,8 +4,9 @@ import { useDynamicLibraries } from '../hooks/useDynamicLibraries';
 import { exportWorksheetAsPdf } from '../lib/worksheetExport';
 import { Spinner } from './Spinner';
 import { FileTextIcon } from './Icons';
-import { WorksheetResult } from './WorksheetResult';
 import { useAppDataManager } from '../hooks/useProfileManager';
+import type { SavedWorksheet } from '../types';
+import { WorksheetEditor } from './WorksheetEditor';
 
 export const GenerateWorksheetView: React.FC = () => {
   const [topic, setTopic] = useState<string>('');
@@ -19,12 +20,27 @@ export const GenerateWorksheetView: React.FC = () => {
   const worksheetRef = useRef<HTMLDivElement>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [localWorksheet, setLocalWorksheet] = useState<SavedWorksheet | null>(null);
 
   useEffect(() => {
     if (activeProfile?.defaultLanguage) {
       setLanguage(activeProfile.defaultLanguage);
     }
   }, [activeProfile?.id, activeProfile?.defaultLanguage]);
+
+  useEffect(() => {
+    if (worksheet) {
+      setLocalWorksheet({
+        ...worksheet,
+        id: 'temp-preview',
+        createdAt: new Date().toISOString(),
+        sourceDescription: `Ficha generada sobre: ${topic}`,
+      });
+      setIsCurrentWorksheetSaved(false);
+    } else {
+      setLocalWorksheet(null);
+    }
+  }, [worksheet, topic]);
 
   const handleGenerate = useCallback(async () => {
     if (!topic.trim()) {
@@ -42,10 +58,10 @@ export const GenerateWorksheetView: React.FC = () => {
   }, [topic, goal, extraDetails, language, generate]);
 
   const handleDownload = useCallback(async () => {
-    if (worksheetRef.current && worksheet) {
+    if (worksheetRef.current && localWorksheet) {
       setIsDownloading(true);
       setValidationError(null);
-      const fileName = `ficha_${worksheet.title.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+      const fileName = `ficha_${localWorksheet.title.replace(/\s+/g, '_').toLowerCase()}.pdf`;
       try {
         await exportWorksheetAsPdf(worksheetRef.current, fileName);
       } catch (err: any) {
@@ -54,15 +70,13 @@ export const GenerateWorksheetView: React.FC = () => {
         setIsDownloading(false);
       }
     }
-  }, [worksheet]);
+  }, [localWorksheet]);
 
-  const handleSave = useCallback(() => {
-    if (worksheet) {
-      saveWorksheet(worksheet, topic);
-      setIsCurrentWorksheetSaved(true);
-    }
-  }, [worksheet, saveWorksheet, topic]);
-
+  const handleSave = useCallback((wsToSave: SavedWorksheet) => {
+    saveWorksheet(wsToSave, topic);
+    setIsCurrentWorksheetSaved(true);
+    setLocalWorksheet(wsToSave);
+  }, [saveWorksheet, topic]);
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -197,16 +211,19 @@ export const GenerateWorksheetView: React.FC = () => {
         {(error || validationError) && <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700" role="alert">{error || validationError}</p>}
       </section>
 
-      {worksheet && (
-        <WorksheetResult
-          ref={worksheetRef}
-          worksheet={worksheet}
+      {localWorksheet && (
+        <WorksheetEditor
+          worksheet={localWorksheet}
+          setWorksheet={setLocalWorksheet}
+          onSave={handleSave}
+          onCancel={() => setLocalWorksheet(null)}
           onDownload={handleDownload}
           isDownloadReady={libsReady}
-          title="Ficha Generada"
-          onSave={handleSave}
-          isSaved={isCurrentWorksheetSaved}
           isDownloading={isDownloading}
+          searchLanguage={language}
+          onSearchLanguageChange={setLanguage}
+          worksheetRef={worksheetRef}
+          isSaved={isCurrentWorksheetSaved}
         />
       )}
     </div>

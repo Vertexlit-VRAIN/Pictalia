@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { WorksheetExercise, WorksheetItem } from '../../types';
-import { WorksheetItemDisplay } from './WorksheetItemDisplay';
+import { WorksheetExercise, WorksheetItem } from '../../../types';
+import { WorksheetItemDisplay } from '../../display/WorksheetItemDisplay';
 
 const shuffleArray = <T,>(items: T[]): T[] => {
   const next = [...items];
@@ -30,7 +30,7 @@ const shuffleAvoidingSamePosition = <T,>(items: T[]): T[] => {
   return shuffleArray(items);
 };
 
-export const UnirDisplay: React.FC<{ exercise: Extract<WorksheetExercise, { type: 'unir' }> }> = ({ exercise }) => {
+export const MatchingDisplay: React.FC<{ exercise: Extract<WorksheetExercise, { type: 'unir' }> }> = ({ exercise }) => {
   const leftColumnItems = exercise.pairs.map(pair => pair.left);
   const rightItems = exercise.pairs.map(pair => pair.right);
 

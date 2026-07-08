@@ -10,15 +10,12 @@ import {
 } from './worksheetOperations';
 
 
-import {
-  buildWorksheetPrompt,
-  buildRefinementPrompt,
-  buildSemanticRepairPrompt,
-  buildJsonRepairPrompt,
-  buildExerciseCountRepairPrompt,
-  buildExerciseRefinementPrompt,
-  buildTranslationPrompt,
-} from './prompts/builder';
+import { buildSemanticRepairPrompt } from './multiagent/prompts/semanticRepairPrompt';
+import { buildExerciseCountRepairPrompt } from './multiagent/prompts/exerciseCountRepairPrompt';
+import { buildJsonRepairPrompt } from './multiagent/prompts/jsonRepairPrompt';
+import { buildRefinementPrompt } from './multiagent/prompts/refinementPrompt';
+import { buildExerciseRefinementPrompt } from './multiagent/prompts/exerciseRefinementPrompt';
+import { buildTranslationPrompt } from './multiagent/prompts/translationPrompt';
 
 interface GenerateWorksheetOptions {
   topic?: string;
@@ -272,50 +269,7 @@ const parseOperationResponse = async (rawText: string): Promise<WorksheetOperati
 
 
 
-export const generateWorksheet = async (options: GenerateWorksheetOptions): Promise<Worksheet> => {
-  const { content: childProfile, showPictogramInstructions } = getActiveProfileData();
-  const requestedExerciseCount = extractRequestedExerciseCount(options);
-
-  try {
-    const promptText = buildWorksheetPrompt(
-      {
-        topic: options.topic,
-        goal: options.goal,
-        extraDetails: options.extraDetails,
-        requestedExerciseCount,
-        language: options.language || 'es',
-      },
-      childProfile,
-      showPictogramInstructions
-    );
-
-    const rawText = await runAiPrompt(promptText);
-    let worksheet = await parseWorksheetResponse(rawText);
-
-    if (needsSemanticRepair(worksheet, options)) {
-      console.warn('La ficha generada no respeta el tema. Intentando corrección semántica automática.');
-      worksheet = await repairSemanticMismatch(rawText, {
-        ...options,
-      });
-    }
-
-    if (needsExerciseCountRepair(worksheet, requestedExerciseCount)) {
-      console.warn('La ficha generada tiene menos ejercicios de los solicitados. Intentando ampliación automática.');
-      worksheet = await repairExerciseCountMismatch(worksheet, options, requestedExerciseCount as number);
-    }
-
-    // Guardamos el contexto original para que esté disponible durante la edición
-    worksheet.originalTopic = options.topic;
-    worksheet.originalGoal = options.goal;
-    worksheet.originalExtraDetails = options.extraDetails;
-    worksheet.language = options.language || 'es';
-
-    return worksheet;
-  } catch (error) {
-    console.error('Error al generar la ficha:', error);
-    throw new Error(error instanceof Error ? error.message : 'No se pudo generar el contenido de la ficha. Por favor, inténtalo de nuevo.');
-  }
-};
+export { generateWorksheet } from './multiagent/workflow';
 
 export const refineWorksheet = async (originalWorksheet: SavedWorksheet, instruction: string): Promise<Partial<Worksheet>> => {
   const { content: childProfile } = getActiveProfileData();

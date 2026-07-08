@@ -1,4 +1,5 @@
 import { exerciseTypesForPrompt } from '../exerciseRepository';
+import { EXERCISE_TYPE_ORDER, getExercisePromptRules, getExerciseSchema } from '../../components/exercises/registry';
 
 export const JSON_ONLY_RULE = `
 Return ONLY valid JSON.
@@ -53,57 +54,19 @@ FORBIDDEN FIELDS:
 - Do not return invented IDs for pictograms, images, words, sounds, or items.
 `;
 
-export const EXERCISE_STRUCTURE_RULES = `
-MANDATORY STRUCTURE BY TYPE:
+const parts = EXERCISE_TYPE_ORDER.map((type, idx) => {
+  const rules = getExercisePromptRules(type);
+  const schema = getExerciseSchema(type);
+  return `${idx + 1}. "${type}":
+JSON Schema format:
+${schema}
+Rules:
+${rules.map(r => `- ${r}`).join('\n')}`;
+});
 
-1. "repasar":
-{
-  "type": "repasar",
-  "prompts": [
-    { "type": "traceable_text", "content": "TEXT" }
-  ]
-}
+export const EXERCISE_STRUCTURE_RULES = `MANDATORY STRUCTURE BY TYPE:
 
-2. "unir":
-{
-  "type": "unir",
-  "pairs": [
-    {
-      "left": { "type": "image", "content": "cow", "searchTerm": "cow" },
-      "right": { "type": "image", "content": "milk", "searchTerm": "milk" }
-    }
-  ]
-}
-
-SPECIFIC RULES FOR "unir":
-- The pairs must represent direct and immediate logical associations between two real and concrete existing elements (e.g., relationships of belonging, cause-effect, tool-action, animal-habitat, or element-category).
-- NEVER pair elements with complex or non-pictographic visual variations (such as silhouettes, shadows, or blurry shapes).
-
-3. "rodear":
-{
-  "type": "rodear",
-  "options": [
-    { "type": "image", "content": "apple", "searchTerm": "apple" }
-  ]
-}
-
-4. "copiar":
-{
-  "type": "copiar",
-  "copies": [
-    { "type": "traceable_text", "content": "DOG" },
-    { "type": "traceable_text", "content": "CAT" }
-  ]
-}
-
-REGLAS ESPECÍFICAS DE "copiar":
-- All words that the student must copy go inside "copies".
-- Each element of "copies" must be "traceable_text".
-- Do not use "image" inside "copiar".
-- Do not use "searchTerm" inside "copiar".
-- Words in "copies" must be in UPPERCASE.
-- Words in "copies" must be distinct from each other.
-`;
+${parts.join('\n\n')}`;
 
 export const SECTION_OUTPUT_RULES = `
 SECTION OUTPUT RULES:

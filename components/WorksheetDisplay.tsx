@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import type { Worksheet, WorksheetExercise, WorksheetItem, WorksheetSection } from '../types';
 import { getFlattenedItemsFromExercise, normalizeWorksheet } from '../services/worksheetNormalizer';
-import { RepasarDisplay } from './display/RepasarDisplay';
-import { UnirDisplay } from './display/UnirDisplay';
-import { RodearDisplay } from './display/RodearDisplay';
-import { CopiarDisplay } from './display/CopiarDisplay';
+import { TracingDisplay } from './exercises/tracing/TracingDisplay';
+import { MatchingDisplay } from './exercises/matching/MatchingDisplay';
+import { CirclingDisplay } from './exercises/circling/CirclingDisplay';
+import { CopyingDisplay } from './exercises/copying/CopyingDisplay';
 import { Pictogram, getAdaptiveSpelledBoxWidth } from './PictogramRenderer';
 
 const AdaptiveWorksheetPictoBox: React.FC<{
@@ -118,14 +118,14 @@ const SectionHeader: React.FC<{ instruction: WorksheetSection['instruction'] }> 
 const renderExercise = (exercise: WorksheetExercise) => {
   switch (exercise.type) {
     case 'repasar':
-      return <RepasarDisplay exercise={exercise} />;
+      return <TracingDisplay exercise={exercise} />;
     case 'unir':
-      return <UnirDisplay exercise={exercise} />;
+      return <MatchingDisplay exercise={exercise} />;
     case 'copiar':
-      return <CopiarDisplay exercise={exercise} />;
+      return <CopyingDisplay exercise={exercise} />;
     case 'rodear':
     default:
-      return <RodearDisplay exercise={exercise as any} />;
+      return <CirclingDisplay exercise={exercise as any} />;
   }
 };
 

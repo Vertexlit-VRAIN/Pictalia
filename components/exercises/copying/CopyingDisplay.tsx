@@ -1,8 +1,8 @@
 import React from 'react';
-import { WorksheetExercise } from '../../types';
-import { WorksheetItemDisplay } from './WorksheetItemDisplay';
+import { WorksheetExercise } from '../../../types';
+import { WorksheetItemDisplay } from '../../display/WorksheetItemDisplay';
 
-export const CopiarDisplay: React.FC<{ exercise: Extract<WorksheetExercise, { type: 'copiar' }> }> = ({ exercise }) => {
+export const CopyingDisplay: React.FC<{ exercise: Extract<WorksheetExercise, { type: 'copiar' }> }> = ({ exercise }) => {
   const copies = (exercise.copies || []).filter(Boolean);
 
   return (

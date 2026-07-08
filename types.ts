@@ -70,6 +70,7 @@ export interface WorksheetItem {
   pictogramRenderMode?: PictogramRenderMode;
   spelledLetterTerms?: string[];
   spelledLetterUrls?: string[];
+  quantity?: number;
 }
 
 export type WorksheetLayout = 'row' | 'column' | 'matching_horizontal';
@@ -132,6 +133,17 @@ export interface WorksheetSection {
   layout: WorksheetLayout;
 }
 
+export interface WorksheetTelemetry {
+  generationTimeMs: number;
+  adpTimeMs: number;
+  acTimeMs: number;
+  rejectionCount: number;
+  manualEditsCount: number;
+  pictoOverridesCount: number;
+  retryCount: number;
+  createdTimestamp: string;
+}
+
 export interface Worksheet {
   title: string;
   pictogramSearchTerm: string;
@@ -145,6 +157,7 @@ export interface Worksheet {
   originalGoal?: string;
   originalExtraDetails?: string;
   language?: 'es' | 'val' | 'en';
+  telemetry?: WorksheetTelemetry;
 }
 
 export interface SavedWorksheet extends Worksheet {

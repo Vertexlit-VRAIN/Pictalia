@@ -1,21 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import type { SavedWorksheet, WorksheetOperation } from '../types';
 import { EditableWorksheetDisplay } from './EditableWorksheetDisplay';
+import { WorksheetDisplay } from './WorksheetDisplay';
 import { refineExercise } from '../services/aiService';
 import { searchPictograms } from '../services/pictogramService';
 import { Spinner } from './Spinner';
-import { Wand2Icon, SaveIcon, XIcon, PencilRulerIcon, HistoryIcon, CheckCircleIcon } from './Icons';
+import { Wand2Icon, SaveIcon, XIcon, PencilRulerIcon, HistoryIcon, CheckCircleIcon, DownloadIcon } from './Icons';
 import { produce } from 'immer';
 import { useWorksheetHistory } from '../hooks/useWorksheetHistory';
 import { applyWorksheetOperations } from '../services/worksheetOperations';
 
+const GamepadIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="6" x2="10" y1="12" y2="12" />
+    <line x1="8" x2="8" y1="10" y2="14" />
+    <line x1="15" x2="15.01" y1="13" y2="13" />
+    <line x1="18" x2="18.01" y1="11" y2="11" />
+    <rect width="20" height="12" x="2" y="6" rx="3" />
+  </svg>
+);
+
+const ArrowLeftIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="m12 19-7-7 7-7" />
+    <path d="M19 12H5" />
+  </svg>
+);
+
 interface WorksheetEditorProps {
   worksheet: SavedWorksheet;
   setWorksheet: (worksheet: SavedWorksheet) => void;
-  onSave: (worksheet: SavedWorksheet) => void;
-  onCancel: () => void;
+  onSave?: (worksheet: SavedWorksheet) => void;
+  onCancel?: () => void;
   searchLanguage: 'es' | 'val' | 'en';
   onSearchLanguageChange: (lang: 'es' | 'val' | 'en') => void;
+  onDownload?: () => void;
+  isDownloadReady?: boolean;
+  isDownloading?: boolean;
+  onPlay?: () => void;
+  isSaved?: boolean;
+  worksheetRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 const shouldResolveItemPictogram = (item: SavedWorksheet['sections'][number]['items'][number]) =>
@@ -28,6 +70,12 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
   onCancel,
   searchLanguage,
   onSearchLanguageChange,
+  onDownload,
+  isDownloadReady,
+  isDownloading,
+  onPlay,
+  isSaved,
+  worksheetRef,
 }) => {
   const {
     worksheet,
@@ -46,7 +94,7 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
   const [refinementContext, setRefinementContext] = useState<string>('all');
   const [suggestedWorksheet, setSuggestedWorksheet] = useState<SavedWorksheet | null>(null);
   const [suggestedOperations, setSuggestedOperations] = useState<WorksheetOperation[] | null>(null);
-  const [activeTab, setActiveTab] = useState<'editor' | 'history'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'history'>('editor');
 
   // Sincronizar el estado actual del historial con el componente padre
   useEffect(() => {
@@ -89,6 +137,35 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
     );
   };
 
+  const handleWorksheetChange = (operations: WorksheetOperation[], actionLabel?: string) => {
+    const label = actionLabel || 'Edición manual';
+    const labelLower = label.toLowerCase();
+    const isPictoEdit = labelLower.includes('picto') || labelLower.includes('imagen') || labelLower.includes('pictograma');
+
+    const nextWorksheet = produce(worksheet, draft => {
+      if (!draft.telemetry) {
+        draft.telemetry = {
+          generationTimeMs: 0,
+          adpTimeMs: 0,
+          acTimeMs: 0,
+          rejectionCount: 0,
+          manualEditsCount: 0,
+          pictoOverridesCount: 0,
+          retryCount: 0,
+          createdTimestamp: new Date().toISOString(),
+        };
+      }
+      if (isPictoEdit) {
+        draft.telemetry.pictoOverridesCount = (draft.telemetry.pictoOverridesCount || 0) + 1;
+      } else {
+        draft.telemetry.manualEditsCount = (draft.telemetry.manualEditsCount || 0) + 1;
+      }
+    });
+
+    const nextBaseState = applyWorksheetOperations(nextWorksheet, operations);
+    commitChange(nextBaseState, label, operations);
+  };
+
   const handleRefineWithAI = async () => {
     if (!refinementInstruction.trim()) {
       setRefinementError('Por favor, escribe qué te gustaría cambiar.');
@@ -103,7 +180,9 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
         ? undefined
         : worksheet.sections[parseInt(refinementContext, 10)]?.internalId;
 
+      const refineStartTime = Date.now();
       const response = await refineExercise(worksheet, refinementInstruction, targetSectionId);
+      const callDurationMs = Date.now() - refineStartTime;
       const operations = response.operations;
 
       const newBaseWorksheet = applyWorksheetOperations(worksheet, operations);
@@ -152,6 +231,20 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
           item.pictoOptions = urls;
           item.selectedPictoUrl = urls.length > 0 ? urls[0] : '';
         });
+
+        if (!draft.telemetry) {
+          draft.telemetry = {
+            generationTimeMs: 0,
+            adpTimeMs: 0,
+            acTimeMs: 0,
+            rejectionCount: 0,
+            manualEditsCount: 0,
+            pictoOverridesCount: 0,
+            retryCount: 0,
+            createdTimestamp: new Date().toISOString(),
+          };
+        }
+        draft.telemetry.generationTimeMs = (draft.telemetry.generationTimeMs || 0) + callDurationMs;
       });
 
       setSuggestedWorksheet(processedWorksheet);
@@ -174,54 +267,129 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
   };
 
   const handleRejectSuggestion = () => {
+    const nextWorksheet = produce(worksheet, draft => {
+      if (!draft.telemetry) {
+        draft.telemetry = {
+          generationTimeMs: 0,
+          adpTimeMs: 0,
+          acTimeMs: 0,
+          rejectionCount: 0,
+          manualEditsCount: 0,
+          pictoOverridesCount: 0,
+          retryCount: 0,
+          createdTimestamp: new Date().toISOString(),
+        };
+      }
+      draft.telemetry.rejectionCount = (draft.telemetry.rejectionCount || 0) + 1;
+    });
+    commitChange(nextWorksheet, 'Rechazo de sugerencia de IA');
+
     setSuggestedWorksheet(null);
     setSuggestedOperations(null);
   };
 
   return (
     <div className="mt-6 space-y-6">
+      {/* Contenedor invisible para que html2canvas siempre pueda capturar el PDF en cualquier pestaña */}
+      {worksheetRef && (
+        <div className="absolute left-[-9999px] top-[-9999px] pointer-events-none" aria-hidden="true">
+          <div ref={worksheetRef} className="w-[800px] p-8 bg-white">
+            <WorksheetDisplay worksheet={worksheet} />
+          </div>
+        </div>
+      )}
+
       <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/50 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="mb-3.5 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-600 shadow-sm hover:bg-slate-50 transition active:bg-slate-100 focus:outline-none"
+              >
+                <ArrowLeftIcon className="h-3.5 w-3.5 text-slate-500" />
+                <span>Volver a la Biblioteca</span>
+              </button>
+            )}
+
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-sky-800">
               <PencilRulerIcon className="h-4 w-4" />
-              Edición manual
+              Espacio de Trabajo
             </div>
 
-            <h3 className="text-2xl font-black tracking-tight text-slate-900">Modo edición</h3>
+            <h3 className="text-2xl font-black tracking-tight text-slate-900">
+              {worksheet.title || 'Ficha de Actividades'}
+            </h3>
 
             <p className="mt-1 text-sm text-slate-500">
-              La ficha se mantiene con proporción A4 y centrada. El asistente de IA se abre desde el botón flotante para no molestar mientras editas.
+              Edita los ejercicios directamente, revisa la vista de impresión en A4 o descarga el PDF listo para usar.
             </p>
           </div>
 
-          <div className="flex flex-col flex-wrap gap-2 sm:flex-row">
-            <div className="mr-4 flex rounded-2xl bg-slate-100 p-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {onPlay && (
               <button
                 type="button"
-                onClick={() => setActiveTab('editor')}
-                className={`rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
-                  activeTab === 'editor'
-                    ? 'bg-white text-sky-700 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
+                onClick={onPlay}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-xs font-black uppercase tracking-wider text-indigo-750 shadow-sm shadow-indigo-150/40 hover:bg-indigo-100 hover:text-indigo-800 transition active:bg-indigo-200 focus:outline-none"
               >
-                Editor
+                <GamepadIcon className="h-4.5 w-4.5 text-indigo-600" />
+                <span>Modo Alumno</span>
               </button>
+            )}
+            {onDownload && (
+              <button
+                type="button"
+                onClick={onDownload}
+                disabled={!isDownloadReady || isDownloading}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-black uppercase tracking-wider text-emerald-750 shadow-sm shadow-emerald-150/40 hover:bg-emerald-100 hover:text-emerald-800 transition active:bg-emerald-200 disabled:opacity-50 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 focus:outline-none"
+              >
+                <DownloadIcon className="h-4.5 w-4.5 text-emerald-600" />
+                <span>{isDownloading ? 'Descargando...' : 'Descargar PDF'}</span>
+              </button>
+            )}
+          </div>
+        </div>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('history')}
-                className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
-                  activeTab === 'history'
-                    ? 'bg-white text-sky-700 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <HistoryIcon className="h-4 w-4" />
-                Historial
-              </button>
-            </div>
+        <div className="mt-5 border-t border-slate-100 pt-4 flex justify-between items-center flex-wrap gap-3">
+          <div className="flex rounded-2xl bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('editor')}
+              className={`rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
+                activeTab === 'editor'
+                  ? 'bg-white text-sky-700 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Ejercicios
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('preview')}
+              className={`rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
+                activeTab === 'preview'
+                  ? 'bg-white text-sky-700 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Vista de Impresión
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('history')}
+              className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
+                activeTab === 'history'
+                  ? 'bg-white text-sky-700 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <HistoryIcon className="h-4 w-4" />
+              Historial
+            </button>
           </div>
         </div>
       </div>
@@ -232,13 +400,15 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
             <EditableWorksheetDisplay
               worksheet={suggestedWorksheet || worksheet}
               highlightedSectionIds={suggestedWorksheet ? getHighlightedSectionIds() : []}
-              onWorksheetChange={(operations, actionLabel) =>
-                commitOperations(operations, actionLabel || 'Edición manual')
-              }
+              onWorksheetChange={handleWorksheetChange}
               searchLanguage={searchLanguage}
               onSearchLanguageChange={onSearchLanguageChange}
             />
           </div>
+        </div>
+      ) : activeTab === 'preview' ? (
+        <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-3 shadow-xl shadow-slate-200/60 max-w-[920px] mx-auto">
+          <WorksheetDisplay worksheet={suggestedWorksheet || worksheet} />
         </div>
       ) : (
         <div className="mx-auto max-w-[920px] rounded-[28px] border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/50 sm:p-6">
@@ -306,15 +476,10 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
         </div>
       )}
 
-      <div className="pointer-events-none sticky bottom-4 z-40">
-        <div
-          className={`pointer-events-auto mx-auto max-w-[960px] rounded-[24px] border p-3 shadow-xl backdrop-blur ${
-            suggestedWorksheet
-              ? 'border-sky-300 bg-sky-950/95'
-              : 'border-slate-200 bg-white/95'
-          }`}
-        >
-          {suggestedWorksheet ? (
+      {/* Panel flotante de sugerencias de IA */}
+      {suggestedWorksheet && (
+        <div className="pointer-events-none sticky bottom-4 z-40">
+          <div className="pointer-events-auto mx-auto max-w-[960px] rounded-[24px] border p-3 shadow-xl backdrop-blur border-sky-300 bg-sky-950/95">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
@@ -335,7 +500,7 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
                 <button
                   type="button"
                   onClick={handleRejectSuggestion}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 font-semibold text-white transition hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 font-semibold text-white transition hover:bg-white/20 focus:outline-none"
                 >
                   <XIcon className="h-5 w-5" />
                   Rechazar
@@ -344,48 +509,16 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
                 <button
                   type="button"
                   onClick={handleAcceptSuggestion}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 font-semibold text-sky-950 shadow-lg transition hover:bg-sky-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 font-semibold text-sky-950 shadow-lg transition hover:bg-sky-50 focus:outline-none"
                 >
                   <CheckCircleIcon className="h-5 w-5" />
                   Aceptar Cambios
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-slate-600">
-                Puedes guardar o cancelar desde aquí sin volver al inicio.
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={onCancel}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-200 px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600"
-                >
-                  <XIcon className="h-5 w-5" />
-                  Cancelar
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    onSave({
-                      ...worksheet,
-                      editHistory: serializeHistory(),
-                      editHistoryIndex: currentIndex,
-                    })
-                  }
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sky-600"
-                >
-                  <SaveIcon className="h-5 w-5" />
-                  Guardar Cambios
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="pointer-events-none fixed bottom-24 right-8 z-50 sm:bottom-24 sm:right-10">
         <div className="flex flex-col items-end gap-3">
