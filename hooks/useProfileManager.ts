@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { APP_DATA_STORAGE_KEY, DEFAULT_AI_SETTINGS, DEFAULT_PICTOGRAM_SETTINGS } from '../constants';
-import type { Profile, AppData, Worksheet, SavedWorksheet, AISettings, PictogramSettings, StudentStructuredProfile } from '../types';
+import type { Profile, AppData, Worksheet, SavedWorksheet, AISettings, PictogramSettings, StudentStructuredProfile, SavedTranslation } from '../types';
 import { DEFAULT_STRUCTURED_PROFILE, normalizeStructuredProfile, serializeStructuredProfile } from '../services/profileSerializer';
 
 const DEFAULT_PROFILE_ID = 'default_profile_01';
@@ -12,6 +12,7 @@ const getDefaultProfile = (): Profile => ({
   structuredContent: DEFAULT_STRUCTURED_PROFILE,
   showPictogramInstructions: true,
   savedWorksheets: [],
+  defaultLanguage: 'es',
 });
 
 const getInitialAppData = (): AppData => ({
@@ -35,6 +36,8 @@ const normalizeLoadedProfile = (profile: Profile): Profile => {
     structuredContent,
     showPictogramInstructions: profile.showPictogramInstructions ?? true,
     savedWorksheets: profile.savedWorksheets || [],
+    savedTranslations: profile.savedTranslations || [],
+    defaultLanguage: profile.defaultLanguage || 'es',
   };
 };
 
@@ -141,6 +144,7 @@ export const useAppDataManager = () => {
       structuredContent: persistedStructuredContent,
       showPictogramInstructions: appData.profiles.find(p => p.id === appData.activeProfileId)?.showPictogramInstructions ?? true,
       savedWorksheets: [],
+      defaultLanguage: appData.profiles.find(p => p.id === appData.activeProfileId)?.defaultLanguage || 'es',
     };
     setAppData(prev => {
         if (!prev) return null;
@@ -181,6 +185,18 @@ export const useAppDataManager = () => {
       return { ...prev, profiles: updatedProfiles };
     });
     showSaveMessage('Ajuste guardado.');
+  }, [appData]);
+
+  const setDefaultLanguage = useCallback((lang: 'es' | 'val' | 'en') => {
+    if (!appData?.activeProfileId) return;
+    setAppData(prev => {
+      if (!prev) return null;
+      const updatedProfiles = prev.profiles.map(p => 
+        p.id === prev.activeProfileId ? { ...p, defaultLanguage: lang } : p
+      );
+      return { ...prev, profiles: updatedProfiles };
+    });
+    showSaveMessage('Idioma por defecto guardado.');
   }, [appData]);
 
   const saveWorksheet = useCallback((worksheet: Worksheet, sourceDescription: string) => {
@@ -255,6 +271,47 @@ export const useAppDataManager = () => {
     showSaveMessage('Ficha actualizada con éxito.');
   }, [appData]);
 
+  const saveTranslation = useCallback((translation: Omit<SavedTranslation, 'id' | 'createdAt'>) => {
+    if (!appData?.activeProfileId) return;
+    const newSavedTranslation: SavedTranslation = {
+      ...translation,
+      id: `trans_${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setAppData(prev => {
+      if (!prev) return null;
+      const updatedProfiles = prev.profiles.map(p => {
+        if (p.id === prev.activeProfileId) {
+          return {
+            ...p,
+            savedTranslations: [newSavedTranslation, ...(p.savedTranslations || [])]
+          };
+        }
+        return p;
+      });
+      return { ...prev, profiles: updatedProfiles };
+    });
+    showSaveMessage('Traducción guardada.');
+  }, [appData]);
+
+  const deleteTranslation = useCallback((idToDelete: string) => {
+    if (!appData?.activeProfileId) return;
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta traducción guardada?')) {
+      setAppData(prev => {
+        if (!prev) return null;
+        const updatedProfiles = prev.profiles.map(p => {
+          if (p.id === prev.activeProfileId) {
+            const updatedTranslations = (p.savedTranslations || []).filter(t => t.id !== idToDelete);
+            return { ...p, savedTranslations: updatedTranslations };
+          }
+          return p;
+        });
+        return { ...prev, profiles: updatedProfiles };
+      });
+      showSaveMessage('Traducción eliminada.');
+    }
+  }, [appData]);
+
   const updateAISettings = useCallback((partialSettings: Partial<AISettings>) => {
     setAppData(prev => {
       if (!prev) return null;
@@ -300,10 +357,14 @@ export const useAppDataManager = () => {
     deleteProfile,
     restoreDefault,
     togglePictogramInstructions,
+    setDefaultLanguage,
     savedWorksheets: activeProfile?.savedWorksheets || [],
     saveWorksheet,
     deleteWorksheet,
     updateWorksheet,
+    savedTranslations: activeProfile?.savedTranslations || [],
+    saveTranslation,
+    deleteTranslation,
     aiSettings: appData?.aiSettings || { ...DEFAULT_AI_SETTINGS },
     updateAISettings,
     pictogramSettings: appData?.pictogramSettings || { ...DEFAULT_PICTOGRAM_SETTINGS },

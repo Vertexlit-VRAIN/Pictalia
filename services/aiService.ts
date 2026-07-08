@@ -1,5 +1,6 @@
-import { APP_DATA_STORAGE_KEY, CHILD_PROFILE, DEFAULT_AI_SETTINGS } from '../constants';
-import type { Worksheet, Profile, AppData, SavedWorksheet, AISettings, WorksheetOperationRequest } from '../types';
+import { APP_DATA_STORAGE_KEY, CHILD_PROFILE } from '../constants';
+import type { Worksheet, Profile, AppData, SavedWorksheet, WorksheetOperationRequest } from '../types';
+import { runAiPrompt } from './aiClient';
 import { normalizeWorksheet } from './worksheetNormalizer';
 import {
   buildWorksheetEditingContext,
@@ -16,12 +17,14 @@ import {
   buildJsonRepairPrompt,
   buildExerciseCountRepairPrompt,
   buildExerciseRefinementPrompt,
+  buildTranslationPrompt,
 } from './prompts/builder';
 
 interface GenerateWorksheetOptions {
   topic?: string;
   goal?: string;
   extraDetails?: string;
+  language?: 'es' | 'val' | 'en';
 }
 
 const EXERCISE_COUNT_PATTERNS = [
@@ -44,13 +47,7 @@ const getAppData = (): AppData | null => {
   }
 };
 
-const getAISettings = (): AISettings => {
-  const appData = getAppData();
-  return {
-    ...DEFAULT_AI_SETTINGS,
-    ...(appData?.aiSettings || {}),
-  };
-};
+
 
 const getActiveProfileData = (): { profile: Profile | null; content: string; showPictogramInstructions: boolean } => {
   const appData = getAppData();
@@ -211,7 +208,7 @@ const repairSemanticMismatch = async (rawText: string, options: GenerateWorkshee
   const { content: childProfile, showPictogramInstructions } = getActiveProfileData();
   const repairPrompt = buildSemanticRepairPrompt(rawText, options, childProfile, showPictogramInstructions);
 
-  const repairedText = await runProviderPrompt(repairPrompt);
+  const repairedText = await runAiPrompt(repairPrompt);
   return normalizeWorksheetPayload(parseJsonPayload(repairedText));
 };
 
@@ -229,7 +226,7 @@ const repairExerciseCountMismatch = async (
     showPictogramInstructions
   );
 
-  const repairedText = await runProviderPrompt(repairPrompt);
+  const repairedText = await runAiPrompt(repairPrompt);
   return normalizeWorksheetPayload(parseJsonPayload(repairedText));
 };
 
@@ -242,7 +239,7 @@ const repairJsonResponse = async (rawText: string, mode: 'worksheet' | 'refineme
   }
   const promptText = buildJsonRepairPrompt(rawText, errorMsg, mode);
 
-  const repairedText = await runProviderPrompt(promptText);
+  const repairedText = await runAiPrompt(promptText);
   return parseJsonPayload(repairedText);
 };
 
@@ -273,126 +270,7 @@ const parseOperationResponse = async (rawText: string): Promise<WorksheetOperati
   }
 };
 
-const callGemini = async (promptText: string, settings: AISettings): Promise<string> => {
-  if (!settings.geminiApiKey.trim()) {
-    throw new Error('Configura una clave de API de Gemini en el perfil para usar este proveedor.');
-  }
 
-  const body: Record<string, unknown> = {
-    contents: [{
-      parts: [{ text: promptText }],
-    }],
-    generationConfig: {
-      responseMimeType: 'application/json',
-      temperature: 0.4,
-    },
-  };
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(settings.geminiModel)}:generateContent?key=${encodeURIComponent(settings.geminiApiKey)}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    }
-  );
-
-  const responseText = await response.text();
-  if (!response.ok) {
-    throw new Error(`Gemini devolvió un error (${response.status}): ${responseText}`);
-  }
-
-  const payload = JSON.parse(responseText);
-  const text = payload?.candidates?.[0]?.content?.parts
-    ?.map((part: { text?: string }) => part.text || '')
-    .join('')
-    .trim();
-
-  if (!text) {
-    throw new Error('Gemini no devolvió contenido útil.');
-  }
-
-  return text;
-};
-
-const normalizeOllamaBaseUrl = (baseUrl: string): string => baseUrl.replace(/\/+$/, '');
-
-const callOllama = async (promptText: string, settings: AISettings): Promise<string> => {
-  const baseUrl = normalizeOllamaBaseUrl(settings.ollamaBaseUrl);
-  if (!baseUrl) {
-    throw new Error('Configura la URL base de Ollama en el perfil para usar este proveedor.');
-  }
-
-  const response = await fetch(`${baseUrl}/api/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: settings.ollamaModel,
-      stream: false,
-      format: 'json',
-      messages: [{
-        role: 'user',
-        content: promptText,
-      }],
-    }),
-  });
-
-  const responseText = await response.text();
-  if (!response.ok) {
-    throw new Error(`Ollama devolvió un error (${response.status}): ${responseText}`);
-  }
-
-  const payload = JSON.parse(responseText);
-  const text = payload?.message?.content?.trim();
-  if (!text) {
-    throw new Error('Ollama no devolvió contenido útil.');
-  }
-
-  return text;
-};
-
-const callDebugProxy = async (promptText: string, settings: AISettings): Promise<string> => {
-  const response = await fetch('/__ai-debug', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      promptText,
-      settings,
-    }),
-  });
-
-  const responseText = await response.text();
-  if (!response.ok) {
-    throw new Error(`AI debug proxy devolvió un error (${response.status}): ${responseText}`);
-  }
-
-  const payload = JSON.parse(responseText);
-  if (!payload?.text) {
-    throw new Error('AI debug proxy no devolvió contenido útil.');
-  }
-
-  return payload.text as string;
-};
-
-const runProviderPrompt = async (promptText: string): Promise<string> => {
-  const settings = getAISettings();
-
-  if (import.meta.env.DEV) {
-    return callDebugProxy(promptText, settings);
-  }
-
-  if (settings.provider === 'ollama') {
-    return callOllama(promptText, settings);
-  }
-
-  return callGemini(promptText, settings);
-};
 
 export const generateWorksheet = async (options: GenerateWorksheetOptions): Promise<Worksheet> => {
   const { content: childProfile, showPictogramInstructions } = getActiveProfileData();
@@ -405,12 +283,13 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
         goal: options.goal,
         extraDetails: options.extraDetails,
         requestedExerciseCount,
+        language: options.language || 'es',
       },
       childProfile,
       showPictogramInstructions
     );
 
-    const rawText = await runProviderPrompt(promptText);
+    const rawText = await runAiPrompt(promptText);
     let worksheet = await parseWorksheetResponse(rawText);
 
     if (needsSemanticRepair(worksheet, options)) {
@@ -429,6 +308,7 @@ export const generateWorksheet = async (options: GenerateWorksheetOptions): Prom
     worksheet.originalTopic = options.topic;
     worksheet.originalGoal = options.goal;
     worksheet.originalExtraDetails = options.extraDetails;
+    worksheet.language = options.language || 'es';
 
     return worksheet;
   } catch (error) {
@@ -443,11 +323,12 @@ export const refineWorksheet = async (originalWorksheet: SavedWorksheet, instruc
   const prompt = buildRefinementPrompt(
     JSON.stringify(originalWorksheet, null, 2),
     instruction,
-    childProfile
+    childProfile,
+    originalWorksheet.language || 'es'
   );
 
   try {
-    const rawText = await runProviderPrompt(prompt);
+    const rawText = await runAiPrompt(prompt);
     return await parseRefinementResponse(rawText);
   } catch (error) {
     console.error('Error al refinar la ficha:', error);
@@ -475,11 +356,12 @@ export const refineExercise = async (
     originalWorksheet.originalExtraDetails,
     targetSectionId,
     targetSectionContent,
-    worksheetContextSummary
+    worksheetContextSummary,
+    originalWorksheet.language || 'es'
   );
 
   try {
-    const rawText = await runProviderPrompt(prompt);
+    const rawText = await runAiPrompt(prompt);
     const response = await parseOperationResponse(rawText);
     return {
       operations: validateOperationsAgainstInstruction(
@@ -492,5 +374,55 @@ export const refineExercise = async (
   } catch (error) {
     console.error('Error al refinar el ejercicio:', error);
     throw new Error(error instanceof Error ? error.message : 'No se pudieron interpretar las operaciones de edición. Por favor, inténtalo de nuevo.');
+  }
+};
+
+export interface TranslationResponse {
+  language: 'es' | 'val' | 'en';
+  recommendedSliders: {
+    noun: number;
+    verb: number;
+    adjective: number;
+    adverb: number;
+    determiner?: number;
+    preposition?: number;
+    conjunction?: number;
+    pronoun?: number;
+    other: number;
+  };
+  tokens: any[];
+}
+
+export const translateTextToMixed = async (
+  text: string,
+  language: string
+): Promise<TranslationResponse> => {
+  const { content: childProfile } = getActiveProfileData();
+
+  try {
+    const promptText = buildTranslationPrompt(text, language, childProfile);
+    const rawText = await runAiPrompt(promptText);
+    const parsed = parseJsonPayload(rawText) as TranslationResponse;
+    
+    if (!parsed || !parsed.language || !parsed.tokens) {
+      throw new Error("Respuesta inválida del modelo de traducción.");
+    }
+
+    // Normalizar el idioma detectado/devuelto por la IA
+    let normalizedLanguage: 'es' | 'val' | 'en' = 'es';
+    const langStr = String(parsed.language || '').toLowerCase().trim();
+    if (langStr.includes('val') || langStr.includes('cat') || langStr === 'catalan' || langStr === 'valenciano') {
+      normalizedLanguage = 'val';
+    } else if (langStr.includes('en') || langStr === 'english' || langStr.includes('ing')) {
+      normalizedLanguage = 'en';
+    } else {
+      normalizedLanguage = 'es';
+    }
+    parsed.language = normalizedLanguage;
+    
+    return parsed;
+  } catch (error) {
+    console.error('Error al traducir el texto:', error);
+    throw new Error(error instanceof Error ? error.message : 'No se pudo traducir el texto. Por favor, inténtalo de nuevo.');
   }
 };

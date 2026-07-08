@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useWorksheetGenerator } from '../hooks/useWorksheetGenerator';
 import { useDynamicLibraries } from '../hooks/useDynamicLibraries';
 import { exportWorksheetAsPdf } from '../lib/worksheetExport';
@@ -13,11 +13,18 @@ export const GenerateWorksheetView: React.FC = () => {
   const [extraDetails, setExtraDetails] = useState<string>('');
   const { worksheet, isLoading, error, generate, status } = useWorksheetGenerator();
   const { libsReady } = useDynamicLibraries(['jspdf', 'html2canvas']);
-  const { saveWorksheet } = useAppDataManager();
+  const { saveWorksheet, activeProfile } = useAppDataManager();
+  const [language, setLanguage] = useState<'es' | 'val' | 'en'>('es');
   const [isCurrentWorksheetSaved, setIsCurrentWorksheetSaved] = useState(false);
   const worksheetRef = useRef<HTMLDivElement>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  useEffect(() => {
+    if (activeProfile?.defaultLanguage) {
+      setLanguage(activeProfile.defaultLanguage);
+    }
+  }, [activeProfile?.id, activeProfile?.defaultLanguage]);
 
   const handleGenerate = useCallback(async () => {
     if (!topic.trim()) {
@@ -30,8 +37,9 @@ export const GenerateWorksheetView: React.FC = () => {
       topic: topic.trim(),
       goal: goal.trim() || undefined,
       extraDetails: extraDetails.trim() || undefined,
+      language: language,
     });
-  }, [topic, goal, extraDetails, generate]);
+  }, [topic, goal, extraDetails, language, generate]);
 
   const handleDownload = useCallback(async () => {
     if (worksheetRef.current && worksheet) {
@@ -96,6 +104,23 @@ export const GenerateWorksheetView: React.FC = () => {
               <p id="topic-help" className="mt-3 text-sm text-slate-500">
                 Ejemplos: "animales de la granja", "partes de una planta" o "los oficios".
               </p>
+
+              <div className="mt-4 border-t border-slate-100 pt-4">
+                <label htmlFor="worksheet-lang-select" className="mb-2 block text-sm font-semibold text-slate-700">
+                  Idioma de la ficha
+                </label>
+                <select
+                  id="worksheet-lang-select"
+                  value={language}
+                  onChange={(e: any) => setLanguage(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm transition focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100 font-bold text-slate-700"
+                  disabled={isLoading}
+                >
+                  <option value="es">Castellano (es)</option>
+                  <option value="val">Valenciano (val)</option>
+                  <option value="en">Inglés (en)</option>
+                </select>
+              </div>
             </div>
 
             <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 shadow-sm">

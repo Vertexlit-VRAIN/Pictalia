@@ -6,6 +6,8 @@ export interface Profile {
   structuredContent?: StudentStructuredProfile;
   showPictogramInstructions: boolean;
   savedWorksheets: SavedWorksheet[];
+  savedTranslations?: SavedTranslation[];
+  defaultLanguage?: 'es' | 'val' | 'en';
 }
 
 export interface StudentProfileBlock {
@@ -45,6 +47,7 @@ export interface PictogramSettings {
   provider: PictogramProvider;
   arasaacApiUrl: string;
   privateApiUrl: string;
+  searchLanguage?: 'es' | 'val' | 'en';
 }
 
 export interface PictogramSearchResult {
@@ -141,6 +144,7 @@ export interface Worksheet {
   originalTopic?: string;
   originalGoal?: string;
   originalExtraDetails?: string;
+  language?: 'es' | 'val' | 'en';
 }
 
 export interface SavedWorksheet extends Worksheet {
@@ -203,3 +207,37 @@ export type WorksheetOperation =
 export interface WorksheetOperationRequest {
   operations: WorksheetOperation[];
 }
+
+export interface TextToken {
+  id: string;
+  text: string;
+  type: 'word' | 'punctuation' | 'whitespace';
+  pos?: 'noun' | 'verb' | 'adjective' | 'adverb' | 'determiner' | 'preposition' | 'conjunction' | 'pronoun' | 'other';
+  importance?: number;
+  concept?: string;
+  pictoUrl?: string;
+  pictoId?: string;
+  pictoOptions?: { id: string; url: string; label: string }[];
+  manualOverride?: 'show' | 'hide';
+}
+
+export interface SavedTranslation {
+  id: string;
+  title: string;
+  originalText: string;
+  tokens: TextToken[];
+  language: 'es' | 'val' | 'en';
+  sliders: {
+    noun: number;
+    verb: number;
+    adjective: number;
+    adverb: number;
+    determiner: number;
+    preposition: number;
+    conjunction: number;
+    pronoun: number;
+    other: number;
+  };
+  createdAt: string;
+}
+

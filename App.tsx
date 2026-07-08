@@ -9,12 +9,21 @@ import { Trash2, FolderOpenIcon, DownloadIcon, CheckCircleIcon } from './compone
 import { useDynamicLibraries } from './hooks/useDynamicLibraries';
 import { exportWorksheetAsPdf } from './lib/worksheetExport';
 import { WorksheetEditor } from './components/WorksheetEditor';
+import { TranslatorView } from './components/TranslatorView';
 
-type View = 'generate' | 'profile' | 'library';
+type View = 'generate' | 'profile' | 'library' | 'translator';
 
 // ... (LibraryView component remains unchanged)
 const LibraryView: React.FC = () => {
-  const { savedWorksheets, deleteWorksheet, isLoading, activeProfile, updateWorksheet } = useAppDataManager();
+  const { 
+    savedWorksheets, 
+    deleteWorksheet, 
+    isLoading, 
+    activeProfile, 
+    updateWorksheet,
+    pictogramSettings,
+    updatePictogramSettings
+  } = useAppDataManager();
   const [selectedWorksheet, setSelectedWorksheet] = useState<SavedWorksheet | null>(null);
   const [editingWorksheet, setEditingWorksheet] = useState<SavedWorksheet | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -144,6 +153,8 @@ const LibraryView: React.FC = () => {
                 setWorksheet={setEditingWorksheet}
                 onSave={handleSaveChanges}
                 onCancel={handleCancelEdit}
+                searchLanguage={pictogramSettings.searchLanguage || 'es'}
+                onSearchLanguageChange={(lang) => updatePictogramSettings({ searchLanguage: lang })}
               />
             ) : (
               <WorksheetResult
@@ -196,6 +207,7 @@ const App: React.FC = () => {
         {activeView === 'generate' && <GenerateWorksheetView />}
         {activeView === 'library' && <LibraryView />}
         {activeView === 'profile' && <ProfileView />}
+        {activeView === 'translator' && <TranslatorView />}
       </main>
     </div>
   );

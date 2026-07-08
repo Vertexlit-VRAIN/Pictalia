@@ -33,15 +33,27 @@ const mapArasaacPictograms = (pictograms: ArasaacPictogram[]): PictogramSearchRe
     keywords: picto.keywords?.map(keyword => keyword.keyword) || [],
   }));
 
-const searchOfficialArasaac = async (searchTerm: string, apiUrl: string): Promise<PictogramSearchResult[]> => {
+const normalizeArasaacLang = (lang: string): string => {
+  const code = lang.toLowerCase().trim();
+  if (code === 'val' || code === 'valenciano' || code === 'ca' || code === 'catalan') {
+    return 'ca';
+  }
+  if (code === 'en' || code === 'english' || code === 'ing' || code === 'inglés') {
+    return 'en';
+  }
+  return 'es';
+};
+
+const searchOfficialArasaac = async (searchTerm: string, apiUrl: string, lang = 'es'): Promise<PictogramSearchResult[]> => {
+  const apiLang = normalizeArasaacLang(lang);
   let modifiedSearchTerm = searchTerm.trim();
   if (modifiedSearchTerm.toUpperCase().startsWith('COLOR ')) {
     modifiedSearchTerm = modifiedSearchTerm.substring(6).trim();
   }
 
-  const runSearch = async (term: string): Promise<PictogramSearchResult[]> => {
-    const response = await fetch(`${normalizeBaseUrl(apiUrl)}/es/bestsearch/${encodeURIComponent(term)}`);
-    console.log(`ARASAAC API Response Status for "${term}": ${response.status} ${response.statusText}`);
+  const runSearch = async (term: string, currentLang: string): Promise<PictogramSearchResult[]> => {
+    const response = await fetch(`${normalizeBaseUrl(apiUrl)}/${currentLang}/bestsearch/${encodeURIComponent(term)}`);
+    console.log(`ARASAAC API Response Status for "${term}" (${currentLang}): ${response.status} ${response.statusText}`);
     if (!response.ok) {
       return [];
     }
@@ -51,22 +63,43 @@ const searchOfficialArasaac = async (searchTerm: string, apiUrl: string): Promis
   };
 
   try {
-    const exactResults = await runSearch(modifiedSearchTerm);
-    if (exactResults.length > 0) {
-      return exactResults;
+    // 1. Try search in the requested language
+    let results = await runSearch(modifiedSearchTerm, apiLang);
+    if (results.length > 0) {
+      return results;
     }
 
+    // Try fallback search by splitting words if multi-word
     const words = modifiedSearchTerm.split(/\s+/).filter(Boolean);
-    for (const word of words) {
-      const fallbackResults = await runSearch(word);
-      if (fallbackResults.length > 0) {
-        return fallbackResults;
+    if (words.length > 1) {
+      for (const word of words) {
+        const fallbackResults = await runSearch(word, apiLang);
+        if (fallbackResults.length > 0) {
+          return fallbackResults;
+        }
+      }
+    }
+
+    // 2. If no results found and language is not Spanish, fallback to Spanish as a last resort
+    if (apiLang !== 'es') {
+      console.log(`No results for "${modifiedSearchTerm}" in ${apiLang}. Falling back to Spanish (es)...`);
+      results = await runSearch(modifiedSearchTerm, 'es');
+      if (results.length > 0) {
+        return results;
+      }
+      if (words.length > 1) {
+        for (const word of words) {
+          const fallbackResults = await runSearch(word, 'es');
+          if (fallbackResults.length > 0) {
+            return fallbackResults;
+          }
+        }
       }
     }
 
     return [];
   } catch (error) {
-    console.error(`Error fetching pictograms for "${searchTerm}":`, error);
+    console.error(`Error fetching pictograms for "${searchTerm}" (${lang}):`, error);
     return [];
   }
 };
@@ -95,12 +128,12 @@ const searchPrivateApi = async (searchTerm: string, apiUrl: string): Promise<Pic
   }
 };
 
-export const searchPictograms = async (searchTerm: string): Promise<PictogramSearchResult[]> => {
+export const searchPictograms = async (searchTerm: string, lang = 'es'): Promise<PictogramSearchResult[]> => {
   const settings = getPictogramSettings();
 
   if (settings.provider === 'private_api') {
     return searchPrivateApi(searchTerm, settings.privateApiUrl);
   }
 
-  return searchOfficialArasaac(searchTerm, settings.arasaacApiUrl);
+  return searchOfficialArasaac(searchTerm, settings.arasaacApiUrl, lang);
 };

@@ -14,6 +14,8 @@ interface WorksheetEditorProps {
   setWorksheet: (worksheet: SavedWorksheet) => void;
   onSave: (worksheet: SavedWorksheet) => void;
   onCancel: () => void;
+  searchLanguage: 'es' | 'val' | 'en';
+  onSearchLanguageChange: (lang: 'es' | 'val' | 'en') => void;
 }
 
 const shouldResolveItemPictogram = (item: SavedWorksheet['sections'][number]['items'][number]) =>
@@ -24,6 +26,8 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
   setWorksheet,
   onSave,
   onCancel,
+  searchLanguage,
+  onSearchLanguageChange,
 }) => {
   const {
     worksheet,
@@ -231,6 +235,8 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
               onWorksheetChange={(operations, actionLabel) =>
                 commitOperations(operations, actionLabel || 'Edición manual')
               }
+              searchLanguage={searchLanguage}
+              onSearchLanguageChange={onSearchLanguageChange}
             />
           </div>
         </div>

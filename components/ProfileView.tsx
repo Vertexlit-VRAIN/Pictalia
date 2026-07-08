@@ -196,6 +196,7 @@ export const ProfileView: React.FC = () => {
     deleteProfile,
     restoreDefault,
     togglePictogramInstructions,
+    setDefaultLanguage,
     aiSettings,
     updateAISettings,
     pictogramSettings,
@@ -317,7 +318,7 @@ export const ProfileView: React.FC = () => {
                 El perfil se organiza en una cabecera breve y cinco bloques pedagógicos. Todo lo que guardes aquí se convertirá después en el texto que usa la IA.
               </p>
             </div>
-            <div className="flex-shrink-0 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <div className="flex flex-wrap items-center gap-4 flex-shrink-0 rounded-2xl border border-slate-200 bg-slate-50 p-3">
               <label htmlFor="picto-toggle" className="flex items-center cursor-pointer">
                 <div className="relative">
                   <input
@@ -332,6 +333,22 @@ export const ProfileView: React.FC = () => {
                 </div>
                 <div className="ml-3 text-sm font-semibold text-slate-700">Instrucciones con Pictos</div>
               </label>
+
+              <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
+                <label htmlFor="default-lang-select" className="text-sm font-semibold text-slate-700">
+                  Idioma Ficha:
+                </label>
+                <select
+                  id="default-lang-select"
+                  value={activeProfile.defaultLanguage || 'es'}
+                  onChange={(e: any) => setDefaultLanguage(e.target.value)}
+                  className="rounded-xl border border-slate-200 bg-white px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                >
+                  <option value="es">Castellano</option>
+                  <option value="val">Valenciano</option>
+                  <option value="en">Inglés</option>
+                </select>
+              </div>
             </div>
           </div>
 

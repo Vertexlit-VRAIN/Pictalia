@@ -9,6 +9,7 @@ interface GenerateWorksheetOptions {
     topic?: string;
     goal?: string;
     extraDetails?: string;
+    language?: 'es' | 'val' | 'en';
 }
 
 type GenerationStage =
@@ -123,7 +124,7 @@ export const useWorksheetGenerator = () => {
             searchTerms.forEach((searchTerm, index) => {
                 logGenerationStep(`Searching pictograms [${index + 1}/${searchTerms.length}]`, searchTerm);
             });
-            const pictogramPromises = searchTerms.map(st => searchPictograms(st.term));
+            const pictogramPromises = searchTerms.map(st => searchPictograms(st.term, options.language || 'es'));
             const pictogramResults = await Promise.all(pictogramPromises);
             logGenerationStep('Raw pictogram results after Promise.all', pictogramResults);
 

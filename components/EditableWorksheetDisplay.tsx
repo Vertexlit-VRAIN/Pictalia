@@ -19,6 +19,8 @@ type EditableWorksheetProps = {
   worksheet: SavedWorksheet;
   onWorksheetChange: (operations: WorksheetOperation[], actionLabel?: string) => void;
   highlightedSectionIds?: string[];
+  searchLanguage: 'es' | 'val' | 'en';
+  onSearchLanguageChange: (lang: 'es' | 'val' | 'en') => void;
 };
 
 import { EditorTarget } from './editors/types';
@@ -39,6 +41,8 @@ type PictogramEditorModalProps = {
   currentRenderMode?: PictogramRenderMode;
   currentSpelledLetterTerms?: string[];
   currentSpelledLetterUrls?: string[];
+  defaultLanguage?: 'es' | 'val' | 'en';
+  onLanguageChange?: (lang: 'es' | 'val' | 'en') => void;
   onSave: (payload: {
     displayedTerm: string;
     searchTerm: string;
@@ -66,6 +70,8 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
   currentRenderMode,
   currentSpelledLetterTerms,
   currentSpelledLetterUrls,
+  defaultLanguage,
+  onLanguageChange,
   onSave,
 }) => {
   const [displayedTerm, setDisplayedTerm] = useState(currentDisplayedTerm);
@@ -75,9 +81,17 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
   const [spelledLetterTerms, setSpelledLetterTerms] = useState<string[]>(currentSpelledLetterTerms || []);
   const [spelledLetterUrls, setSpelledLetterUrls] = useState<string[]>(currentSpelledLetterUrls || []);
   const [applyToAll, setApplyToAll] = useState(false);
+  const [searchLanguage, setSearchLanguage] = useState<'es' | 'val' | 'en'>('es');
   const [results, setResults] = useState<PictogramSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const letters = useMemo(() => getSpellableCharacters(searchTerm || displayedTerm), [displayedTerm, searchTerm]);
+
+  const handleLanguageChange = (lang: 'es' | 'val' | 'en') => {
+    setSearchLanguage(lang);
+    if (onLanguageChange) {
+      onLanguageChange(lang);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -88,8 +102,9 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
     setSpelledLetterTerms(currentSpelledLetterTerms || []);
     setSpelledLetterUrls(currentSpelledLetterUrls || []);
     setApplyToAll(false);
+    setSearchLanguage(defaultLanguage || 'es');
     setResults((currentPictoOptions || []).map((url, index) => ({ id: `${index}-${url}`, url })));
-  }, [isOpen, currentDisplayedTerm, currentSearchTerm, currentSelectedUrl, currentPictoOptions, currentRenderMode, currentSpelledLetterTerms, currentSpelledLetterUrls]);
+  }, [isOpen, currentDisplayedTerm, currentSearchTerm, currentSelectedUrl, currentPictoOptions, currentRenderMode, currentSpelledLetterTerms, currentSpelledLetterUrls, defaultLanguage]);
 
   useEffect(() => {
     setSpelledLetterTerms(current => letters.map((letter, index) => current[index]?.trim() || letter));
@@ -111,7 +126,7 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
 
     const timeoutId = window.setTimeout(async () => {
       try {
-        const foundPictograms = await searchPictograms(normalizedSearchTerm);
+        const foundPictograms = await searchPictograms(normalizedSearchTerm, searchLanguage);
         if (!cancelled) {
           setResults(foundPictograms);
           if (foundPictograms.length > 0) {
@@ -134,7 +149,7 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [isOpen, searchTerm, displayedTerm, currentPictoOptions, selectedUrl]);
+  }, [isOpen, searchTerm, displayedTerm, currentPictoOptions, selectedUrl, searchLanguage]);
 
   if (!isOpen) return null;
 
@@ -185,14 +200,25 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
             </div>
             <div>
               <label htmlFor="searchTerm" className="mb-1 block text-sm font-medium text-slate-700">Búsqueda visual</label>
-              <input
-                id="searchTerm"
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Ej: unir, perro, rojo"
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
-              />
+              <div className="flex gap-2">
+                <input
+                  id="searchTerm"
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Ej: unir, perro, rojo"
+                  className="flex-1 rounded-xl border border-slate-300 px-3 py-2 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                />
+                <select
+                  value={searchLanguage}
+                  onChange={(e: any) => handleLanguageChange(e.target.value)}
+                  className="rounded-xl border border-slate-300 bg-white px-2 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                >
+                  <option value="es">Castellano</option>
+                  <option value="val">Valenciano</option>
+                  <option value="en">Inglés</option>
+                </select>
+              </div>
             </div>
             <label className="flex items-center gap-2 text-sm text-slate-700">
               <input
@@ -488,6 +514,8 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
   worksheet,
   onWorksheetChange,
   highlightedSectionIds = [],
+  searchLanguage,
+  onSearchLanguageChange,
 }) => {
   const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<number[]>([]);
@@ -951,6 +979,8 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
           currentRenderMode={currentEditorState.renderMode}
           currentSpelledLetterTerms={currentEditorState.spelledLetterTerms}
           currentSpelledLetterUrls={currentEditorState.spelledLetterUrls}
+          defaultLanguage={searchLanguage}
+          onLanguageChange={onSearchLanguageChange}
           onSave={handleSavePictogramEdit}
         />
       )}

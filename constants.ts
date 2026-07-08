@@ -12,6 +12,7 @@ export const DEFAULT_PICTOGRAM_SETTINGS = {
   provider: 'arasaac_official',
   arasaacApiUrl: 'https://api.arasaac.org/api/pictograms',
   privateApiUrl: 'http://localhost:3001/api/pictograms',
+  searchLanguage: 'es',
 } as const;
 
 export const CHILD_PROFILE = `

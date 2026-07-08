@@ -1,71 +1,66 @@
 import { exerciseTypesForPrompt } from '../exerciseRepository';
 
 export const JSON_ONLY_RULE = `
-Devuelve SOLO JSON válido.
-No uses markdown.
-No añadas explicaciones.
-No añadas comentarios.
-No añadas texto antes ni después del JSON.
-`;
-
-export const CASTILIAN_SPANISH_RULES = `
-IDIOMA:
-- Usa castellano de España.
-- Evita regionalismos de otros países.
-- Usa vocabulario claro, frecuente y funcional.
+Return ONLY valid JSON.
+Do not use markdown wrappers.
+Do not add explanations.
+Do not add comments.
+Do not add text before or after the JSON.
 `;
 
 export const PEDAGOGICAL_RULES = `
-CRITERIOS PEDAGÓGICOS:
-- Adapta la ficha al perfil antes que maximizar variedad.
-- Prioriza autonomía, apoyo visual y baja carga verbal.
-- Evita actividades que puedan provocar frustración.
-- Si dudas entre dos opciones, elige la más simple y visual.
-- Usa vocabulario concreto, cotidiano y adecuado al nivel del alumno.
-- No conviertas temas de conocimiento del entorno en ejercicios de letras salvo que el objetivo sea lectoescritura.
-- Todos los ejercicios deben mantener coherencia con el tema central.
+PEDAGOGICAL CRITERIA:
+- Adapt the worksheet to the profile rather than maximizing variety.
+- Prioritize autonomy, visual support, and low verbal load.
+- Avoid activities that could cause frustration.
+- If in doubt between two options, choose the simplest and most visual.
+- Use concrete, everyday vocabulary suitable for the student's level.
+- Do not convert environmental knowledge topics into literacy exercises unless the goal is reading/writing.
+- All exercises must maintain direct coherence with the central topic.
+- **Strict Content Coherence**: All sections, instructions, texts, images, and search terms of the worksheet must be 100% related and have direct thematic coherence with the requested topic and goals. Avoid mixing unrelated subject matter (e.g., avoid introducing number tracing or counting in worksheets about conceptual topics unless explicitly requested). All vocabulary and stimuli must belong to the central topic.
 `;
 
 export const PICTOGRAM_RULES = `
-REGLAS DE PICTOGRAMAS:
-- La IA NO busca pictogramas.
-- La IA NO elige pictogramas concretos.
-- La IA NO devuelve URLs.
-- La IA NO devuelve resultados de ARASAAC ni de ninguna base de datos.
-- El sistema buscará después los pictogramas usando "searchTerm".
-- Si el contenido visible es un número, "searchTerm" debe ser el mismo número en dígitos.
-- Nunca conviertas números a palabras dentro de "searchTerm".
-- Para imágenes usa siempre:
-  { "type": "image", "content": "texto visible", "searchTerm": "término de búsqueda" }
-- Para pictogramas de instrucción usa siempre:
-  { "searchTerm": "término de búsqueda", "content": "texto visible" }
-- "content" es obligatorio.
-- "searchTerm" es obligatorio en imágenes y pictogramas de instrucción.
+PICTOGRAM RULES:
+- The AI DOES NOT search for pictograms.
+- The AI DOES NOT choose specific pictograms.
+- The AI DOES NOT return URLs.
+- The AI DOES NOT return results from ARASAAC or any database.
+- The system will search for pictograms later using "searchTerm".
+- If the visible content is a number, "searchTerm" must be the same number in digits.
+- Never convert numbers to words inside "searchTerm".
+- For images, always use:
+  { "type": "image", "content": "visible text", "searchTerm": "search term" }
+- For instruction pictograms, always use:
+  { "searchTerm": "search term", "content": "visible text" }
+- "content" is mandatory.
+- "searchTerm" is mandatory in images and instruction pictograms.
+- **Pictogram Feasibility**: Request search terms ("searchTerm") only for concrete, real, and common concepts (e.g., animals, food, everyday objects, clear actions). AVOID requesting abstract concepts, complex combinations, visual metaphors, or special graphic variations (such as silhouettes, shadows, cutaways, or visual effects), as the pictogram database does not contain representations for these variations and search will fail.
 `;
 
 export const FORBIDDEN_TECHNICAL_FIELDS = `
-CAMPOS PROHIBIDOS:
-- No devuelvas "internalId" dentro de "section".
-- No devuelvas "items".
-- No devuelvas "layout".
-- No devuelvas "selectedPictoUrl".
-- No devuelvas "pictoOptions".
-- No devuelvas "url".
-- No devuelvas "pictogramRenderMode".
-- No devuelvas "spelledLetterTerms".
-- No devuelvas "spelledLetterUrls".
-- No devuelvas arrays de URLs.
-- No devuelvas IDs inventados para pictogramas, imágenes, palabras, sonidos ni items.
+FORBIDDEN FIELDS:
+- Do not return "internalId" inside "section".
+- Do not return "items".
+- Do not return "layout".
+- Do not return "selectedPictoUrl".
+- Do not return "pictoOptions".
+- Do not return "url".
+- Do not return "pictogramRenderMode".
+- Do not return "spelledLetterTerms".
+- Do not return "spelledLetterUrls".
+- Do not return arrays of URLs.
+- Do not return invented IDs for pictograms, images, words, sounds, or items.
 `;
 
 export const EXERCISE_STRUCTURE_RULES = `
-ESTRUCTURA OBLIGATORIA POR TIPO:
+MANDATORY STRUCTURE BY TYPE:
 
 1. "repasar":
 {
   "type": "repasar",
   "prompts": [
-    { "type": "traceable_text", "content": "TEXTO" }
+    { "type": "traceable_text", "content": "TEXT" }
   ]
 }
 
@@ -74,17 +69,21 @@ ESTRUCTURA OBLIGATORIA POR TIPO:
   "type": "unir",
   "pairs": [
     {
-      "left": { "type": "image", "content": "vaca", "searchTerm": "vaca" },
-      "right": { "type": "image", "content": "leche", "searchTerm": "leche" }
+      "left": { "type": "image", "content": "cow", "searchTerm": "cow" },
+      "right": { "type": "image", "content": "milk", "searchTerm": "milk" }
     }
   ]
 }
+
+SPECIFIC RULES FOR "unir":
+- The pairs must represent direct and immediate logical associations between two real and concrete existing elements (e.g., relationships of belonging, cause-effect, tool-action, animal-habitat, or element-category).
+- NEVER pair elements with complex or non-pictographic visual variations (such as silhouettes, shadows, or blurry shapes).
 
 3. "rodear":
 {
   "type": "rodear",
   "options": [
-    { "type": "image", "content": "manzana", "searchTerm": "manzana" }
+    { "type": "image", "content": "apple", "searchTerm": "apple" }
   ]
 }
 
@@ -92,68 +91,65 @@ ESTRUCTURA OBLIGATORIA POR TIPO:
 {
   "type": "copiar",
   "copies": [
-    { "type": "traceable_text", "content": "PERRO" },
-    { "type": "traceable_text", "content": "GATO" }
+    { "type": "traceable_text", "content": "DOG" },
+    { "type": "traceable_text", "content": "CAT" }
   ]
 }
 
 REGLAS ESPECÍFICAS DE "copiar":
-- Todas las palabras que el alumno debe copiar van dentro de "copies".
-- Cada elemento de "copies" debe ser "traceable_text".
-- No uses "image" dentro de "copiar".
-- No uses "searchTerm" dentro de "copiar".
-- Las palabras de "copies" deben ir en MAYÚSCULAS.
-- Las palabras de "copies" deben ser distintas entre sí.
+- All words that the student must copy go inside "copies".
+- Each element of "copies" must be "traceable_text".
+- Do not use "image" inside "copiar".
+- Do not use "searchTerm" inside "copiar".
+- Words in "copies" must be in UPPERCASE.
+- Words in "copies" must be distinct from each other.
 `;
 
 export const SECTION_OUTPUT_RULES = `
-REGLAS DE SECCIÓN:
-- Cada sección debe contener exactamente estas claves:
-  "exerciseType", "instruction", "exercise".
-- "exerciseType" solo puede ser: ${exerciseTypesForPrompt()}.
-- "exercise.type" debe coincidir exactamente con "exerciseType".
-- No uses claves alternativas como "activities", "tasks", "blocks", "pages" o "elements".
+SECTION OUTPUT RULES:
+- Each section must contain exactly these keys: "exerciseType", "instruction", "exercise".
+- "exerciseType" can only be: ${exerciseTypesForPrompt()}.
+- "exercise.type" must match "exerciseType" exactly.
+- Do not use alternative keys like "activities", "tasks", "blocks", "pages", or "elements".
 `;
 
 export const WORKSHEET_GENERATION_RULES = `
-REGLAS DE GENERACIÓN DE FICHA:
-- Devuelve una ficha completa.
-- La ficha debe tener "title", "pictogramSearchTerm" y "sections".
-- Cada elemento de "sections" es un ejercicio.
-- En ausencia de cantidad exacta, genera al menos 4 ejercicios.
-- La ficha debe tener suficiente contenido para ser útil como material de trabajo.
-- Selecciona los tipos de ejercicio más adecuados según el perfil.
-- Evita usar un único tipo de ejercicio en toda la ficha salvo que el perfil lo requiera.
-- Si incluyes "copiar" y también "repasar", coloca "copiar" después de "repasar".
+WORKSHEET GENERATION RULES:
+- Return a complete worksheet.
+- The worksheet must have "title", "pictogramSearchTerm", and "sections".
+- Each element of "sections" is an exercise.
+- In the absence of an exact quantity, generate at least 4 exercises.
+- The worksheet must have enough content to be useful as study/work material.
+- Select the most suitable exercise types based on the profile.
+- Avoid using a single exercise type throughout the worksheet unless the profile requires it.
+- If you include "copiar" and also "repasar", place "copiar" after "repasar".
 `;
 
 export const OPERATION_RULES = `
-REGLAS DE OPERACIONES:
-- Devuelve un objeto JSON con una única propiedad: "operations".
-- Operaciones válidas:
-  "update_worksheet", "create_section", "update_section", "delete_section", "move_section".
-- NO devuelvas la ficha completa.
-- NO regeneres todas las secciones.
-- Dentro de "section", devuelve solo estructura pedagógica:
-  "exerciseType", "instruction", "exercise".
-- Si hay sección objetivo, devuelve exactamente una operación "update_section" con ese "sectionId", salvo que la petición pida borrar o mover.
-- Si hay sección objetivo y el usuario dice "haz el ejercicio sobre...", transforma esa sección mediante "update_section".
-- Si no hay sección objetivo y el usuario pide añadir un ejercicio nuevo, usa "create_section".
+OPERATION RULES:
+- Return a JSON object with a single property: "operations".
+- Valid operations: "update_worksheet", "create_section", "update_section", "delete_section", "move_section".
+- DO NOT return the entire worksheet.
+- DO NOT regenerate all sections.
+- Inside "section", return only pedagogical structure: "exerciseType", "instruction", "exercise".
+- If there is a target section, return exactly one "update_section" operation with that "sectionId", unless the request is to delete or move.
+- If there is a target section and the user says "make the exercise about...", update that section via "update_section".
+- If there is no target section and the user asks to add a new exercise, use "create_section".
 `;
 
 export const ID_RULES = `
-REGLAS DE IDS:
-- Para modificar, borrar o mover, usa siempre el "sectionId" existente.
-- No inventes "sectionId".
-- No inventes "afterSectionId".
-- La única identificación permitida es "sectionId" o "afterSectionId" en la operación.
-- No uses IDs de pictogramas, imágenes, sonidos, palabras ni items.
+ID RULES:
+- To modify, delete, or move, always use the existing "sectionId".
+- Do not invent "sectionId".
+- Do not invent "afterSectionId".
+- The only permitted identification is "sectionId" or "afterSectionId" in the operation.
+- Do not use IDs for pictograms, images, sounds, words, or items.
 `;
 
 export const OPERATION_PRESERVATION_RULES = `
-REGLAS DE PRESERVACIÓN:
-- Cambia solo lo necesario para cumplir la petición.
-- Conserva el contenido actual salvo que el usuario pida sustituirlo, eliminarlo o reordenarlo.
-- Si la petición pide añadir contenido, conserva lo anterior y añade solo lo nuevo.
-- Si la petición pide simplificar, conserva el tema y baja vocabulario, carga verbal y dificultad.
+PRESERVATION RULES:
+- Change only what is necessary to fulfill the request.
+- Keep the current content unless the user asks to replace, delete, or reorder it.
+- If the request asks to add content, preserve the previous content and add only the new content.
+- If the request asks to simplify, keep the topic and lower vocabulary, verbal load, and difficulty.
 `;
