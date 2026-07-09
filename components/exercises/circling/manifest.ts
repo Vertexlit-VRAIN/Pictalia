@@ -36,7 +36,7 @@ export const manifest: ExerciseManifest = {
   }),
 
   // AI & Pedagogical Directives
-  pedagogicalDescription: 'Circling exercises evaluate selective attention, target discrimination, and categorization. The student must select/circle the options corresponding to the target prompt or instruction. Excellent for students needing target isolation from graphic distractors.',
+  pedagogicalDescription: 'Circling exercises evaluate selective attention, target discrimination, and categorization.',
   jsonSchema: `{
   "exerciseType": "rodear",
   "instruction": {
@@ -47,20 +47,17 @@ export const manifest: ExerciseManifest = {
     ]
   },
   "exercise": {
-    "type": "rodear",
     "prompt": null,
     "options": [
-      { "type": "image", "content": "manzana", "searchTerm": "manzana" },
-      { "type": "image", "content": "pera", "searchTerm": "pera" },
-      { "type": "image", "content": "coche", "searchTerm": "coche" },
-      { "type": "image", "content": "mesa", "searchTerm": "mesa" }
+      { "content": "manzana", "searchTerm": "manzana" },
+      { "content": "pera", "searchTerm": "pera" },
+      { "content": "coche", "searchTerm": "coche" }
     ]
   }
 }`,
   promptRules: [
-    'Presents visual options. The options list must be a simple list of images or text options.',
-    'It can optionally have a "prompt" object representing the target object/concept.',
-    'Ensure distractors in "options" are clearly distinct from correct targets to prevent cognitive frustration.',
+    'Renders a list of options. Distractors must be concrete, simple, and clearly distinct from target items.',
+    'An optional "prompt" object can define the target concept.',
   ],
   fewShotExamples: [
     {
@@ -76,13 +73,11 @@ export const manifest: ExerciseManifest = {
     ]
   },
   "exercise": {
-    "type": "rodear",
     "prompt": null,
     "options": [
-      { "type": "image", "content": "perro", "searchTerm": "perro" },
-      { "type": "image", "content": "silla", "searchTerm": "silla" },
-      { "type": "image", "content": "gato", "searchTerm": "gato" },
-      { "type": "image", "content": "lápiz", "searchTerm": "lapiz" }
+      { "content": "perro", "searchTerm": "perro" },
+      { "content": "silla", "searchTerm": "silla" },
+      { "content": "gato", "searchTerm": "gato" }
     ]
   }
 }`,

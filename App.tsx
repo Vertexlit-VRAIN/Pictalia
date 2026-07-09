@@ -67,6 +67,11 @@ const LibraryView: React.FC = () => {
     }
   }, [selectedWorksheet]);
 
+  const handleUpdateWorksheet = useCallback((ws: SavedWorksheet) => {
+    updateWorksheet(ws);
+    setSelectedWorksheet(ws);
+  }, [updateWorksheet]);
+
   if (isLoading) {
     return <div className="rounded-[28px] border border-slate-200 bg-white p-8 text-slate-600 shadow-xl shadow-slate-200/50">Cargando biblioteca...</div>;
   }

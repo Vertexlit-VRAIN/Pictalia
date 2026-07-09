@@ -103,6 +103,34 @@ Actualmente el catálogo incluye:
 
 Cada tipo define su etiqueta, instrucción por defecto, layout canónico, términos de inferencia y plantilla inicial. Esta estructura prepara el proyecto para que más adelante un docente pueda generar nuevas plantillas o ejercicios con ayuda de IA sin dispersar la lógica por componentes, normalizadores y prompts.
 
+## Sistema Multiagente (MAS)
+
+La generación de fichas está gobernada por una tubería multiagente estructurada (ADP Agent + AC Agents) para asegurar consistencia pedagógica y robustez de código.
+
+```mermaid
+graph TD
+    User[Docente: Tema, Objetivo y Perfil] --> ADP[Agente Diseñador Pedagógico - ADP]
+    Registry[Registro de Ejercicios Disponibles] --> ADP
+    ADP -->|Genera Plan / Blueprint| Plan[ADPBlueprint JSON]
+    
+    Plan --> AC_Split{Distribución por Ejercicio}
+    AC_Split -->|Ejercicio 1| AC1[Agente Constructor - AC]
+    AC_Split -->|Ejercicio N| ACn[Agente Constructor - AC]
+    
+    Schema1[Schema Ejercicio 1] --> AC1
+    Scheman[Schema Ejercicio N] --> ACn
+    
+    AC1 -->|Validación / Reintento| AC_Join[Recopilación de Secciones]
+    ACn -->|Validación / Reintento| AC_Join
+    
+    AC_Join --> Assembler[Ensamblador / Normalizador Local]
+    Assembler --> PictoAPI[Resolución de Pictogramas - API ARASAAC]
+    PictoAPI --> Telemetry[Inyección de Telemetría]
+    Telemetry --> Final[Ficha Final en Biblioteca]
+```
+
+Para una descripción detallada orientada a publicaciones científicas, consulta la [Documentación del Sistema Multiagente (MAS)](file:///Users/calitor/Documents/projects/Adaptator-TEA/docs/MAS_README.md).
+
 ## Notas
 
 - La app no bloquea el arranque si falta configuración de IA.

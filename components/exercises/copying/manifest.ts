@@ -19,7 +19,7 @@ export const manifest: ExerciseManifest = {
   }),
 
   // AI & Pedagogical Directives
-  pedagogicalDescription: 'Copying exercises reinforce spelling, letter-by-letter writing, and word copying. Recommended for students with higher writing capabilities who are learning spelling structures and character mapping.',
+  pedagogicalDescription: 'Copying exercises reinforce spelling, letter-by-letter writing, and word copying.',
   jsonSchema: `{
   "exerciseType": "copiar",
   "instruction": {
@@ -29,20 +29,12 @@ export const manifest: ExerciseManifest = {
     ]
   },
   "exercise": {
-    "type": "copiar",
-    "copies": [
-      { "type": "traceable_text", "content": "SEMILLA" },
-      { "type": "traceable_text", "content": "RAÍZ" },
-      { "type": "traceable_text", "content": "TALLO" }
-    ]
+    "copies": ["SEMILLA", "RAÍZ", "TALLO"]
   }
 }`,
   promptRules: [
-    'All words that the student must copy go inside "copies".',
-    'Each element of "copies" must be of type "traceable_text".',
-    'Do NOT use "image" or "searchTerm" inside the copying exercise.',
-    'Words in "copies" must be in UPPERCASE.',
-    'Words in "copies" must be distinct from each other.',
+    'All words to copy go in "copies" as raw strings in UPPERCASE.',
+    'Do not include "image" or "searchTerm" items in this exercise.',
   ],
   fewShotExamples: [
     {
@@ -57,11 +49,7 @@ export const manifest: ExerciseManifest = {
     ]
   },
   "exercise": {
-    "type": "copiar",
-    "copies": [
-      { "type": "traceable_text", "content": "SOL" },
-      { "type": "traceable_text", "content": "NUBE" }
-    ]
+    "copies": ["SOL", "NUBE"]
   }
 }`,
     },

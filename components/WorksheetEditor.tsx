@@ -103,7 +103,8 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
       editHistory: serializeHistory(),
       editHistoryIndex: currentIndex,
     });
-  }, [worksheet, currentIndex, serializeHistory, setWorksheet]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [worksheet, currentIndex, serializeHistory]);
 
   const getHighlightedSectionIds = (): string[] => {
     if (!suggestedOperations) return [];
@@ -349,6 +350,16 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
                 <span>{isDownloading ? 'Descargando...' : 'Descargar PDF'}</span>
               </button>
             )}
+            {onSave && !isSaved && (
+              <button
+                type="button"
+                onClick={() => onSave(worksheet)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-2 text-xs font-black uppercase tracking-wider text-sky-750 shadow-sm shadow-sky-150/40 hover:bg-sky-100 hover:text-sky-850 transition active:bg-sky-200 focus:outline-none"
+              >
+                <SaveIcon className="h-4.5 w-4.5 text-sky-600" />
+                <span>Guardar Ficha</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -523,9 +534,10 @@ export const WorksheetEditor: React.FC<WorksheetEditorProps> = ({
       <div className="pointer-events-none fixed bottom-24 right-8 z-50 sm:bottom-24 sm:right-10">
         <div className="flex flex-col items-end gap-3">
           <div
-            className={`pointer-events-auto w-[320px] origin-bottom-right rounded-[24px] border border-slate-200 bg-white shadow-2xl transition-all duration-300 sm:w-[380px] ${
+            aria-hidden={!isAssistantOpen}
+            className={`w-[320px] origin-bottom-right rounded-[24px] border border-slate-200 bg-white shadow-2xl transition-all duration-300 sm:w-[380px] ${
               isAssistantOpen
-                ? 'translate-y-0 opacity-100'
+                ? 'pointer-events-auto translate-y-0 opacity-100'
                 : 'pointer-events-none translate-y-4 opacity-0'
             }`}
           >

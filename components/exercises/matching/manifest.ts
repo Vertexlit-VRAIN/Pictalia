@@ -59,7 +59,7 @@ export const manifest: ExerciseManifest = {
   }),
 
   // AI & Pedagogical Directives
-  pedagogicalDescription: 'Matching exercises evaluate logical association, categorization, cause-effect, and simple number-to-quantity mapping. Ideal for students with lower verbal loads who respond well to direct spatial and visual associations.',
+  pedagogicalDescription: 'Matching exercises evaluate logical association, categorization, cause-effect, and simple number-to-quantity mapping.',
   jsonSchema: `{
   "exerciseType": "unir",
   "instruction": {
@@ -70,23 +70,17 @@ export const manifest: ExerciseManifest = {
     ]
   },
   "exercise": {
-    "type": "unir",
     "pairs": [
       {
-        "left": { "type": "image", "content": "abeja", "searchTerm": "abeja" },
-        "right": { "type": "image", "content": "flor", "searchTerm": "flor" }
-      },
-      {
-        "left": { "type": "image", "content": "vaca", "searchTerm": "vaca" },
-        "right": { "type": "image", "content": "leche", "searchTerm": "leche" }
+        "left": { "content": "abeja", "searchTerm": "abeja" },
+        "right": { "content": "flor", "searchTerm": "flor" }
       }
     ]
   }
 }`,
   promptRules: [
-    'The pairs must represent direct and immediate logical associations between two real and concrete elements (e.g. relationships of belonging, cause-effect, tool-action, animal-habitat, or element-category).',
-    'NEVER pair elements with complex or non-pictographic visual variations (such as silhouettes, shadows, or blurry shapes).',
-    'If the blueprint specifies matching quantity/numbers (e.g. number 2 with two flowers), set "type": "image", "searchTerm": "flor", and "quantity": 2 on the right item. The left/text item should have the number "2".',
+    'Pairs must represent direct logical associations (e.g. animal-to-food, object-to-category).',
+    'For quantity matching, the left item should have the number digit as content (e.g. "2"), and the right item should have the concrete noun as searchTerm (e.g. "flor") with the target quantity (e.g. 2).',
   ],
   fewShotExamples: [
     {
@@ -103,15 +97,14 @@ export const manifest: ExerciseManifest = {
     ]
   },
   "exercise": {
-    "type": "unir",
     "pairs": [
       {
-        "left": { "type": "image", "content": "vaca", "searchTerm": "vaca" },
-        "right": { "type": "image", "content": "hierba", "searchTerm": "hierba" }
+        "left": { "content": "vaca", "searchTerm": "vaca" },
+        "right": { "content": "hierba", "searchTerm": "hierba" }
       },
       {
-        "left": { "type": "image", "content": "mono", "searchTerm": "mono" },
-        "right": { "type": "image", "content": "plátano", "searchTerm": "platano" }
+        "left": { "content": "mono", "searchTerm": "mono" },
+        "right": { "content": "plátano", "searchTerm": "platano" }
       }
     ]
   }
@@ -131,15 +124,14 @@ export const manifest: ExerciseManifest = {
     ]
   },
   "exercise": {
-    "type": "unir",
     "pairs": [
       {
-        "left": { "type": "text", "content": "1" },
-        "right": { "type": "image", "content": "manzana", "searchTerm": "manzana", "quantity": 1 }
+        "left": { "content": "1" },
+        "right": { "content": "manzana", "searchTerm": "manzana", "quantity": 1 }
       },
       {
-        "left": { "type": "text", "content": "2" },
-        "right": { "type": "image", "content": "manzana", "searchTerm": "manzana", "quantity": 2 }
+        "left": { "content": "2" },
+        "right": { "content": "manzana", "searchTerm": "manzana", "quantity": 2 }
       }
     ]
   }

@@ -277,22 +277,109 @@ const normalizeCopiarExercise = (
   };
 };
 
+const preNormalizeRawExercise = (exercise: any, type: ExerciseType): any => {
+  if (!exercise) return undefined;
+
+  if (type === 'repasar') {
+    const rawPrompts = exercise.prompts || [];
+    const prompts = rawPrompts.map((p: any) => {
+      if (typeof p === 'string') {
+        return { type: 'traceable_text', content: p };
+      }
+      return {
+        type: p.type || 'traceable_text',
+        content: p.content || '',
+        searchTerm: p.searchTerm,
+      };
+    });
+    return { type: 'repasar', prompts };
+  }
+
+  if (type === 'copiar') {
+    const rawCopies = exercise.copies || [];
+    const copies = rawCopies.map((c: any) => {
+      if (typeof c === 'string') {
+        return { type: 'traceable_text', content: c };
+      }
+      return {
+        type: c.type || 'traceable_text',
+        content: c.content || '',
+        searchTerm: c.searchTerm,
+      };
+    });
+    return { type: 'copiar', copies };
+  }
+
+  if (type === 'rodear') {
+    const rawOptions = exercise.options || [];
+    const options = rawOptions.map((o: any) => {
+      if (typeof o === 'string') {
+        return { type: 'image', content: o, searchTerm: o.toLowerCase() };
+      }
+      return {
+        type: o.type || 'image',
+        content: o.content || '',
+        searchTerm: o.searchTerm || o.content || '',
+        quantity: o.quantity,
+      };
+    });
+    const prompt = exercise.prompt
+      ? (typeof exercise.prompt === 'string'
+          ? { type: 'image', content: exercise.prompt, searchTerm: exercise.prompt.toLowerCase() }
+          : {
+              type: exercise.prompt.type || 'image',
+              content: exercise.prompt.content || '',
+              searchTerm: exercise.prompt.searchTerm || exercise.prompt.content || '',
+            })
+      : null;
+    return { type: 'rodear', prompt, options };
+  }
+
+  if (type === 'unir') {
+    const rawPairs = exercise.pairs || [];
+    const pairs = rawPairs.map((p: any) => {
+      if (!p) return { left: undefined, right: undefined };
+      const left = typeof p.left === 'string'
+        ? { type: 'image', content: p.left, searchTerm: p.left.toLowerCase() }
+        : {
+            type: p.left?.type || (p.left?.searchTerm ? 'image' : 'text'),
+            content: p.left?.content || '',
+            searchTerm: p.left?.searchTerm || '',
+            quantity: p.left?.quantity,
+          };
+      const right = typeof p.right === 'string'
+        ? { type: 'image', content: p.right, searchTerm: p.right.toLowerCase() }
+        : {
+            type: p.right?.type || (p.right?.searchTerm ? 'image' : 'text'),
+            content: p.right?.content || '',
+            searchTerm: p.right?.searchTerm || '',
+            quantity: p.right?.quantity,
+          };
+      return { left, right };
+    });
+    return { type: 'unir', pairs };
+  }
+
+  return exercise;
+};
+
 const normalizeExercise = (
   section: Partial<WorksheetSection>,
   exerciseType: ExerciseType
 ): WorksheetExercise => {
   const items = section.items || [];
+  const rawExercise = preNormalizeRawExercise(section.exercise, exerciseType);
 
   switch (exerciseType) {
     case 'repasar':
-      return normalizeRepasarExercise(section.exercise?.type === 'repasar' ? section.exercise : undefined, items);
+      return normalizeRepasarExercise(rawExercise, items);
     case 'unir':
-      return normalizeUnirExercise(section.exercise?.type === 'unir' ? section.exercise : undefined, items);
+      return normalizeUnirExercise(rawExercise, items);
     case 'copiar':
-      return normalizeCopiarExercise(section.exercise?.type === 'copiar' ? section.exercise : undefined, items);
+      return normalizeCopiarExercise(rawExercise, items);
     case 'rodear':
     default:
-      return normalizeRodearExercise(section.exercise?.type === 'rodear' ? section.exercise : undefined, items);
+      return normalizeRodearExercise(rawExercise, items);
   }
 };
 

@@ -19,7 +19,7 @@ export const manifest: ExerciseManifest = {
   }),
 
   // AI & Pedagogical Directives
-  pedagogicalDescription: 'Tracing exercises focus on fine motor skills, character/letter stroke practice, and simple visual-to-written recognition. Highly recommended for students who are beginning writing or require practice with shape tracing and coordinates.',
+  pedagogicalDescription: 'Tracing exercises focus on fine motor skills and simple visual-written recognition. Recommended for students learning coordinate tracing.',
   jsonSchema: `{
   "exerciseType": "repasar",
   "instruction": {
@@ -29,18 +29,11 @@ export const manifest: ExerciseManifest = {
     ]
   },
   "exercise": {
-    "type": "repasar",
-    "prompts": [
-      { "type": "traceable_text", "content": "3" },
-      { "type": "traceable_text", "content": "FLOR" },
-      { "type": "traceable_text", "content": "HOJA" },
-      { "type": "traceable_text", "content": "RAÍZ" }
-    ]
+    "prompts": ["3", "FLOR", "HOJA"]
   }
 }`,
   promptRules: [
-    'The prompts array must contain only objects of type "traceable_text".',
-    'Do NOT output a separate "image" item followed by a "traceable_text" item for the same concept; a single "traceable_text" item with the word or letter to trace in "content" is sufficient and will automatically display its corresponding pictogram.',
+    'The "prompts" array must only contain raw strings representing the letters or words to trace (capitalized).',
   ],
   fewShotExamples: [
     {
@@ -56,12 +49,7 @@ export const manifest: ExerciseManifest = {
     ]
   },
   "exercise": {
-    "type": "repasar",
-    "prompts": [
-      { "type": "traceable_text", "content": "TALLO" },
-      { "type": "traceable_text", "content": "HOJA" },
-      { "type": "traceable_text", "content": "RAIZ" }
-    ]
+    "prompts": ["TALLO", "HOJA", "RAIZ"]
   }
 }`,
     },
