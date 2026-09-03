@@ -1,7 +1,7 @@
 import React from 'react';
-import { BrainCircuitIcon, FileTextIcon, FolderOpenIcon, SlidersHorizontalIcon, SparklesIcon } from './Icons';
+import { BrainCircuitIcon, FileTextIcon, FolderOpenIcon, SlidersHorizontalIcon, SparklesIcon, ImageIcon } from './Icons';
 
-type HeaderView = 'generate' | 'profile' | 'library' | 'translator';
+type HeaderView = 'generate' | 'profile' | 'library' | 'translator' | 'gallery';
 
 interface HeaderProps {
   activeView: HeaderView;
@@ -58,6 +58,14 @@ export const Header: React.FC<HeaderProps> = ({ activeView, setActiveView }) => 
             >
               <FolderOpenIcon className="h-5 w-5" />
               <span>Biblioteca</span>
+            </button>
+            <button
+              onClick={() => setActiveView('gallery')}
+              className={getButtonClasses('gallery')}
+              aria-current={activeView === 'gallery' ? 'page' : undefined}
+            >
+              <ImageIcon className="h-5 w-5" />
+              <span>Galería</span>
             </button>
             <button
               onClick={() => setActiveView('profile')}

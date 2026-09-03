@@ -38,7 +38,11 @@ ${language === 'auto' ? 'Detect the main language of the text (Castilian Spanish
    - Keywords with high meaning (nouns, verbs, adjectives) must have high scores (0.8 to 1.0).
    - Functional words (articles, prepositions, conjunctions) must have low scores (0.1 to 0.3).
    - **Importance Variability**: DO NOT assign the same importance value to all words in the same grammatical category. Evaluate which words are core or indispensable to understand the sentence's main idea (higher scores, e.g. 1.0 or 0.9) and which are complementary (lower scores, e.g. 0.7 or 0.6). This allows the sliders to filter the most relevant words first.
-6. **Recommended Sliders (recommendedSliders)**: Recommend an initial percentage (0 to 100) for each category adjusted to the profile and text difficulty.
+6. **Recommended Sliders (recommendedSliders)**: Recommend an initial percentage (0 to 100) for each category.
+   - '0' means no visual support is recommended for this category (typically for students with low support needs, high literacy, or high autonomy).
+   - '100' means maximum visual support is recommended (all words in this category will display pictograms, typically for students with high support needs, non-verbal profiles, or who require high visual aid to read).
+   - Values in between (e.g., '50' or '80') recommend partial visual support, where only the words with the highest importance scores in that category are turned into pictograms.
+   - You must decide these values dynamically based on the student's cognitive profile and the complexity of the text.
 7. **Language in JSON (language)**: The "language" field must be strictly "es", "val", or "en".`,
     `FORMAT RULES:
 - Return ONLY the JSON object.
@@ -46,7 +50,7 @@ ${language === 'auto' ? 'Detect the main language of the text (Castilian Spanish
 - Respect markdown JSON code block formatting.`,
     `PEDAGOGICAL AND GRAMMATICAL REFERENCE EXAMPLES:
  
-Example 1 (Spanish, Profile with high support need):
+Example 1 (Spanish, Profile A):
 Text: "El niño vive en una casa grande."
 Response:
 {
@@ -80,7 +84,7 @@ Response:
   ]
 }
  
-Example 2 (Valencian, Profile with high support need):
+Example 2 (Valencian, Profile B):
 Text: "El xiquet menja en una casa gran."
 Response:
 {
@@ -114,7 +118,7 @@ Response:
   ]
 }
  
-Example 3 (English, Profile with high support need):
+Example 3 (English, Profile C):
 Text: "The dog runs fast."
 Response:
 {

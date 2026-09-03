@@ -541,6 +541,19 @@ export const ProfileView: React.FC = () => {
                     </select>
                   </div>
 
+                  <div className="flex items-center gap-3 py-1">
+                    <input
+                      type="checkbox"
+                      id="use-single-prompt"
+                      checked={aiSettings.useSinglePrompt || false}
+                      onChange={(e) => updateAISettings({ useSinglePrompt: e.target.checked })}
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    />
+                    <label htmlFor="use-single-prompt" className="text-sm font-semibold text-slate-700 cursor-pointer select-none">
+                      Usar prompt único (desactivar MAS)
+                    </label>
+                  </div>
+
                   <div>
                     <label htmlFor="gemini-model" className="block text-sm font-semibold text-gray-700 mb-1">Modelo de Gemini</label>
                     <input

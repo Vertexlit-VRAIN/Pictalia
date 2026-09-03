@@ -32,6 +32,7 @@ import { TracingEditor } from './exercises/tracing/TracingEditor';
 import { MatchingEditor } from './exercises/matching/MatchingEditor';
 import { CopyingEditor } from './exercises/copying/CopyingEditor';
 import { CirclingEditor } from './exercises/circling/CirclingEditor';
+import { getExerciseManifest } from './exercises/registry';
 
 type PictogramEditorModalProps = {
   isOpen: boolean;
@@ -130,7 +131,7 @@ const PictogramEditorModal: React.FC<PictogramEditorModalProps> = ({
 
     const timeoutId = window.setTimeout(async () => {
       try {
-        const foundPictograms = await searchPictograms(normalizedSearchTerm, searchLanguage);
+        const foundPictograms = await searchPictograms(normalizedSearchTerm, searchLanguage, { isManualSearch: true });
         if (!cancelled) {
           setResults(foundPictograms);
           if (foundPictograms.length > 0) {
@@ -858,9 +859,11 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
     updateSectionByIndex(sectionIndex, section => {
       const items = getMutableSectionItems(section);
       const exerciseType = section.exerciseType || 'rodear';
+      const manifest = getExerciseManifest(exerciseType);
+      const minItems = manifest.minimumItems;
 
       if (exerciseType === 'unir') {
-        if (items.length <= 4) return;
+        if (items.length <= minItems) return;
         const pairCount = items.length / 2;
         const pairIndex = itemIndex < pairCount ? itemIndex : itemIndex - pairCount;
         items.splice(pairCount + pairIndex, 1);
@@ -868,7 +871,7 @@ export const EditableWorksheetDisplay: React.FC<EditableWorksheetProps> = ({
         return;
       }
 
-      const minimumItems = exerciseType === 'copiar' ? 1 : exerciseType === 'repasar' ? 1 : 2;      if (items.length <= minimumItems) return;
+      if (items.length <= minItems) return;
       items.splice(itemIndex, 1);
     });
   };

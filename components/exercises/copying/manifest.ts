@@ -8,6 +8,8 @@ export const manifest: ExerciseManifest = {
   defaultLayout: 'column',
   instructionTerms: ['copiar'],
   minimumItems: 1,
+  minGenerateItems: 3,
+  maxGenerateItems: 6,
   createDefaultExercise: () => ({
     type: 'copiar',
     copies: [
@@ -35,6 +37,8 @@ export const manifest: ExerciseManifest = {
   promptRules: [
     'All words to copy go in "copies" as raw strings in UPPERCASE.',
     'Do not include "image" or "searchTerm" items in this exercise.',
+    'CRITICAL: Only plan a simple list of words to copy in uppercase.',
+    'Scale the number of words to copy dynamically based on the student profile, strictly between 3 and 6 elements. High support needs profiles should have 3 words; lower support needs should have 4 to 6 words.',
   ],
   fewShotExamples: [
     {

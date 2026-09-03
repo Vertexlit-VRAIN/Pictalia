@@ -1,0 +1,277 @@
+{
+  "run_info": {
+    "run_id": 23,
+    "task_id": 4,
+    "topic": "Formas geométricas básicas",
+    "profile_id": "bajo_soporte",
+    "provider": "ollama",
+    "model": "gemma3:4b",
+    "mode": "single",
+    "success": true,
+    "error_message": "",
+    "elapsed_ms": 20006
+  },
+  "llm_calls": [
+    {
+      "prompt": "You are the Adaptator-TEA AI system.\nYour goal is to generate a complete educational worksheet adapted for a student with special education needs (TEA).\n\nSTUDENT PROFILE:\nDatos generales:\n- Edad: 8\n- Curso o etapa: Primaria 2º\n- Diagnóstico o condición relevante: TEA grado 1 (alto funcionamiento)\n- Objetivos prioritarios actuales: Consolidar comprensión lectora de frases sencillas, autonomía en la resolución de tareas escolares estructuradas y refuerzo de cálculo aritmético simple.\n- Comentarios adicionales: Vocabulario amplio. Puede experimentar fatiga mental si la ficha tiene demasiados elementos repetitivos o carece de una meta lúdica. Responde bien a consignas textuales claras.\n\n1. Comprensión y acceso a la información:\n- Síntesis profesional: Comprende instrucciones escritas de dos pasos si están estructuradas. No requiere apoyo visual masivo de pictogramas (puede llegar a distraerle si está sobrecargado).\n- Canal de acceso preferente: Lectoescritura combinada con esquemas visuales lógicos.\n- Apoyos indispensables: Títulos claros, enunciados directos y estructura espacial limpia.\n\n2. Modalidad de respuesta:\n- Modalidad expresiva: Verbal y lectoescritura funcional. Capaz de escribir palabras y completar frases cortas de forma autónoma.\n- Habilidades motoras: Motricidad fina desarrollada. Puede copiar palabras en minúsculas/mayúsculas y realizar trazos precisos.\n- Adaptaciones de respuesta: Actividades de copiar palabras, resolver operaciones aritméticas y relacionar conceptos abstractos.\n\nPEDAGOGICAL PLAN:\n- Topic: Formas geométricas básicas\n- Goal: Reconocer y discriminar visualmente el círculo y el cuadrado.\n- Details (Teacher Instructions): Usar el ejercicio de rodear con colores diferenciados.\n\nPEDAGOGICAL RULES:\n- Adapt the exercise to the student profile. Prioritize autonomy, visual support, and low verbal load.\n- Choose simple and concrete visual representations. Everyday vocabulary only.\n- Strict Content Coherence: All titles, instructions, text, and search terms must have 100% direct thematic coherence with the topic. Do not mix unrelated subjects.\n- Element Scaling: Dynamically adapt the number of elements/items in each generated exercise section (e.g., pairs in \"unir\", options in \"rodear\", words/letters in \"repasar\"/\"copiar\") to the student's age, attention limit, and cognitive support level. The chosen count MUST fall strictly within the \"Min items\" and \"Max items\" limits specified for that exercise type. High support needs profiles should get a count close to the Min limit; lower support needs should get a count close to the Max limit.\n\nMANDATORY STRUCTURE BY TYPE:\n- Exercise type \"repasar\":\n  JSON Schema format:\n  {\n  \"exerciseType\": \"repasar\",\n  \"instruction\": {\n    \"text\": \"REPASAR LA PALABRA\",\n    \"pictograms\": [\n      { \"searchTerm\": \"repasar\", \"content\": \"REPASAR\" }\n    ]\n  },\n  \"exercise\": {\n    \"prompts\": [\"A\", \"B\", \"C\"]\n  }\n}\n  Limits: Min items: 3, Max items: 6\n  Rules:\n    - The \"prompts\" array must only contain raw strings representing the letters or words to trace (capitalized).\n  - CRITICAL: Only plan a simple list of letters, numbers, or words to trace in uppercase.\n  - Scale the number of items to trace dynamically based on the student profile, strictly between 3 and 6 elements. High support needs profiles should have 3 items; lower support needs should have 4 to 6 items.\n\n- Exercise type \"unir\":\n  JSON Schema format:\n  {\n  \"exerciseType\": \"unir\",\n  \"instruction\": {\n    \"text\": \"UNIR CADA ANIMAL CON SU COMIDA\",\n    \"pictograms\": [\n      { \"searchTerm\": \"unir\", \"content\": \"UNIR\" }\n    ]\n  },\n  \"exercise\": {\n    \"pairs\": [\n      {\n        \"left\": { \"content\": \"mono\", \"searchTerm\": \"mono\" },\n        \"right\": { \"content\": \"plátano\", \"searchTerm\": \"platano\" }\n      }\n    ]\n  }\n}\n  Limits: Min items: 6, Max items: 12\n  Rules:\n    - Pairs must represent direct logical associations (e.g. animal-to-food, object-to-category).\n  - For quantity matching, the left item should have the number digit as content (e.g. \"2\"), and the right item should have the concrete noun as searchTerm (e.g. \"flor\") with the target quantity (e.g. 2).\n  - CRITICAL: Only plan direct left-to-right item matching pairs. Do not plan multiple levels, sub-questions, or other layout formats.\n  - Scale the number of matching pairs dynamically based on the student profile, strictly between 3 and 6 pairs. High support needs profiles should have 3 pairs (6 items); lower support needs should have 4 to 6 pairs. Do not generate only 2 pairs unless explicitly asked.\n\n- Exercise type \"rodear\":\n  JSON Schema format:\n  {\n  \"exerciseType\": \"rodear\",\n  \"instruction\": {\n    \"text\": \"RODEA LOS ANIMALES\",\n    \"pictograms\": [\n      { \"searchTerm\": \"rodear\", \"content\": \"RODEAR\" }\n    ]\n  },\n  \"exercise\": {\n    \"prompt\": null,\n    \"options\": [\n      { \"content\": \"perro\", \"searchTerm\": \"perro\" },\n      { \"content\": \"silla\", \"searchTerm\": \"silla\" }\n    ]\n  }\n}\n  Limits: Min items: 4, Max items: 8\n  Rules:\n    - Renders a simple flat list or grid of options. Distractors must be concrete, simple, and clearly distinct from target items.\n  - An optional \"prompt\" object can define the target concept.\n  - CRITICAL: Only plan a simple list/grid of options. Never plan complex illustration scenes, body parts labeling, interactive layouts, or subgroups.\n  - Scale the number of options (targets + distractors) dynamically based on the student profile, strictly between 4 and 8 options. High support needs profiles should have 4 options; lower support needs should have 6 to 8 options.\n\n- Exercise type \"copiar\":\n  JSON Schema format:\n  {\n  \"exerciseType\": \"copiar\",\n  \"instruction\": {\n    \"text\": \"COPIA LAS PALABRAS\",\n    \"pictograms\": [\n      { \"searchTerm\": \"copiar\", \"content\": \"COPIAR\" }\n    ]\n  },\n  \"exercise\": {\n    \"copies\": [\"SOL\", \"LUNA\"]\n  }\n}\n  Limits: Min items: 3, Max items: 6\n  Rules:\n    - All words to copy go in \"copies\" as raw strings in UPPERCASE.\n  - Do not include \"image\" or \"searchTerm\" items in this exercise.\n  - CRITICAL: Only plan a simple list of words to copy in uppercase.\n  - Scale the number of words to copy dynamically based on the student profile, strictly between 3 and 6 elements. High support needs profiles should have 3 words; lower support needs should have 4 to 6 words.\n\nPICTOGRAM SEARCH TERM & CONTENT RULES:\n1. Every item inside the JSON containing \"searchTerm\" (for pictogram lookup) or \"content\" (displayed text) MUST contain a single, simple, concrete word (e.g. \"sol\", \"perro\", \"abrigo\").\n2. CRITICAL: Never use multi-word descriptions, qualifiers, sentences, or phrases for search terms (e.g. NEVER write \"sol de verano\", \"abuela feliz\", \"comer manzana\").\n3. CRITICAL: Do NOT use technical qualifiers or file extensions in the search term. For example, never use suffixes like \"_pictograma\", \"_image\", \"_dibujo\", \"_picto\", \"pictograma\", \"image\", or \"dibujo\".\n4. Do NOT use punctuation, hyphens (-), or underscores (_) inside \"searchTerm\" (e.g. use \"manzana\", never \"manzana_roja\" or \"manzana-roja\").\n5. The content text of the pictogram should match the search term but in UPPERCASE.\n\nCRITICAL GENERATION RULES:\n1. Output ONLY a valid JSON object matching the worksheet schema below. No conversational text.\n2. Strictly follow the exclusions, constraints, or focus areas requested in \"Details\". For instance, if the teacher explicitly says \"no quiero ejercicios de repasar\" or similar, you MUST NOT include any sections of type \"repasar\" in the worksheet under any circumstances.\n3. Every exercise section must include an instruction text (UPPERCASE) and associated instruction pictograms (each with searchTerm and content).\n\nWORKSHEET OUTPUT SCHEMA:\n{\n  \"title\": \"Descriptive worksheet title in Castilian Spanish (es)\",\n  \"pictogramSearchTerm\": \"Simple theme word for the whole worksheet\",\n  \"sections\": [\n    {\n      \"exerciseType\": \"repasar / unir / rodear / copiar\",\n      \"instruction\": {\n        \"text\": \"INSTRUCTION TEXT\",\n        \"pictograms\": [\n          { \"searchTerm\": \"term\", \"content\": \"WORD\" }\n        ]\n      },\n      \"exercise\": <structure matching the corresponding schema for exerciseType>\n    }\n  ]\n}\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{\n  \"title\": \"Formas Geométricas: Círculo y Cuadrado\",\n  \"pictogramSearchTerm\": \"formas\",\n  \"sections\": [\n    {\n      \"exerciseType\": \"repasar\",\n      \"instruction\": {\n        \"text\": \"REPASAR LA PALABRA\",\n        \"pictograms\": [\n          { \"searchTerm\": \"repasar\", \"content\": \"REPASAR\" }\n        ]\n      },\n      \"exercise\": {\n        \"prompts\": [\"CÍRCULO\", \"CUADRADO\", \"TRIÁNGULO\"]\n      }\n    },\n    {\n      \"exerciseType\": \"unir\",\n      \"instruction\": {\n        \"text\": \"UNIR CADA FORMA CON SU NOMBRE\",\n        \"pictograms\": [\n          { \"searchTerm\": \"unir\", \"content\": \"UNIR\" }\n        ]\n      },\n      \"exercise\": {\n        \"pairs\": [\n          {\n            \"left\": { \"content\": \"círculo\", \"searchTerm\": \"círculo\" },\n            \"right\": { \"content\": \"forma\", \"searchTerm\": \"forma\" }\n          },\n          {\n            \"left\": { \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\" },\n            \"right\": { \"content\": \"ladrillo\", \"searchTerm\": \"ladrillo\" }\n          }\n        ]\n      }\n    },\n    {\n      \"exerciseType\": \"rodear\",\n      \"instruction\": {\n        \"text\": \"RODEA LOS CÍRCULOS\",\n        \"pictograms\": [\n          { \"searchTerm\": \"rodear\", \"content\": \"RODEAR\" }\n        ]\n      },\n      \"exercise\": {\n        \"prompt\": null,\n        \"options\": [\n          { \"content\": \"sol\", \"searchTerm\": \"sol\" },\n          { \"content\": \"luna\", \"searchTerm\": \"luna\" },\n          { \"content\": \"círculo\", \"searchTerm\": \"círculo\" },\n          { \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\" }\n        ]\n      }\n    },\n    {\n      \"exerciseType\": \"copiar\",\n      \"instruction\": {\n        \"text\": \"COPIA LAS PALABRAS\",\n        \"pictograms\": [\n          { \"searchTerm\": \"copiar\", \"content\": \"COPIAR\" }\n        ]\n      },\n      \"exercise\": {\n        \"copies\": [\"CÍRCULO\", \"CUADRADO\"]\n      }\n    }\n  ]\n}",
+      "provider": "ollama",
+      "status": "success"
+    }
+  ],
+  "final_worksheet": {
+    "title": "Formas Geométricas: Círculo y Cuadrado",
+    "pictogramSearchTerm": "formas",
+    "sections": [
+      {
+        "exerciseType": "repasar",
+        "instruction": {
+          "text": "REPASAR LA PALABRA",
+          "pictograms": [
+            {
+              "searchTerm": "repasar",
+              "content": "REPASAR",
+              "url": "https://static.arasaac.org/pictograms/15475/15475_500.png"
+            }
+          ]
+        },
+        "exercise": {
+          "prompts": [
+            "CÍRCULO",
+            "CUADRADO",
+            "TRIÁNGULO"
+          ]
+        },
+        "items": [
+          {
+            "type": "traceable_text",
+            "content": "CÍRCULO"
+          },
+          {
+            "type": "traceable_text",
+            "content": "CUADRADO"
+          },
+          {
+            "type": "traceable_text",
+            "content": "TRIÁNGULO"
+          }
+        ]
+      },
+      {
+        "exerciseType": "unir",
+        "instruction": {
+          "text": "UNIR CADA FORMA CON SU NOMBRE",
+          "pictograms": [
+            {
+              "searchTerm": "unir",
+              "content": "UNIR",
+              "url": "https://static.arasaac.org/pictograms/6965/6965_500.png"
+            }
+          ]
+        },
+        "exercise": {
+          "pairs": [
+            {
+              "left": {
+                "content": "círculo",
+                "searchTerm": "círculo",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/4603/4603_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/4603/4603_500.png",
+                  "https://static.arasaac.org/pictograms/34053/34053_500.png"
+                ]
+              },
+              "right": {
+                "content": "forma",
+                "searchTerm": "forma",
+                "selectedPictoUrl": "",
+                "pictoOptions": []
+              }
+            },
+            {
+              "left": {
+                "content": "cuadrado",
+                "searchTerm": "cuadrado",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/4616/4616_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/4616/4616_500.png"
+                ]
+              },
+              "right": {
+                "content": "ladrillo",
+                "searchTerm": "ladrillo",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2951/2951_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2951/2951_500.png"
+                ]
+              }
+            }
+          ]
+        },
+        "items": [
+          {
+            "type": "image",
+            "content": "círculo",
+            "searchTerm": "círculo",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "cuadrado",
+            "searchTerm": "cuadrado",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "forma",
+            "searchTerm": "forma",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "ladrillo",
+            "searchTerm": "ladrillo",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          }
+        ]
+      },
+      {
+        "exerciseType": "rodear",
+        "instruction": {
+          "text": "RODEA LOS CÍRCULOS",
+          "pictograms": [
+            {
+              "searchTerm": "rodear",
+              "content": "RODEAR",
+              "url": "https://static.arasaac.org/pictograms/6285/6285_500.png"
+            }
+          ]
+        },
+        "exercise": {
+          "prompt": null,
+          "options": [
+            {
+              "content": "sol",
+              "searchTerm": "sol",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/2798/2798_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/2798/2798_500.png",
+                "https://static.arasaac.org/pictograms/7252/7252_500.png"
+              ]
+            },
+            {
+              "content": "luna",
+              "searchTerm": "luna",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/2933/2933_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/2933/2933_500.png"
+              ]
+            },
+            {
+              "content": "círculo",
+              "searchTerm": "círculo",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/4603/4603_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/4603/4603_500.png",
+                "https://static.arasaac.org/pictograms/34053/34053_500.png"
+              ]
+            },
+            {
+              "content": "cuadrado",
+              "searchTerm": "cuadrado",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/4616/4616_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/4616/4616_500.png"
+              ]
+            }
+          ]
+        },
+        "items": [
+          {
+            "type": "image",
+            "content": "sol",
+            "searchTerm": "sol",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "luna",
+            "searchTerm": "luna",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "círculo",
+            "searchTerm": "círculo",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "cuadrado",
+            "searchTerm": "cuadrado",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          }
+        ]
+      },
+      {
+        "exerciseType": "copiar",
+        "instruction": {
+          "text": "COPIA LAS PALABRAS",
+          "pictograms": [
+            {
+              "searchTerm": "copiar",
+              "content": "COPIAR",
+              "url": "https://static.arasaac.org/pictograms/21559/21559_500.png"
+            }
+          ]
+        },
+        "exercise": {
+          "copies": [
+            "CÍRCULO",
+            "CUADRADO"
+          ]
+        },
+        "items": [
+          {
+            "type": "traceable_text",
+            "content": "CÍRCULO"
+          },
+          {
+            "type": "traceable_text",
+            "content": "CUADRADO"
+          }
+        ]
+      }
+    ],
+    "selectedPictoUrl": "https://static.arasaac.org/pictograms/4651/4651_500.png",
+    "pictoOptions": [
+      "https://static.arasaac.org/pictograms/4651/4651_500.png"
+    ],
+    "telemetry": {
+      "generationTimeMs": 20006,
+      "adpTimeMs": 0,
+      "acTimeMs": 0,
+      "rejectionCount": 0,
+      "manualEditsCount": 0,
+      "pictoOverridesCount": 0,
+      "retryCount": 0,
+      "createdTimestamp": "2026-07-16T06:58:56Z"
+    }
+  }
+}

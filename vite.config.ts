@@ -142,5 +142,13 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, '.'),
     }
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        visualizer: path.resolve(__dirname, 'visualizer.html')
+      }
+    }
   }
 });

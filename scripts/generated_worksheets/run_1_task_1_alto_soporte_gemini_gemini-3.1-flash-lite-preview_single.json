@@ -1,0 +1,274 @@
+{
+  "run_info": {
+    "run_id": 1,
+    "task_id": 1,
+    "topic": "Las frutas",
+    "profile_id": "alto_soporte",
+    "provider": "gemini",
+    "model": "gemini-3.1-flash-lite-preview",
+    "mode": "single",
+    "success": true,
+    "error_message": "",
+    "elapsed_ms": 2193
+  },
+  "llm_calls": [
+    {
+      "prompt": "You are the Adaptator-TEA AI system.\nYour goal is to generate a complete educational worksheet adapted for a student with special education needs (TEA).\n\nSTUDENT PROFILE:\nDatos generales:\n- Edad: 4\n- Curso o etapa: Infantil 3 años\n- Diagnóstico o condición relevante: TEA grado 3\n- Objetivos prioritarios actuales: Favorecer intención comunicativa básica, comprensión de rutinas escolares mediante apoyos visuales masivos y habituación a tareas dirigidas extremadamente breves.\n- Comentarios adicionales: No tolera interacciones auditivas prolongadas, no maneja la escritura ni el trazado preciso de letras. Su atención es inferior a 2 minutos y requiere reforzadores visuales inmediatos.\n\n1. Comprensión y acceso a la información:\n- Síntesis profesional: Comprende exclusivamente consignas visuales de un solo paso acompañadas de modelo físico o pictogramas repetidos. Requiere apoyo de pictograma para todas las palabras clave.\n- Canal de acceso preferente: Visual puro y cinestésico.\n- Apoyos indispensables: Pictogramas de ARASAAC con fondo de color adaptado, anticipación visual clara e instrucciones breves en mayúsculas.\n\n2. Modalidad de respuesta:\n- Modalidad expresiva: Prácticamente no verbal (emite sonidos guturales o señala). No escribe ni realiza copias.\n- Habilidades motoras: Motricidad gruesa preservada, motricidad fina inmadura (agarre palmar, incapaz de seguir líneas de puntos finas).\n- Adaptaciones de respuesta: Respuesta mediante señalar, arrastrar o rodear con marcas muy gruesas.\n\nPEDAGOGICAL PLAN:\n- Topic: Las frutas\n- Goal: Identificar y clasificar frutas comunes como manzana, plátano y naranja.\n- Details (Teacher Instructions): Pedir que no se incluyan ejercicios de repasar letras.\n\nPEDAGOGICAL RULES:\n- Adapt the exercise to the student profile. Prioritize autonomy, visual support, and low verbal load.\n- Choose simple and concrete visual representations. Everyday vocabulary only.\n- Strict Content Coherence: All titles, instructions, text, and search terms must have 100% direct thematic coherence with the topic. Do not mix unrelated subjects.\n- Element Scaling: Dynamically adapt the number of elements/items in each generated exercise section (e.g., pairs in \"unir\", options in \"rodear\", words/letters in \"repasar\"/\"copiar\") to the student's age, attention limit, and cognitive support level. The chosen count MUST fall strictly within the \"Min items\" and \"Max items\" limits specified for that exercise type. High support needs profiles should get a count close to the Min limit; lower support needs should get a count close to the Max limit.\n\nMANDATORY STRUCTURE BY TYPE:\n- Exercise type \"repasar\":\n  JSON Schema format:\n  {\n  \"exerciseType\": \"repasar\",\n  \"instruction\": {\n    \"text\": \"REPASAR LA PALABRA\",\n    \"pictograms\": [\n      { \"searchTerm\": \"repasar\", \"content\": \"REPASAR\" }\n    ]\n  },\n  \"exercise\": {\n    \"prompts\": [\"A\", \"B\", \"C\"]\n  }\n}\n  Limits: Min items: 3, Max items: 6\n  Rules:\n    - The \"prompts\" array must only contain raw strings representing the letters or words to trace (capitalized).\n  - CRITICAL: Only plan a simple list of letters, numbers, or words to trace in uppercase.\n  - Scale the number of items to trace dynamically based on the student profile, strictly between 3 and 6 elements. High support needs profiles should have 3 items; lower support needs should have 4 to 6 items.\n\n- Exercise type \"unir\":\n  JSON Schema format:\n  {\n  \"exerciseType\": \"unir\",\n  \"instruction\": {\n    \"text\": \"UNIR CADA ANIMAL CON SU COMIDA\",\n    \"pictograms\": [\n      { \"searchTerm\": \"unir\", \"content\": \"UNIR\" }\n    ]\n  },\n  \"exercise\": {\n    \"pairs\": [\n      {\n        \"left\": { \"content\": \"mono\", \"searchTerm\": \"mono\" },\n        \"right\": { \"content\": \"plátano\", \"searchTerm\": \"platano\" }\n      }\n    ]\n  }\n}\n  Limits: Min items: 6, Max items: 12\n  Rules:\n    - Pairs must represent direct logical associations (e.g. animal-to-food, object-to-category).\n  - For quantity matching, the left item should have the number digit as content (e.g. \"2\"), and the right item should have the concrete noun as searchTerm (e.g. \"flor\") with the target quantity (e.g. 2).\n  - CRITICAL: Only plan direct left-to-right item matching pairs. Do not plan multiple levels, sub-questions, or other layout formats.\n  - Scale the number of matching pairs dynamically based on the student profile, strictly between 3 and 6 pairs. High support needs profiles should have 3 pairs (6 items); lower support needs should have 4 to 6 pairs. Do not generate only 2 pairs unless explicitly asked.\n\n- Exercise type \"rodear\":\n  JSON Schema format:\n  {\n  \"exerciseType\": \"rodear\",\n  \"instruction\": {\n    \"text\": \"RODEA LOS ANIMALES\",\n    \"pictograms\": [\n      { \"searchTerm\": \"rodear\", \"content\": \"RODEAR\" }\n    ]\n  },\n  \"exercise\": {\n    \"prompt\": null,\n    \"options\": [\n      { \"content\": \"perro\", \"searchTerm\": \"perro\" },\n      { \"content\": \"silla\", \"searchTerm\": \"silla\" }\n    ]\n  }\n}\n  Limits: Min items: 4, Max items: 8\n  Rules:\n    - Renders a simple flat list or grid of options. Distractors must be concrete, simple, and clearly distinct from target items.\n  - An optional \"prompt\" object can define the target concept.\n  - CRITICAL: Only plan a simple list/grid of options. Never plan complex illustration scenes, body parts labeling, interactive layouts, or subgroups.\n  - Scale the number of options (targets + distractors) dynamically based on the student profile, strictly between 4 and 8 options. High support needs profiles should have 4 options; lower support needs should have 6 to 8 options.\n\n- Exercise type \"copiar\":\n  JSON Schema format:\n  {\n  \"exerciseType\": \"copiar\",\n  \"instruction\": {\n    \"text\": \"COPIA LAS PALABRAS\",\n    \"pictograms\": [\n      { \"searchTerm\": \"copiar\", \"content\": \"COPIAR\" }\n    ]\n  },\n  \"exercise\": {\n    \"copies\": [\"SOL\", \"LUNA\"]\n  }\n}\n  Limits: Min items: 3, Max items: 6\n  Rules:\n    - All words to copy go in \"copies\" as raw strings in UPPERCASE.\n  - Do not include \"image\" or \"searchTerm\" items in this exercise.\n  - CRITICAL: Only plan a simple list of words to copy in uppercase.\n  - Scale the number of words to copy dynamically based on the student profile, strictly between 3 and 6 elements. High support needs profiles should have 3 words; lower support needs should have 4 to 6 words.\n\nPICTOGRAM SEARCH TERM & CONTENT RULES:\n1. Every item inside the JSON containing \"searchTerm\" (for pictogram lookup) or \"content\" (displayed text) MUST contain a single, simple, concrete word (e.g. \"sol\", \"perro\", \"abrigo\").\n2. CRITICAL: Never use multi-word descriptions, qualifiers, sentences, or phrases for search terms (e.g. NEVER write \"sol de verano\", \"abuela feliz\", \"comer manzana\").\n3. CRITICAL: Do NOT use technical qualifiers or file extensions in the search term. For example, never use suffixes like \"_pictograma\", \"_image\", \"_dibujo\", \"_picto\", \"pictograma\", \"image\", or \"dibujo\".\n4. Do NOT use punctuation, hyphens (-), or underscores (_) inside \"searchTerm\" (e.g. use \"manzana\", never \"manzana_roja\" or \"manzana-roja\").\n5. The content text of the pictogram should match the search term but in UPPERCASE.\n\nCRITICAL GENERATION RULES:\n1. Output ONLY a valid JSON object matching the worksheet schema below. No conversational text.\n2. Strictly follow the exclusions, constraints, or focus areas requested in \"Details\". For instance, if the teacher explicitly says \"no quiero ejercicios de repasar\" or similar, you MUST NOT include any sections of type \"repasar\" in the worksheet under any circumstances.\n3. Every exercise section must include an instruction text (UPPERCASE) and associated instruction pictograms (each with searchTerm and content).\n\nWORKSHEET OUTPUT SCHEMA:\n{\n  \"title\": \"Descriptive worksheet title in Castilian Spanish (es)\",\n  \"pictogramSearchTerm\": \"Simple theme word for the whole worksheet\",\n  \"sections\": [\n    {\n      \"exerciseType\": \"repasar / unir / rodear / copiar\",\n      \"instruction\": {\n        \"text\": \"INSTRUCTION TEXT\",\n        \"pictograms\": [\n          { \"searchTerm\": \"term\", \"content\": \"WORD\" }\n        ]\n      },\n      \"exercise\": <structure matching the corresponding schema for exerciseType>\n    }\n  ]\n}\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{\n  \"title\": \"LAS FRUTAS\",\n  \"pictogramSearchTerm\": \"fruta\",\n  \"sections\": [\n    {\n      \"exerciseType\": \"rodear\",\n      \"instruction\": {\n        \"text\": \"RODEA LAS FRUTAS\",\n        \"pictograms\": [\n          { \"searchTerm\": \"rodear\", \"content\": \"RODEAR\" },\n          { \"searchTerm\": \"fruta\", \"content\": \"FRUTA\" }\n        ]\n      },\n      \"exercise\": {\n        \"prompt\": { \"content\": \"FRUTA\", \"searchTerm\": \"fruta\" },\n        \"options\": [\n          { \"content\": \"MANZANA\", \"searchTerm\": \"manzana\" },\n          { \"content\": \"PLATANO\", \"searchTerm\": \"platano\" },\n          { \"content\": \"NARANJA\", \"searchTerm\": \"naranja\" },\n          { \"content\": \"MESA\", \"searchTerm\": \"mesa\" }\n        ]\n      }\n    },\n    {\n      \"exerciseType\": \"unir\",\n      \"instruction\": {\n        \"text\": \"UNIR CADA FRUTA CON SU IGUAL\",\n        \"pictograms\": [\n          { \"searchTerm\": \"unir\", \"content\": \"UNIR\" },\n          { \"searchTerm\": \"fruta\", \"content\": \"FRUTA\" }\n        ]\n      },\n      \"exercise\": {\n        \"pairs\": [\n          {\n            \"left\": { \"content\": \"MANZANA\", \"searchTerm\": \"manzana\" },\n            \"right\": { \"content\": \"MANZANA\", \"searchTerm\": \"manzana\" }\n          },\n          {\n            \"left\": { \"content\": \"PLATANO\", \"searchTerm\": \"platano\" },\n            \"right\": { \"content\": \"PLATANO\", \"searchTerm\": \"platano\" }\n          },\n          {\n            \"left\": { \"content\": \"NARANJA\", \"searchTerm\": \"naranja\" },\n            \"right\": { \"content\": \"NARANJA\", \"searchTerm\": \"naranja\" }\n          }\n        ]\n      }\n    }\n  ]\n}",
+      "provider": "gemini",
+      "status": "success"
+    }
+  ],
+  "final_worksheet": {
+    "title": "LAS FRUTAS (gemini-3.1-flash-lite-preview)",
+    "pictogramSearchTerm": "fruta",
+    "sections": [
+      {
+        "exerciseType": "rodear",
+        "instruction": {
+          "text": "RODEA LAS FRUTAS",
+          "pictograms": [
+            {
+              "searchTerm": "rodear",
+              "content": "RODEAR",
+              "url": "https://static.arasaac.org/pictograms/6285/6285_500.png"
+            },
+            {
+              "searchTerm": "fruta",
+              "content": "FRUTA",
+              "url": "https://static.arasaac.org/pictograms/4653/4653_500.png"
+            }
+          ]
+        },
+        "exercise": {
+          "prompt": {
+            "content": "FRUTA",
+            "searchTerm": "fruta"
+          },
+          "options": [
+            {
+              "content": "MANZANA",
+              "searchTerm": "manzana",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/2462/2462_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/2462/2462_500.png",
+                "https://static.arasaac.org/pictograms/13645/13645_500.png",
+                "https://static.arasaac.org/pictograms/13644/13644_500.png"
+              ]
+            },
+            {
+              "content": "PLATANO",
+              "searchTerm": "platano",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/2530/2530_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/2530/2530_500.png",
+                "https://static.arasaac.org/pictograms/9054/9054_500.png"
+              ]
+            },
+            {
+              "content": "NARANJA",
+              "searchTerm": "naranja",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/2483/2483_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/2483/2483_500.png",
+                "https://static.arasaac.org/pictograms/2888/2888_500.png"
+              ]
+            },
+            {
+              "content": "MESA",
+              "searchTerm": "mesa",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/3129/3129_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/3129/3129_500.png",
+                "https://static.arasaac.org/pictograms/6562/6562_500.png"
+              ]
+            }
+          ]
+        },
+        "items": [
+          {
+            "type": "image",
+            "content": "MANZANA",
+            "searchTerm": "manzana",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "PLATANO",
+            "searchTerm": "platano",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "NARANJA",
+            "searchTerm": "naranja",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "MESA",
+            "searchTerm": "mesa",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          }
+        ]
+      },
+      {
+        "exerciseType": "unir",
+        "instruction": {
+          "text": "UNIR CADA FRUTA CON SU IGUAL",
+          "pictograms": [
+            {
+              "searchTerm": "unir",
+              "content": "UNIR",
+              "url": "https://static.arasaac.org/pictograms/6965/6965_500.png"
+            },
+            {
+              "searchTerm": "fruta",
+              "content": "FRUTA",
+              "url": "https://static.arasaac.org/pictograms/4653/4653_500.png"
+            }
+          ]
+        },
+        "exercise": {
+          "pairs": [
+            {
+              "left": {
+                "content": "MANZANA",
+                "searchTerm": "manzana",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2462/2462_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2462/2462_500.png",
+                  "https://static.arasaac.org/pictograms/13645/13645_500.png",
+                  "https://static.arasaac.org/pictograms/13644/13644_500.png"
+                ]
+              },
+              "right": {
+                "content": "MANZANA",
+                "searchTerm": "manzana",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2462/2462_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2462/2462_500.png",
+                  "https://static.arasaac.org/pictograms/13645/13645_500.png",
+                  "https://static.arasaac.org/pictograms/13644/13644_500.png"
+                ]
+              }
+            },
+            {
+              "left": {
+                "content": "PLATANO",
+                "searchTerm": "platano",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2530/2530_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2530/2530_500.png",
+                  "https://static.arasaac.org/pictograms/9054/9054_500.png"
+                ]
+              },
+              "right": {
+                "content": "PLATANO",
+                "searchTerm": "platano",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2530/2530_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2530/2530_500.png",
+                  "https://static.arasaac.org/pictograms/9054/9054_500.png"
+                ]
+              }
+            },
+            {
+              "left": {
+                "content": "NARANJA",
+                "searchTerm": "naranja",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2483/2483_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2483/2483_500.png",
+                  "https://static.arasaac.org/pictograms/2888/2888_500.png"
+                ]
+              },
+              "right": {
+                "content": "NARANJA",
+                "searchTerm": "naranja",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2483/2483_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2483/2483_500.png",
+                  "https://static.arasaac.org/pictograms/2888/2888_500.png"
+                ]
+              }
+            }
+          ]
+        },
+        "items": [
+          {
+            "type": "image",
+            "content": "MANZANA",
+            "searchTerm": "manzana",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "PLATANO",
+            "searchTerm": "platano",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "NARANJA",
+            "searchTerm": "naranja",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "MANZANA",
+            "searchTerm": "manzana",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "PLATANO",
+            "searchTerm": "platano",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "NARANJA",
+            "searchTerm": "naranja",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          }
+        ]
+      }
+    ],
+    "selectedPictoUrl": "https://static.arasaac.org/pictograms/4653/4653_500.png",
+    "pictoOptions": [
+      "https://static.arasaac.org/pictograms/4653/4653_500.png",
+      "https://static.arasaac.org/pictograms/28339/28339_500.png"
+    ],
+    "telemetry": {
+      "generationTimeMs": 2193,
+      "adpTimeMs": 0,
+      "acTimeMs": 0,
+      "rejectionCount": 0,
+      "manualEditsCount": 0,
+      "pictoOverridesCount": 0,
+      "retryCount": 0,
+      "createdTimestamp": "2026-07-16T07:18:37Z"
+    }
+  }
+}

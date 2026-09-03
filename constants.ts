@@ -6,6 +6,7 @@ export const DEFAULT_AI_SETTINGS = {
   geminiModel: 'gemini-3.1-flash-lite-preview',
   ollamaBaseUrl: 'http://localhost:11434',
   ollamaModel: 'gemma4:e4b',
+  useSinglePrompt: false,
 } as const;
 
 export const DEFAULT_PICTOGRAM_SETTINGS = {

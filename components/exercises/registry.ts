@@ -35,3 +35,9 @@ export const getExercisePromptRules = (type: ExerciseType): string[] =>
 
 export const getExerciseFewShotExamples = (type: ExerciseType): FewShotExample[] =>
   getExerciseManifest(type).fewShotExamples;
+
+export const getExerciseMinGenerateItems = (type: ExerciseType): number =>
+  getExerciseManifest(type).minGenerateItems;
+
+export const getExerciseMaxGenerateItems = (type: ExerciseType): number =>
+  getExerciseManifest(type).maxGenerateItems;

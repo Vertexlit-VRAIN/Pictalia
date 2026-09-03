@@ -1,0 +1,210 @@
+{
+  "run_info": {
+    "run_id": 16,
+    "task_id": 3,
+    "topic": "Los números del 1 al 3",
+    "profile_id": "medio_soporte",
+    "provider": "ollama",
+    "model": "gemma3:4b",
+    "mode": "multi",
+    "success": true,
+    "error_message": "",
+    "elapsed_ms": 22021
+  },
+  "llm_calls": [
+    {
+      "prompt": "You are the Pedagogical Evaluator Agent (PEA) / ADP stratega for Adaptator-TEA.\nYour role is to design the pedagogical plan and worksheet structure for a student with special education needs.\n\nSTUDENT PROFILE:\nDatos generales:\n- Edad: 6\n- Curso o etapa: Infantil 5 años\n- Diagnóstico o condición relevante: TEA grado 1\n- Objetivos prioritarios actuales: Aumentar comprensión de consignas visuales, sostener la atención en tareas breves y consolidar aprendizajes funcionales en lengua y matemáticas.\n- Comentarios adicionales: Rechaza ayudas verbales prolongadas y suele responder mejor cuando la tarea es autoexplicativa, breve y visual.\n\n1. Comprensión y acceso a la información:\n- Síntesis profesional: Comprende mejor consignas de un paso, simples, visuales y modeladas. Necesita estructura clara, anticipación breve y un ejemplo inmediato.\n- Canal de acceso preferente: Visual, a través de pictogramas estructurados y apoyos gráficos.\n- Apoyos indispensables: Pictograma de instrucción y apoyos en palabras clave. Estructura repetitiva y predecible.\n\n2. Modalidad de respuesta:\n- Modalidad expresiva: No verbal. Usa gestos, señalar y pictogramas para comunicarse.\n- Habilidades motoras: Capaz de realizar trazos gruesos (repasar palabras cortas en mayúsculas, unir con líneas y rodear).\n- Adaptaciones de respuesta: Tareas tipo unir, rodear y repasar letras o números grandes.\n\nPEDAGOGICAL GOALS:\n- Topic: Los números del 1 al 3\n- Goal: Asociar la grafía de los números 1, 2 y 3 con la cantidad de objetos correspondiente.\n- Details (Teacher Instructions): El ejercicio debe ser del tipo unir.\n\nAVAILABLE EXERCISE TYPES & STRUCTURAL CONSTRAINTS:\n- \"repasar\": Tracing exercises focus on fine motor skills and simple visual-written recognition. Recommended for students learning coordinate tracing.\n  Limits: Min items: 3, Max items: 6\n  Constraints and rules:\n  - The \"prompts\" array must only contain raw strings representing the letters or words to trace (capitalized).\n  - CRITICAL: Only plan a simple list of letters, numbers, or words to trace in uppercase.\n  - Scale the number of items to trace dynamically based on the student profile, strictly between 3 and 6 elements. High support needs profiles should have 3 items; lower support needs should have 4 to 6 items.\n- \"unir\": Matching exercises build cognitive associations and relational classification (e.g. image to word, number to quantity).\n  Limits: Min items: 6, Max items: 12\n  Constraints and rules:\n  - Pairs must represent direct logical associations (e.g. animal-to-food, object-to-category).\n  - For quantity matching, the left item should have the number digit as content (e.g. \"2\"), and the right item should have the concrete noun as searchTerm (e.g. \"flor\") with the target quantity (e.g. 2).\n  - CRITICAL: Only plan direct left-to-right item matching pairs. Do not plan multiple levels, sub-questions, or other layout formats.\n  - Scale the number of matching pairs dynamically based on the student profile, strictly between 3 and 6 pairs. High support needs profiles should have 3 pairs (6 items); lower support needs should have 4 to 6 pairs. Do not generate only 2 pairs unless explicitly asked.\n- \"rodear\": Circling exercises reinforce selective attention and visual discrimination of target elements in a set of distractors.\n  Limits: Min items: 4, Max items: 8\n  Constraints and rules:\n  - Renders a simple flat list or grid of options. Distractors must be concrete, simple, and clearly distinct from target items.\n  - An optional \"prompt\" object can define the target concept.\n  - CRITICAL: Only plan a simple list/grid of options. Never plan complex illustration scenes, body parts labeling, interactive layouts, or subgroups.\n  - Scale the number of options (targets + distractors) dynamically based on the student profile, strictly between 4 and 8 options. High support needs profiles should have 4 options; lower support needs should have 6 to 8 options.\n- \"copiar\": Copying exercises reinforce spelling, letter-by-letter writing, and word copying.\n  Limits: Min items: 3, Max items: 6\n  Constraints and rules:\n  - All words to copy go in \"copies\" as raw strings in UPPERCASE.\n  - Do not include \"image\" or \"searchTerm\" items in this exercise.\n  - CRITICAL: Only plan a simple list of words to copy in uppercase.\n  - Scale the number of words to copy dynamically based on the student profile, strictly between 3 and 6 elements. High support needs profiles should have 3 words; lower support needs should have 4 to 6 words.\n\nEXERCISE COUNT:\nGenerate a recommended number of exercises (usually between 3 and 5) based on the student profile.\n\nRULES:\n1. Choose the most appropriate exercise types from the available list for this student's profile.\n2. Structure the learning progression logically (easier exercises first, e.g. repasar before copiar).\n3. For each exercise, write a clear objective, a concise instruction in uppercase, and a highly detailed content description.\n4. CRITICAL: The content description must strictly match the supported structure of the exercise type. Do NOT invent layouts, background scenes, interactive diagrams, or custom shapes that are not supported. E.g. for \"rodear\", describe targets and distractors; for \"unir\", describe left and right pairs; for \"repasar\", list words to trace.\n5. If appropriate for numeracy or visual matching, you can plan \"unir\" exercises that match text numbers with a repeated pictogram (quantity), describing it in the exercise content description.\n6. All texts (titles, instructions, description details) MUST be in Castilian Spanish (es).\n7. Output ONLY a valid JSON object matching the schema below. No conversational text.\n8. CRITICAL: Strictly follow any exclusions, constraints, or explicit focus areas requested by the teacher in \"Details\" under PEDAGOGICAL GOALS. For instance, if the teacher explicitly says they do not want a specific type of exercise (e.g., \"no quiero ejercicios de repasar\", \"no repasar\", \"no copiar\", \"do not include matching\"), you MUST NOT plan or choose that exercise type under any circumstances, even if it is recommended by the student profile. Do not select it from the available exercise list.\n9. CRITICAL: For each exercise plan, analyze the student's profile (specifically their attention span, motor skills, age, and cognitive support level) and EXPLICITLY specify the exact number of elements, pairs, options, or words to generate in the \"description\" field. The chosen count MUST fall strictly within the \"Min items\" and \"Max items\" limits specified for that exercise type. High support needs / short attention span profiles should get a count close to the Min limit (e.g., exactly 3 pairs/6 items for unir, exactly 4 options/items for rodear); lower support needs / higher attention span profiles should get a count close to the Max limit (e.g., exactly 5-6 pairs/10-12 items for unir, exactly 6-8 options/items for rodear).\n\nOUTPUT SCHEMA:\n{\n  \"title\": \"Short descriptive title of the worksheet in Castilian Spanish (es)\",\n  \"pictogramSearchTerm\": \"Simple noun in Castilian Spanish (es) representing the overall theme\",\n  \"exercisePlans\": [\n    {\n      \"type\": \"one of the available exercise types\",\n      \"objective\": \"Detailed pedagogical objective for this exercise\",\n      \"instruction\": \"SHORT INSTRUCTION IN UPPERCASE\",\n      \"description\": \"Extremely detailed description of the content to generate. E.g. 'Match number 1 with 1 flower pictogram, number 2 with 2 flower pictograms, number 3 with 3 flower pictograms. Left column has numbers, right column has repeated flower pictures.'\"\n    }\n  ]\n}\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{\n  \"title\": \"Números 1, 2 y 3 - Asociación\",\n  \"pictogramSearchTerm\": \"flor\",\n  \"exercisePlans\": [\n    {\n      \"type\": \"unir\",\n      \"objective\": \"Asociar los números 1, 2 y 3 con la cantidad visual correspondiente de flores.\",\n      \"instruction\": \"UNE los números con las flores.\",\n      \"description\": \"Crear 3 pares de tarjetas. La tarjeta izquierda tendrá el número 1, 2 o 3 (en mayúsculas). La tarjeta derecha tendrá una imagen de una flor, repetida la cantidad de veces indicada por el número (1 flor para el número 1, 2 flores para el número 2, 3 flores para el número 3).  Se generarían 3 pares de tarjetas de este tipo.\"\n    }\n  ]\n}",
+      "provider": "ollama",
+      "status": "success"
+    },
+    {
+      "prompt": "You are the Exercise Constructor Agent (AC) for Adaptator-TEA.\nYour role is to generate the exact JSON structure for a single educational exercise according to a provided pedagogical blueprint.\n\nPEDAGOGICAL BLUEPRINT:\n- Exercise Type: unir\n- Objective: Asociar los números 1, 2 y 3 con la cantidad visual correspondiente de flores.\n- Instruction: UNE los números con las flores.\n- Detailed Content Description: Crear 3 pares de tarjetas. La tarjeta izquierda tendrá el número 1, 2 o 3 (en mayúsculas). La tarjeta derecha tendrá una imagen de una flor, repetida la cantidad de veces indicada por el número (1 flor para el número 1, 2 flores para el número 2, 3 flores para el número 3).  Se generarían 3 pares de tarjetas de este tipo.\n\nTARGET SCHEMA AND RULES:\nYou must output a single JSON object matching the format below.\n{\n  \"exerciseType\": \"unir\",\n  \"instruction\": {\n    \"text\": \"UNIR CADA ANIMAL CON SU COMIDA\",\n    \"pictograms\": [\n      { \"searchTerm\": \"unir\", \"content\": \"UNIR\" }\n    ]\n  },\n  \"exercise\": {\n    \"pairs\": [\n      {\n        \"left\": { \"content\": \"mono\", \"searchTerm\": \"mono\" },\n        \"right\": { \"content\": \"plátano\", \"searchTerm\": \"platano\" }\n      }\n    ]\n  }\n}\n\nADDITIONAL RULES:\n1. Generate the exact content and the exact element count (number of options, pairs, words, traces) described in the blueprint description. Do NOT default or be limited to the counts shown in the JSON schemas or few-shot examples.\n2. Pairs must represent direct logical associations (e.g. animal-to-food, object-to-category).\n3. For quantity matching, the left item should have the number digit as content (e.g. \"2\"), and the right item should have the concrete noun as searchTerm (e.g. \"flor\") with the target quantity (e.g. 2).\n4. CRITICAL: Only plan direct left-to-right item matching pairs. Do not plan multiple levels, sub-questions, or other layout formats.\n5. Scale the number of matching pairs dynamically based on the student profile, strictly between 3 and 6 pairs. High support needs profiles should have 3 pairs (6 items); lower support needs should have 4 to 6 pairs. Do not generate only 2 pairs unless explicitly asked.\n6. All student-facing and teacher-facing text in the JSON (instructions, contents, searchTerms, copies, etc.) MUST be written in Castilian Spanish (es).\n7. Do NOT include any additional fields or wrapper objects. The output must be exactly the JSON section structure.\n8. Do NOT include markdown styling or text outside the JSON block. Return ONLY the JSON object.\n\nPICTOGRAM SEARCH TERM & CONTENT RULES:\n1. Every item inside the JSON containing \"searchTerm\" (for pictogram lookup) or \"content\" (displayed text) MUST contain a single, simple, concrete word (e.g. \"sol\", \"perro\", \"abrigo\").\n2. CRITICAL: Never use multi-word descriptions, qualifiers, sentences, or phrases for search terms (e.g. NEVER write \"sol de verano\", \"abuela feliz\", \"comer manzana\").\n3. CRITICAL: Do NOT use technical qualifiers or file extensions in the search term. For example, never use suffixes like \"_pictograma\", \"_image\", \"_dibujo\", \"_picto\", \"pictograma\", \"image\", or \"dibujo\".\n4. Do NOT use punctuation, hyphens (-), or underscores (_) inside \"searchTerm\" (e.g. use \"manzana\", never \"manzana_roja\" or \"manzana-roja\").\n5. The content text of the pictogram should match the search term but in UPPERCASE.\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{\n  \"exerciseType\": \"unir\",\n  \"instruction\": {\n    \"text\": \"UNIR los números con las flores.\",\n    \"pictograms\": [\n      { \"searchTerm\": \"uno\", \"content\": \"UNO\" },\n      { \"searchTerm\": \"dos\", \"content\": \"DOS\" },\n      { \"searchTerm\": \"tres\", \"content\": \"TRES\" }\n    ]\n  },\n  \"exercise\": {\n    \"pairs\": [\n      {\n        \"left\": { \"content\": \"1\", \"searchTerm\": \"uno\" },\n        \"right\": { \"content\": \"flor\", \"searchTerm\": \"uno\" }\n      },\n      {\n        \"left\": { \"content\": \"2\", \"searchTerm\": \"dos\" },\n        \"right\": { \"content\": \"flor\", \"searchTerm\": \"dos\" }\n      },\n      {\n        \"left\": { \"content\": \"3\", \"searchTerm\": \"tres\" },\n        \"right\": { \"content\": \"flor\", \"searchTerm\": \"tres\" }\n      }\n    ]\n  }\n}",
+      "provider": "ollama",
+      "status": "success"
+    },
+    {
+      "prompt": "You are the Pedagogical Evaluator Agent (PEA) for Adaptator-TEA.\nYour role is to review a single educational exercise generated by the Exercise Constructor Agent (AC) against the student's profile and the pedagogical plan.\n\nSTUDENT PROFILE:\nDatos generales:\n- Edad: 6\n- Curso o etapa: Infantil 5 años\n- Diagnóstico o condición relevante: TEA grado 1\n- Objetivos prioritarios actuales: Aumentar comprensión de consignas visuales, sostener la atención en tareas breves y consolidar aprendizajes funcionales en lengua y matemáticas.\n- Comentarios adicionales: Rechaza ayudas verbales prolongadas y suele responder mejor cuando la tarea es autoexplicativa, breve y visual.\n\n1. Comprensión y acceso a la información:\n- Síntesis profesional: Comprende mejor consignas de un paso, simples, visuales y modeladas. Necesita estructura clara, anticipación breve y un ejemplo inmediato.\n- Canal de acceso preferente: Visual, a través de pictogramas estructurados y apoyos gráficos.\n- Apoyos indispensables: Pictograma de instrucción y apoyos en palabras clave. Estructura repetitiva y predecible.\n\n2. Modalidad de respuesta:\n- Modalidad expresiva: No verbal. Usa gestos, señalar y pictogramas para comunicarse.\n- Habilidades motoras: Capaz de realizar trazos gruesos (repasar palabras cortas en mayúsculas, unir con líneas y rodear).\n- Adaptaciones de respuesta: Tareas tipo unir, rodear y repasar letras o números grandes.\n\nPEDAGOGICAL PLAN FOR THIS EXERCISE:\n- Exercise Type: unir\n- Objective: Asociar los números 1, 2 y 3 con la cantidad visual correspondiente de flores.\n- Instruction: UNE los números con las flores.\n- Detailed Content Description: Crear 3 pares de tarjetas. La tarjeta izquierda tendrá el número 1, 2 o 3 (en mayúsculas). La tarjeta derecha tendrá una imagen de una flor, repetida la cantidad de veces indicada por el número (1 flor para el número 1, 2 flores para el número 2, 3 flores para el número 3).  Se generarían 3 pares de tarjetas de este tipo.\n\nGENERATED JSON TO EVALUATE:\n{\"exerciseType\": \"unir\", \"instruction\": {\"text\": \"UNIR los n\\u00fameros con las flores.\", \"pictograms\": [{\"searchTerm\": \"uno\", \"content\": \"UNO\"}, {\"searchTerm\": \"dos\", \"content\": \"DOS\"}, {\"searchTerm\": \"tres\", \"content\": \"TRES\"}]}, \"exercise\": {\"pairs\": [{\"left\": {\"content\": \"1\", \"searchTerm\": \"uno\"}, \"right\": {\"content\": \"flor\", \"searchTerm\": \"uno\"}}, {\"left\": {\"content\": \"2\", \"searchTerm\": \"dos\"}, \"right\": {\"content\": \"flor\", \"searchTerm\": \"dos\"}}, {\"left\": {\"content\": \"3\", \"searchTerm\": \"tres\"}, \"right\": {\"content\": \"flor\", \"searchTerm\": \"tres\"}}]}}\n\nEVALUATION CRITERIA:\n1. JSON Schema Validity: The JSON must parse correctly and have the exact fields defined for type \"unir\".\n2. Adaptability to Profile: The activity must fit the motor, cognitive, and attention limits of the student.\n3. Instruction Visual Clarity: The instruction text must be brief, direct, written in Castilian Spanish (es) (UPPERCASE) and accompanied by matching pictograms.\n4. Content Matching: The generated options/items/pairs must strictly represent the detailed description and theme of the blueprint.\n5. Pictogram Search Terms Audit: Inspect all \"searchTerm\" fields. They must contain exactly one simple concrete word.\n   - REJECT any search term that contains multi-word concepts, sentences, or instructions (e.g. \"perro marron\", \"abuela feliz\").\n   - REJECT any search term with hyphens (-), underscores (_) or files extensions (e.g. \"plato_picto\", \"flor_image\").\n   - Ensure spelling is correct in Castilian Spanish (es).\n\nOUTPUT FORMAT:\nYou must return a single valid JSON object with the following fields:\n{\n  \"approved\": true or false,\n  \"feedback\": \"If approved=false, write detailed instructions on what needs to be changed. Explain what failed and how to correct it. If approved=true, leave empty.\"\n}\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{\n  \"approved\": true,\n  \"feedback\": \"\"\n}",
+      "provider": "ollama",
+      "status": "success"
+    },
+    {
+      "prompt": "You are the Global Pedagogical Evaluator Agent (GPEA) for Adaptator-TEA.\nYour role is to audit a full educational worksheet containing multiple exercises, ensuring overall progression, visual simplicity, and structural coherence.\n\nSTUDENT PROFILE:\nDatos generales:\n- Edad: 6\n- Curso o etapa: Infantil 5 años\n- Diagnóstico o condición relevante: TEA grado 1\n- Objetivos prioritarios actuales: Aumentar comprensión de consignas visuales, sostener la atención en tareas breves y consolidar aprendizajes funcionales en lengua y matemáticas.\n- Comentarios adicionales: Rechaza ayudas verbales prolongadas y suele responder mejor cuando la tarea es autoexplicativa, breve y visual.\n\n1. Comprensión y acceso a la información:\n- Síntesis profesional: Comprende mejor consignas de un paso, simples, visuales y modeladas. Necesita estructura clara, anticipación breve y un ejemplo inmediato.\n- Canal de acceso preferente: Visual, a través de pictogramas estructurados y apoyos gráficos.\n- Apoyos indispensables: Pictograma de instrucción y apoyos en palabras clave. Estructura repetitiva y predecible.\n\n2. Modalidad de respuesta:\n- Modalidad expresiva: No verbal. Usa gestos, señalar y pictogramas para comunicarse.\n- Habilidades motoras: Capaz de realizar trazos gruesos (repasar palabras cortas en mayúsculas, unir con líneas y rodear).\n- Adaptaciones de respuesta: Tareas tipo unir, rodear y repasar letras o números grandes.\n\nGENERATED WORKSHEET JSON:\n{\"title\": \"N\\u00fameros 1, 2 y 3 - Asociaci\\u00f3n\", \"pictogramSearchTerm\": \"flor\", \"sections\": [{\"exerciseType\": \"unir\", \"instruction\": {\"text\": \"UNIR los n\\u00fameros con las flores.\", \"pictograms\": [{\"searchTerm\": \"uno\", \"content\": \"UNO\"}, {\"searchTerm\": \"dos\", \"content\": \"DOS\"}, {\"searchTerm\": \"tres\", \"content\": \"TRES\"}]}, \"exercise\": {\"pairs\": [{\"left\": {\"content\": \"1\", \"searchTerm\": \"uno\"}, \"right\": {\"content\": \"flor\", \"searchTerm\": \"uno\"}}, {\"left\": {\"content\": \"2\", \"searchTerm\": \"dos\"}, \"right\": {\"content\": \"flor\", \"searchTerm\": \"dos\"}}, {\"left\": {\"content\": \"3\", \"searchTerm\": \"tres\"}, \"right\": {\"content\": \"flor\", \"searchTerm\": \"tres\"}}]}, \"items\": [{\"type\": \"image\", \"content\": \"1\", \"searchTerm\": \"uno\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"2\", \"searchTerm\": \"dos\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"3\", \"searchTerm\": \"tres\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"flor\", \"searchTerm\": \"uno\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"flor\", \"searchTerm\": \"dos\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"flor\", \"searchTerm\": \"tres\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}]}]}\n\nEVALUATION CRITERIA:\n1. Overall Coherence: The worksheet must maintain a single, consistent theme across all exercises.\n2. Progression & Visual Load: The exercises must be ordered from easiest (e.g., repasar) to hardest (e.g., copiar). The total number of items must not overwhelm the student's attention limits.\n3. Pictogram Consistency: Search terms for pictograms must be simple single words in the target language. No underscores, hyphens, or technical suffixes.\n\nOUTPUT FORMAT:\nYou must return a single valid JSON object with the following fields:\n{\n  \"approved\": true or false,\n  \"feedback\": \"If approved=false, provide general feedback and specific suggestions for each failed exercise.\",\n  \"rejectedSectionIndexes\": [index of failed exercises in the worksheet sections list, starting from 0. E.g. [1] to reject the second exercise. Empty if all are approved.]\n}\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{}",
+      "provider": "ollama",
+      "status": "success"
+    }
+  ],
+  "final_worksheet": {
+    "title": "Números 1, 2 y 3 - Asociación",
+    "pictogramSearchTerm": "flor",
+    "sections": [
+      {
+        "exerciseType": "unir",
+        "instruction": {
+          "text": "UNIR los números con las flores.",
+          "pictograms": [
+            {
+              "searchTerm": "uno",
+              "content": "UNO",
+              "url": "https://static.arasaac.org/pictograms/2627/2627_500.png"
+            },
+            {
+              "searchTerm": "dos",
+              "content": "DOS",
+              "url": "https://static.arasaac.org/pictograms/2628/2628_500.png"
+            },
+            {
+              "searchTerm": "tres",
+              "content": "TRES",
+              "url": "https://static.arasaac.org/pictograms/2629/2629_500.png"
+            }
+          ]
+        },
+        "exercise": {
+          "pairs": [
+            {
+              "left": {
+                "content": "1",
+                "searchTerm": "uno",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2627/2627_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2627/2627_500.png",
+                  "https://static.arasaac.org/pictograms/4889/4889_500.png",
+                  "https://static.arasaac.org/pictograms/7291/7291_500.png",
+                  "https://static.arasaac.org/pictograms/35677/35677_500.png"
+                ]
+              },
+              "right": {
+                "content": "flor",
+                "searchTerm": "uno",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2627/2627_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2627/2627_500.png",
+                  "https://static.arasaac.org/pictograms/4889/4889_500.png",
+                  "https://static.arasaac.org/pictograms/7291/7291_500.png",
+                  "https://static.arasaac.org/pictograms/35677/35677_500.png"
+                ]
+              }
+            },
+            {
+              "left": {
+                "content": "2",
+                "searchTerm": "dos",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2628/2628_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2628/2628_500.png",
+                  "https://static.arasaac.org/pictograms/4890/4890_500.png",
+                  "https://static.arasaac.org/pictograms/7027/7027_500.png",
+                  "https://static.arasaac.org/pictograms/35679/35679_500.png"
+                ]
+              },
+              "right": {
+                "content": "flor",
+                "searchTerm": "dos",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2628/2628_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2628/2628_500.png",
+                  "https://static.arasaac.org/pictograms/4890/4890_500.png",
+                  "https://static.arasaac.org/pictograms/7027/7027_500.png",
+                  "https://static.arasaac.org/pictograms/35679/35679_500.png"
+                ]
+              }
+            },
+            {
+              "left": {
+                "content": "3",
+                "searchTerm": "tres",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2629/2629_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2629/2629_500.png",
+                  "https://static.arasaac.org/pictograms/4891/4891_500.png",
+                  "https://static.arasaac.org/pictograms/7283/7283_500.png",
+                  "https://static.arasaac.org/pictograms/35681/35681_500.png"
+                ]
+              },
+              "right": {
+                "content": "flor",
+                "searchTerm": "tres",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/2629/2629_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/2629/2629_500.png",
+                  "https://static.arasaac.org/pictograms/4891/4891_500.png",
+                  "https://static.arasaac.org/pictograms/7283/7283_500.png",
+                  "https://static.arasaac.org/pictograms/35681/35681_500.png"
+                ]
+              }
+            }
+          ]
+        },
+        "items": [
+          {
+            "type": "image",
+            "content": "1",
+            "searchTerm": "uno",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "2",
+            "searchTerm": "dos",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "3",
+            "searchTerm": "tres",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "flor",
+            "searchTerm": "uno",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "flor",
+            "searchTerm": "dos",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "flor",
+            "searchTerm": "tres",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          }
+        ]
+      }
+    ],
+    "selectedPictoUrl": "https://static.arasaac.org/pictograms/3102/3102_500.png",
+    "pictoOptions": [
+      "https://static.arasaac.org/pictograms/3102/3102_500.png",
+      "https://static.arasaac.org/pictograms/7104/7104_500.png"
+    ],
+    "telemetry": {
+      "generationTimeMs": 22021,
+      "adpTimeMs": 8464,
+      "acTimeMs": 10701,
+      "rejectionCount": 0,
+      "manualEditsCount": 0,
+      "pictoOverridesCount": 0,
+      "retryCount": 0,
+      "createdTimestamp": "2026-07-16T06:57:33Z"
+    }
+  }
+}

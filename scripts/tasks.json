@@ -1,0 +1,302 @@
+[
+  {
+    "id": 1,
+    "topic": "Las frutas",
+    "goal": "Identificar y clasificar frutas comunes como manzana, plátano y naranja.",
+    "extraDetails": "Pedir que no se incluyan ejercicios de repasar letras."
+  },
+  {
+    "id": 2,
+    "topic": "Animales de la granja",
+    "goal": "Reconocer animales de la granja y asociar cada animal con su nombre.",
+    "extraDetails": "Debe tener un ejercicio de unir animales con sus siluetas."
+  },
+  {
+    "id": 3,
+    "topic": "Los números del 1 al 3",
+    "goal": "Asociar la grafía de los números 1, 2 y 3 con la cantidad de objetos correspondiente.",
+    "extraDetails": "El ejercicio debe ser del tipo unir."
+  },
+  {
+    "id": 4,
+    "topic": "Formas geométricas básicas",
+    "goal": "Reconocer y discriminar visualmente el círculo y el cuadrado.",
+    "extraDetails": "Usar el ejercicio de rodear con colores diferenciados."
+  },
+  {
+    "id": 5,
+    "topic": "Las partes de la cara",
+    "goal": "Identificar los ojos, la nariz y la boca en un dibujo esquemático.",
+    "extraDetails": "Evitar palabras complejas. Enfocarse en vocabulario funcional básico."
+  },
+  {
+    "id": 6,
+    "topic": "Las estaciones: El invierno",
+    "goal": "Reconocer ropa típica de invierno (abrigo, gorro, guantes) y discriminarla de la de verano.",
+    "extraDetails": "Usar un ejercicio de rodear para seleccionar la ropa de abrigo."
+  },
+  {
+    "id": 7,
+    "topic": "Hábitos de higiene: Lavarse las manos",
+    "goal": "Identificar la secuencia y los elementos necesarios para lavarse las manos (agua, jabón, toalla).",
+    "extraDetails": "La instrucción debe ser directa y en mayúsculas."
+  },
+  {
+    "id": 8,
+    "topic": "Las vocales: A y O",
+    "goal": "Discriminar visualmente las letras A y O en palabras cortas.",
+    "extraDetails": "Se sugiere un ejercicio de repasar las letras indicadas."
+  },
+  {
+    "id": 9,
+    "topic": "Los colores primarios",
+    "goal": "Identificar y clasificar objetos por su color (rojo, azul y amarillo).",
+    "extraDetails": "No incluir ejercicios de copiar palabras."
+  },
+  {
+    "id": 10,
+    "topic": "Medios de transporte terrestres",
+    "goal": "Reconocer vehículos comunes (coche, autobús, tren, bicicleta).",
+    "extraDetails": "Generar al menos un ejercicio de unir vehículo-nombre."
+  },
+  {
+    "id": 11,
+    "topic": "Las partes del cuerpo: La mano y el pie",
+    "goal": "Diferenciar visualmente entre manos y pies mediante una tarea de selección.",
+    "extraDetails": "El ejercicio principal debe ser rodear."
+  },
+  {
+    "id": 12,
+    "topic": "Conceptos espaciales: Arriba y Abajo",
+    "goal": "Comprender la relación espacial de arriba y abajo utilizando ejemplos de la naturaleza (sol, flor).",
+    "extraDetails": "Evitar la sobrecarga visual. Pocos elementos."
+  },
+  {
+    "id": 13,
+    "topic": "Instrumentos musicales sencillos",
+    "goal": "Reconocer la pandereta, el tambor y la flauta.",
+    "extraDetails": "Asociar cada instrumento con su silueta."
+  },
+  {
+    "id": 14,
+    "topic": "Las emociones básicas: Alegría y Tristeza",
+    "goal": "Identificar expresiones faciales correspondientes a estar contento o estar triste.",
+    "extraDetails": "Evitar textos largos. Apoyo en pictogramas de caras expresivas."
+  },
+  {
+    "id": 15,
+    "topic": "Útiles escolares",
+    "goal": "Asociar el lápiz, la goma y la mochila con su uso en el colegio.",
+    "extraDetails": "Se requiere un ejercicio de copiar los nombres en mayúsculas."
+  },
+  {
+    "id": 16,
+    "topic": "Alimentos saludables",
+    "goal": "Identificar alimentos saludables (manzana, leche, pescado) y diferenciarlos de golosinas.",
+    "extraDetails": "Usar el ejercicio de rodear los alimentos saludables."
+  },
+  {
+    "id": 17,
+    "topic": "Los animales marinos",
+    "goal": "Reconocer el pez, el pulpo y el delfín.",
+    "extraDetails": "No planificar ejercicios de repasar letras."
+  },
+  {
+    "id": 18,
+    "topic": "El tiempo atmosférico",
+    "goal": "Identificar conceptos de lluvia, sol y nubes.",
+    "extraDetails": "Unir cada símbolo del tiempo con el pictograma adecuado."
+  },
+  {
+    "id": 19,
+    "topic": "El dormitorio",
+    "goal": "Reconocer objetos del dormitorio (cama, almohada, armario).",
+    "extraDetails": "Generar copias de palabras sencillas de 4 a 5 letras."
+  },
+  {
+    "id": 20,
+    "topic": "Los números 4 y 5",
+    "goal": "Asociar las cantidades 4 y 5 con sus correspondientes números escritos.",
+    "extraDetails": "Especialmente diseñado para emparejamiento visual de cantidades."
+  },
+  {
+    "id": 21,
+    "topic": "Las verduras de la cocina",
+    "goal": "Identificar la zanahoria, el tomate y la lechuga.",
+    "extraDetails": "Evitar ejercicios de unir."
+  },
+  {
+    "id": 22,
+    "topic": "Prendas de vestir cotidianas",
+    "goal": "Diferenciar pantalón, camiseta y zapato.",
+    "extraDetails": "Asociar la prenda de vestir con la parte del cuerpo donde se coloca."
+  },
+  {
+    "id": 23,
+    "topic": "La rutina del baño: Cepillarse los dientes",
+    "goal": "Identificar el cepillo de dientes, la pasta y el vaso de agua.",
+    "extraDetails": "El ejercicio principal debe ser repasar las palabras del cepillado."
+  },
+  {
+    "id": 24,
+    "topic": "La cocina y sus utensilios",
+    "goal": "Reconocer cuchara, tenedor, vaso y plato.",
+    "extraDetails": "Hacer un ejercicio de rodear el tenedor y la cuchara."
+  },
+  {
+    "id": 25,
+    "topic": "Animales domésticos: Perro y Gato",
+    "goal": "Distinguir entre perros y gatos en diferentes posturas o colores.",
+    "extraDetails": "Evitar tareas de escritura."
+  },
+  {
+    "id": 26,
+    "topic": "El jardín y las plantas",
+    "goal": "Reconocer la flor, el árbol y la regadera.",
+    "extraDetails": "Copiar las palabras FLOR y ARBOL en mayúsculas."
+  },
+  {
+    "id": 27,
+    "topic": "Conceptos de tamaño: Grande y Pequeño",
+    "goal": "Clasificar objetos según sean grandes o pequeños.",
+    "extraDetails": "Utilizar dibujos sencillos con diferencias de escala notables."
+  },
+  {
+    "id": 28,
+    "topic": "El salón de la casa",
+    "goal": "Reconocer el sofá, la mesa y la televisión.",
+    "extraDetails": "Unir cada objeto con su silueta correspondiente."
+  },
+  {
+    "id": 29,
+    "topic": "La ropa de verano",
+    "goal": "Identificar bañador, chanclas y gorra.",
+    "extraDetails": "Rodear los elementos correspondientes al verano."
+  },
+  {
+    "id": 30,
+    "topic": "Las figuras geométricas: El triángulo",
+    "goal": "Identificar objetos cotidianos que tengan forma de triángulo (rebanada de pizza, señal).",
+    "extraDetails": "Evitar ejercicios de repasar letras."
+  },
+  {
+    "id": 31,
+    "topic": "Profesiones de ayuda: Bombero y Policía",
+    "goal": "Asociar al bombero con el camión de bomberos y al policía con el coche patrulla.",
+    "extraDetails": "El ejercicio debe ser del tipo unir parejas."
+  },
+  {
+    "id": 32,
+    "topic": "El desayuno",
+    "goal": "Identificar alimentos del desayuno (leche, galleta, pan).",
+    "extraDetails": "Copiar las palabras leche y pan en mayúsculas."
+  },
+  {
+    "id": 33,
+    "topic": "Insectos comunes",
+    "goal": "Reconocer la hormiga, la mariposa y la abeja.",
+    "extraDetails": "Rodear los insectos que vuelan."
+  },
+  {
+    "id": 34,
+    "topic": "Juguetes favoritos",
+    "goal": "Reconocer la pelota, la muñeca y el coche de juguete.",
+    "extraDetails": "No incluir ejercicios de copiar palabras."
+  },
+  {
+    "id": 35,
+    "topic": "La primavera",
+    "goal": "Identificar flores, mariposas y sol.",
+    "extraDetails": "Repasar las palabras relacionadas con la primavera."
+  },
+  {
+    "id": 36,
+    "topic": "El otoño y las hojas",
+    "goal": "Reconocer las hojas secas, las setas y el viento.",
+    "extraDetails": "Hacer un ejercicio de unir hojas con su color correspondiente (marrón, amarillo)."
+  },
+  {
+    "id": 37,
+    "topic": "El colegio y sus espacios",
+    "goal": "Reconocer el aula, el patio y la biblioteca.",
+    "extraDetails": "Evitar tareas que requieran mucha escritura fina."
+  },
+  {
+    "id": 38,
+    "topic": "Acciones básicas: Correr y Saltar",
+    "goal": "Asociar la acción física de correr y saltar con sus representaciones visuales.",
+    "extraDetails": "Instrucciones de un solo paso."
+  },
+  {
+    "id": 39,
+    "topic": "Los animales de la selva",
+    "goal": "Identificar el león, el mono y el elefante.",
+    "extraDetails": "Hacer un ejercicio de rodear al mono."
+  },
+  {
+    "id": 40,
+    "topic": "La hora de dormir",
+    "goal": "Identificar el pijama, la cama y el cuento.",
+    "extraDetails": "Copiar palabras de 4 letras."
+  },
+  {
+    "id": 41,
+    "topic": "El agua en la naturaleza",
+    "goal": "Reconocer el río, el mar y la lluvia.",
+    "extraDetails": "Asociar el agua con su origen mediante un ejercicio de unir."
+  },
+  {
+    "id": 42,
+    "topic": "Los sentidos: Oír y Ver",
+    "goal": "Asociar el oído con la campana y el ojo con la televisión.",
+    "extraDetails": "Evitar términos abstractos o complejos."
+  },
+  {
+    "id": 43,
+    "topic": "Frutos secos del otoño",
+    "goal": "Identificar la castaña, la nuez y la avellana.",
+    "extraDetails": "No incluir ejercicios de repasar."
+  },
+  {
+    "id": 44,
+    "topic": "Las aves del parque",
+    "goal": "Reconocer la paloma, el pato y el pájaro.",
+    "extraDetails": "Rodear los patos en el estanque."
+  },
+  {
+    "id": 45,
+    "topic": "Las partes del árbol",
+    "goal": "Identificar la hoja, la rama y el tronco.",
+    "extraDetails": "Repasar las palabras HOJA y TRONCO."
+  },
+  {
+    "id": 46,
+    "topic": "Elementos del cielo",
+    "goal": "Identificar las estrellas, la luna y el sol.",
+    "extraDetails": "Hacer un ejercicio de unir sol-día y luna-noche."
+  },
+  {
+    "id": 47,
+    "topic": "Higiene: Lavarse los dientes",
+    "goal": "Identificar el cepillo y el dentífrico.",
+    "extraDetails": "Rodear los objetos de limpieza bucal."
+  },
+  {
+    "id": 48,
+    "topic": "Medios de transporte aéreos",
+    "goal": "Reconocer el avión, el helicóptero y el globo.",
+    "extraDetails": "Copiar la palabra AVION."
+  },
+  {
+    "id": 49,
+    "topic": "Las herramientas del huerto",
+    "goal": "Reconocer la pala, el rastrillo y la carretilla.",
+    "extraDetails": "Evitar tareas de escritura."
+  },
+  {
+    "id": 50,
+    "topic": "Clasificar ropa: Limpia y Sucia",
+    "goal": "Diferenciar entre ropa para lavar (sucia) y ropa limpia.",
+    "extraDetails": "Asociar ropa sucia con la lavadora mediante un ejercicio de unir."
+  }
+]

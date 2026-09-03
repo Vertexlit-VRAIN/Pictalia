@@ -28,6 +28,8 @@ export interface ExerciseManifest {
   defaultLayout: WorksheetLayout;
   instructionTerms: string[];
   minimumItems: number;
+  minGenerateItems: number;
+  maxGenerateItems: number;
   createDefaultExercise: () => WorksheetExercise;
 
   // AI & Prompt directives

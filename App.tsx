@@ -10,8 +10,9 @@ import { exportWorksheetAsPdf } from './lib/worksheetExport';
 import { WorksheetEditor } from './components/WorksheetEditor';
 import { TranslatorView } from './components/TranslatorView';
 import { InteractiveWorksheetPlay } from './components/exercises/InteractiveWorksheetPlay';
+import { GalleryView } from './components/GalleryView';
 
-type View = 'generate' | 'profile' | 'library' | 'translator';
+type View = 'generate' | 'profile' | 'library' | 'translator' | 'gallery';
 
 // ... (LibraryView component remains unchanged)
 const GamepadIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -220,12 +221,13 @@ const App: React.FC = () => {
       >
         Saltar al contenido principal
       </a>
-      <Header activeView={activeView} setActiveView={setActiveView} />
+      <Header activeView={activeView as any} setActiveView={setActiveView} />
       <main id="main-content" className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
         {activeView === 'generate' && <GenerateWorksheetView />}
         {activeView === 'library' && <LibraryView />}
         {activeView === 'profile' && <ProfileView />}
         {activeView === 'translator' && <TranslatorView />}
+        {activeView === 'gallery' && <GalleryView />}
       </main>
     </div>
   );

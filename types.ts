@@ -39,6 +39,7 @@ export interface AISettings {
   geminiModel: string;
   ollamaBaseUrl: string;
   ollamaModel: string;
+  useSinglePrompt?: boolean;
 }
 
 export type PictogramProvider = 'arasaac_official' | 'private_api';

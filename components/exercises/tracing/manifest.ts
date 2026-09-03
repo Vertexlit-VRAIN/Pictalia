@@ -8,6 +8,8 @@ export const manifest: ExerciseManifest = {
   defaultLayout: 'column',
   instructionTerms: ['repasar'],
   minimumItems: 1,
+  minGenerateItems: 3,
+  maxGenerateItems: 6,
   createDefaultExercise: () => ({
     type: 'repasar',
     prompts: [
@@ -34,6 +36,8 @@ export const manifest: ExerciseManifest = {
 }`,
   promptRules: [
     'The "prompts" array must only contain raw strings representing the letters or words to trace (capitalized).',
+    'CRITICAL: Only plan a simple list of letters, numbers, or words to trace in uppercase.',
+    'Scale the number of items to trace dynamically based on the student profile, strictly between 3 and 6 elements. High support needs profiles should have 3 items; lower support needs should have 4 to 6 items.',
   ],
   fewShotExamples: [
     {

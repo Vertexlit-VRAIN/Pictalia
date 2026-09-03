@@ -40,7 +40,7 @@ export const TokenEditModal: React.FC<TokenEditModalProps> = ({
     if (!customSearchTerm.trim()) return;
     setIsCustomSearching(true);
     try {
-      const results = await searchPictograms(customSearchTerm.trim(), localSearchLanguage);
+      const results = await searchPictograms(customSearchTerm.trim(), localSearchLanguage, { isManualSearch: true });
       setCustomSearchResults(results);
     } catch (err) {
       console.error('Custom pictogram search error:', err);

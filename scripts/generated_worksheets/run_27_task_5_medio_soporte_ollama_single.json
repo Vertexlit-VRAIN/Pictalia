@@ -1,0 +1,216 @@
+{
+  "run_info": {
+    "run_id": 27,
+    "task_id": 5,
+    "topic": "Las partes de la cara",
+    "profile_id": "medio_soporte",
+    "provider": "ollama",
+    "model": "gemma3:4b",
+    "mode": "single",
+    "success": true,
+    "error_message": "",
+    "elapsed_ms": 16850
+  },
+  "llm_calls": [
+    {
+      "prompt": "You are the Adaptator-TEA AI system.\nYour goal is to generate a complete educational worksheet adapted for a student with special education needs (TEA).\n\nSTUDENT PROFILE:\nDatos generales:\n- Edad: 6\n- Curso o etapa: Infantil 5 años\n- Diagnóstico o condición relevante: TEA grado 1\n- Objetivos prioritarios actuales: Aumentar comprensión de consignas visuales, sostener la atención en tareas breves y consolidar aprendizajes funcionales en lengua y matemáticas.\n- Comentarios adicionales: Rechaza ayudas verbales prolongadas y suele responder mejor cuando la tarea es autoexplicativa, breve y visual.\n\n1. Comprensión y acceso a la información:\n- Síntesis profesional: Comprende mejor consignas de un paso, simples, visuales y modeladas. Necesita estructura clara, anticipación breve y un ejemplo inmediato.\n- Canal de acceso preferente: Visual, a través de pictogramas estructurados y apoyos gráficos.\n- Apoyos indispensables: Pictograma de instrucción y apoyos en palabras clave. Estructura repetitiva y predecible.\n\n2. Modalidad de respuesta:\n- Modalidad expresiva: No verbal. Usa gestos, señalar y pictogramas para comunicarse.\n- Habilidades motoras: Capaz de realizar trazos gruesos (repasar palabras cortas en mayúsculas, unir con líneas y rodear).\n- Adaptaciones de respuesta: Tareas tipo unir, rodear y repasar letras o números grandes.\n\nPEDAGOGICAL PLAN:\n- Topic: Las partes de la cara\n- Goal: Identificar los ojos, la nariz y la boca en un dibujo esquemático.\n- Details (Teacher Instructions): Evitar palabras complejas. Enfocarse en vocabulario funcional básico.\n\nPEDAGOGICAL RULES:\n- Adapt the exercise to the student profile. Prioritize autonomy, visual support, and low verbal load.\n- Choose simple and concrete visual representations. Everyday vocabulary only.\n- Strict Content Coherence: All titles, instructions, text, and search terms must have 100% direct thematic coherence with the topic. Do not mix unrelated subjects.\n- Element Scaling: Dynamically adapt the number of elements/items in each generated exercise section (e.g., pairs in \"unir\", options in \"rodear\", words/letters in \"repasar\"/\"copiar\") to the student's age, attention limit, and cognitive support level. The chosen count MUST fall strictly within the \"Min items\" and \"Max items\" limits specified for that exercise type. High support needs profiles should get a count close to the Min limit; lower support needs should get a count close to the Max limit.\n\nMANDATORY STRUCTURE BY TYPE:\n- Exercise type \"repasar\":\n  JSON Schema format:\n  {\n  \"exerciseType\": \"repasar\",\n  \"instruction\": {\n    \"text\": \"REPASAR LA PALABRA\",\n    \"pictograms\": [\n      { \"searchTerm\": \"repasar\", \"content\": \"REPASAR\" }\n    ]\n  },\n  \"exercise\": {\n    \"prompts\": [\"A\", \"B\", \"C\"]\n  }\n}\n  Limits: Min items: 3, Max items: 6\n  Rules:\n    - The \"prompts\" array must only contain raw strings representing the letters or words to trace (capitalized).\n  - CRITICAL: Only plan a simple list of letters, numbers, or words to trace in uppercase.\n  - Scale the number of items to trace dynamically based on the student profile, strictly between 3 and 6 elements. High support needs profiles should have 3 items; lower support needs should have 4 to 6 items.\n\n- Exercise type \"unir\":\n  JSON Schema format:\n  {\n  \"exerciseType\": \"unir\",\n  \"instruction\": {\n    \"text\": \"UNIR CADA ANIMAL CON SU COMIDA\",\n    \"pictograms\": [\n      { \"searchTerm\": \"unir\", \"content\": \"UNIR\" }\n    ]\n  },\n  \"exercise\": {\n    \"pairs\": [\n      {\n        \"left\": { \"content\": \"mono\", \"searchTerm\": \"mono\" },\n        \"right\": { \"content\": \"plátano\", \"searchTerm\": \"platano\" }\n      }\n    ]\n  }\n}\n  Limits: Min items: 6, Max items: 12\n  Rules:\n    - Pairs must represent direct logical associations (e.g. animal-to-food, object-to-category).\n  - For quantity matching, the left item should have the number digit as content (e.g. \"2\"), and the right item should have the concrete noun as searchTerm (e.g. \"flor\") with the target quantity (e.g. 2).\n  - CRITICAL: Only plan direct left-to-right item matching pairs. Do not plan multiple levels, sub-questions, or other layout formats.\n  - Scale the number of matching pairs dynamically based on the student profile, strictly between 3 and 6 pairs. High support needs profiles should have 3 pairs (6 items); lower support needs should have 4 to 6 pairs. Do not generate only 2 pairs unless explicitly asked.\n\n- Exercise type \"rodear\":\n  JSON Schema format:\n  {\n  \"exerciseType\": \"rodear\",\n  \"instruction\": {\n    \"text\": \"RODEA LOS ANIMALES\",\n    \"pictograms\": [\n      { \"searchTerm\": \"rodear\", \"content\": \"RODEAR\" }\n    ]\n  },\n  \"exercise\": {\n    \"prompt\": null,\n    \"options\": [\n      { \"content\": \"perro\", \"searchTerm\": \"perro\" },\n      { \"content\": \"silla\", \"searchTerm\": \"silla\" }\n    ]\n  }\n}\n  Limits: Min items: 4, Max items: 8\n  Rules:\n    - Renders a simple flat list or grid of options. Distractors must be concrete, simple, and clearly distinct from target items.\n  - An optional \"prompt\" object can define the target concept.\n  - CRITICAL: Only plan a simple list/grid of options. Never plan complex illustration scenes, body parts labeling, interactive layouts, or subgroups.\n  - Scale the number of options (targets + distractors) dynamically based on the student profile, strictly between 4 and 8 options. High support needs profiles should have 4 options; lower support needs should have 6 to 8 options.\n\n- Exercise type \"copiar\":\n  JSON Schema format:\n  {\n  \"exerciseType\": \"copiar\",\n  \"instruction\": {\n    \"text\": \"COPIA LAS PALABRAS\",\n    \"pictograms\": [\n      { \"searchTerm\": \"copiar\", \"content\": \"COPIAR\" }\n    ]\n  },\n  \"exercise\": {\n    \"copies\": [\"SOL\", \"LUNA\"]\n  }\n}\n  Limits: Min items: 3, Max items: 6\n  Rules:\n    - All words to copy go in \"copies\" as raw strings in UPPERCASE.\n  - Do not include \"image\" or \"searchTerm\" items in this exercise.\n  - CRITICAL: Only plan a simple list of words to copy in uppercase.\n  - Scale the number of words to copy dynamically based on the student profile, strictly between 3 and 6 elements. High support needs profiles should have 3 words; lower support needs should have 4 to 6 words.\n\nPICTOGRAM SEARCH TERM & CONTENT RULES:\n1. Every item inside the JSON containing \"searchTerm\" (for pictogram lookup) or \"content\" (displayed text) MUST contain a single, simple, concrete word (e.g. \"sol\", \"perro\", \"abrigo\").\n2. CRITICAL: Never use multi-word descriptions, qualifiers, sentences, or phrases for search terms (e.g. NEVER write \"sol de verano\", \"abuela feliz\", \"comer manzana\").\n3. CRITICAL: Do NOT use technical qualifiers or file extensions in the search term. For example, never use suffixes like \"_pictograma\", \"_image\", \"_dibujo\", \"_picto\", \"pictograma\", \"image\", or \"dibujo\".\n4. Do NOT use punctuation, hyphens (-), or underscores (_) inside \"searchTerm\" (e.g. use \"manzana\", never \"manzana_roja\" or \"manzana-roja\").\n5. The content text of the pictogram should match the search term but in UPPERCASE.\n\nCRITICAL GENERATION RULES:\n1. Output ONLY a valid JSON object matching the worksheet schema below. No conversational text.\n2. Strictly follow the exclusions, constraints, or focus areas requested in \"Details\". For instance, if the teacher explicitly says \"no quiero ejercicios de repasar\" or similar, you MUST NOT include any sections of type \"repasar\" in the worksheet under any circumstances.\n3. Every exercise section must include an instruction text (UPPERCASE) and associated instruction pictograms (each with searchTerm and content).\n\nWORKSHEET OUTPUT SCHEMA:\n{\n  \"title\": \"Descriptive worksheet title in Castilian Spanish (es)\",\n  \"pictogramSearchTerm\": \"Simple theme word for the whole worksheet\",\n  \"sections\": [\n    {\n      \"exerciseType\": \"repasar / unir / rodear / copiar\",\n      \"instruction\": {\n        \"text\": \"INSTRUCTION TEXT\",\n        \"pictograms\": [\n          { \"searchTerm\": \"term\", \"content\": \"WORD\" }\n        ]\n      },\n      \"exercise\": <structure matching the corresponding schema for exerciseType>\n    }\n  ]\n}\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{\n  \"title\": \"Las Partes de la Cara\",\n  \"pictogramSearchTerm\": \"cara\",\n  \"sections\": [\n    {\n      \"exerciseType\": \"repasar\",\n      \"instruction\": {\n        \"text\": \"REPASAR LA PALABRA\",\n        \"pictograms\": [\n          { \"searchTerm\": \"repasar\", \"content\": \"REPASAR\" }\n        ]\n      },\n      \"exercise\": {\n        \"prompts\": [\"O\", \"U\", \"A\"]\n      }\n    },\n    {\n      \"exerciseType\": \"unir\",\n      \"instruction\": {\n        \"text\": \"UNIR CADA OJO CON SU PALANCA\",\n        \"pictograms\": [\n          { \"searchTerm\": \"unir\", \"content\": \"UNIR\" }\n        ]\n      },\n      \"exercise\": {\n        \"pairs\": [\n          {\n            \"left\": { \"content\": \"ojo\", \"searchTerm\": \"ojo\" },\n            \"right\": { \"content\": \"palanca\", \"searchTerm\": \"palanca\" }\n          }\n        ]\n      }\n    },\n    {\n      \"exerciseType\": \"rodear\",\n      \"instruction\": {\n        \"text\": \"RODEA LA NARIZ\",\n        \"pictograms\": [\n          { \"searchTerm\": \"rodear\", \"content\": \"RODEAR\" }\n        ]\n      },\n      \"exercise\": {\n        \"prompt\": null,\n        \"options\": [\n          { \"content\": \"nariz\", \"searchTerm\": \"nariz\" },\n          { \"content\": \"sol\", \"searchTerm\": \"sol\" }\n        ]\n      }\n    },\n    {\n      \"exerciseType\": \"copiar\",\n      \"instruction\": {\n        \"text\": \"COPIA LAS PALABRAS\",\n        \"pictograms\": [\n          { \"searchTerm\": \"copiar\", \"content\": \"COPIAR\" }\n        ]\n      },\n      \"exercise\": {\n        \"copies\": [\"nariz\", \"boca\"]\n      }\n    }\n  ]\n}",
+      "provider": "ollama",
+      "status": "success"
+    }
+  ],
+  "final_worksheet": {
+    "title": "Las Partes de la Cara",
+    "pictogramSearchTerm": "cara",
+    "sections": [
+      {
+        "exerciseType": "repasar",
+        "instruction": {
+          "text": "REPASAR LA PALABRA",
+          "pictograms": [
+            {
+              "searchTerm": "repasar",
+              "content": "REPASAR",
+              "url": "https://static.arasaac.org/pictograms/15475/15475_500.png"
+            }
+          ]
+        },
+        "exercise": {
+          "prompts": [
+            "O",
+            "U",
+            "A"
+          ]
+        },
+        "items": [
+          {
+            "type": "traceable_text",
+            "content": "O"
+          },
+          {
+            "type": "traceable_text",
+            "content": "U"
+          },
+          {
+            "type": "traceable_text",
+            "content": "A"
+          }
+        ]
+      },
+      {
+        "exerciseType": "unir",
+        "instruction": {
+          "text": "UNIR CADA OJO CON SU PALANCA",
+          "pictograms": [
+            {
+              "searchTerm": "unir",
+              "content": "UNIR",
+              "url": "https://static.arasaac.org/pictograms/6965/6965_500.png"
+            }
+          ]
+        },
+        "exercise": {
+          "pairs": [
+            {
+              "left": {
+                "content": "ojo",
+                "searchTerm": "ojo",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/6573/6573_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/6573/6573_500.png"
+                ]
+              },
+              "right": {
+                "content": "palanca",
+                "searchTerm": "palanca",
+                "selectedPictoUrl": "https://static.arasaac.org/pictograms/24218/24218_500.png",
+                "pictoOptions": [
+                  "https://static.arasaac.org/pictograms/24218/24218_500.png",
+                  "https://static.arasaac.org/pictograms/26278/26278_500.png",
+                  "https://static.arasaac.org/pictograms/26279/26279_500.png"
+                ]
+              }
+            }
+          ]
+        },
+        "items": [
+          {
+            "type": "image",
+            "content": "ojo",
+            "searchTerm": "ojo",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "palanca",
+            "searchTerm": "palanca",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          }
+        ]
+      },
+      {
+        "exerciseType": "rodear",
+        "instruction": {
+          "text": "RODEA LA NARIZ",
+          "pictograms": [
+            {
+              "searchTerm": "rodear",
+              "content": "RODEAR",
+              "url": "https://static.arasaac.org/pictograms/6285/6285_500.png"
+            }
+          ]
+        },
+        "exercise": {
+          "prompt": null,
+          "options": [
+            {
+              "content": "nariz",
+              "searchTerm": "nariz",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/2887/2887_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/2887/2887_500.png"
+              ]
+            },
+            {
+              "content": "sol",
+              "searchTerm": "sol",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/2798/2798_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/2798/2798_500.png",
+                "https://static.arasaac.org/pictograms/7252/7252_500.png"
+              ]
+            }
+          ]
+        },
+        "items": [
+          {
+            "type": "image",
+            "content": "nariz",
+            "searchTerm": "nariz",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "sol",
+            "searchTerm": "sol",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          }
+        ]
+      },
+      {
+        "exerciseType": "copiar",
+        "instruction": {
+          "text": "COPIA LAS PALABRAS",
+          "pictograms": [
+            {
+              "searchTerm": "copiar",
+              "content": "COPIAR",
+              "url": "https://static.arasaac.org/pictograms/21559/21559_500.png"
+            }
+          ]
+        },
+        "exercise": {
+          "copies": [
+            "nariz",
+            "boca"
+          ]
+        },
+        "items": [
+          {
+            "type": "traceable_text",
+            "content": "NARIZ"
+          },
+          {
+            "type": "traceable_text",
+            "content": "BOCA"
+          }
+        ]
+      }
+    ],
+    "selectedPictoUrl": "https://static.arasaac.org/pictograms/2684/2684_500.png",
+    "pictoOptions": [
+      "https://static.arasaac.org/pictograms/2684/2684_500.png",
+      "https://static.arasaac.org/pictograms/4589/4589_500.png",
+      "https://static.arasaac.org/pictograms/31915/31915_500.png",
+      "https://static.arasaac.org/pictograms/37138/37138_500.png"
+    ],
+    "telemetry": {
+      "generationTimeMs": 16850,
+      "adpTimeMs": 0,
+      "acTimeMs": 0,
+      "rejectionCount": 0,
+      "manualEditsCount": 0,
+      "pictoOverridesCount": 0,
+      "retryCount": 0,
+      "createdTimestamp": "2026-07-16T07:00:31Z"
+    }
+  }
+}

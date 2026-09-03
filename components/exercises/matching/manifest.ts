@@ -8,6 +8,8 @@ export const manifest: ExerciseManifest = {
   defaultLayout: 'matching_horizontal',
   instructionTerms: ['unir', 'flecha'],
   minimumItems: 4, // 2 pairs = 4 items
+  minGenerateItems: 6, // 3 pairs = 6 items
+  maxGenerateItems: 12, // 6 pairs = 12 items
   createDefaultExercise: () => ({
     type: 'unir',
     pairs: [
@@ -81,6 +83,8 @@ export const manifest: ExerciseManifest = {
   promptRules: [
     'Pairs must represent direct logical associations (e.g. animal-to-food, object-to-category).',
     'For quantity matching, the left item should have the number digit as content (e.g. "2"), and the right item should have the concrete noun as searchTerm (e.g. "flor") with the target quantity (e.g. 2).',
+    'CRITICAL: Only plan direct left-to-right item matching pairs. Do not plan multiple levels, sub-questions, or other layout formats.',
+    'Scale the number of matching pairs dynamically based on the student profile, strictly between 3 and 6 pairs. High support needs profiles should have 3 pairs; lower support needs should have 4 to 6 pairs. Do not generate only 2 pairs unless explicitly asked.',
   ],
   fewShotExamples: [
     {

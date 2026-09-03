@@ -12,10 +12,11 @@ export class AcAgent {
     index: number,
     schema: string,
     requestedLanguage: 'es' | 'val' | 'en',
-    onRetry: () => void
+    onRetry: () => void,
+    feedback?: string
   ): Promise<any> {
     const type = String(plan.type || 'rodear').toLowerCase().trim();
-    const promptText = buildAcExercisePrompt(plan, schema, requestedLanguage);
+    const promptText = buildAcExercisePrompt(plan, schema, requestedLanguage, feedback);
 
     let attempts = 0;
     const maxAttempts = 3;

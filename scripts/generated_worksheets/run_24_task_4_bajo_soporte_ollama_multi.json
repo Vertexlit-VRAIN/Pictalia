@@ -1,0 +1,240 @@
+{
+  "run_info": {
+    "run_id": 24,
+    "task_id": 4,
+    "topic": "Formas geométricas básicas",
+    "profile_id": "bajo_soporte",
+    "provider": "ollama",
+    "model": "gemma3:4b",
+    "mode": "multi",
+    "success": true,
+    "error_message": "",
+    "elapsed_ms": 52787
+  },
+  "llm_calls": [
+    {
+      "prompt": "You are the Pedagogical Evaluator Agent (PEA) / ADP stratega for Adaptator-TEA.\nYour role is to design the pedagogical plan and worksheet structure for a student with special education needs.\n\nSTUDENT PROFILE:\nDatos generales:\n- Edad: 8\n- Curso o etapa: Primaria 2º\n- Diagnóstico o condición relevante: TEA grado 1 (alto funcionamiento)\n- Objetivos prioritarios actuales: Consolidar comprensión lectora de frases sencillas, autonomía en la resolución de tareas escolares estructuradas y refuerzo de cálculo aritmético simple.\n- Comentarios adicionales: Vocabulario amplio. Puede experimentar fatiga mental si la ficha tiene demasiados elementos repetitivos o carece de una meta lúdica. Responde bien a consignas textuales claras.\n\n1. Comprensión y acceso a la información:\n- Síntesis profesional: Comprende instrucciones escritas de dos pasos si están estructuradas. No requiere apoyo visual masivo de pictogramas (puede llegar a distraerle si está sobrecargado).\n- Canal de acceso preferente: Lectoescritura combinada con esquemas visuales lógicos.\n- Apoyos indispensables: Títulos claros, enunciados directos y estructura espacial limpia.\n\n2. Modalidad de respuesta:\n- Modalidad expresiva: Verbal y lectoescritura funcional. Capaz de escribir palabras y completar frases cortas de forma autónoma.\n- Habilidades motoras: Motricidad fina desarrollada. Puede copiar palabras en minúsculas/mayúsculas y realizar trazos precisos.\n- Adaptaciones de respuesta: Actividades de copiar palabras, resolver operaciones aritméticas y relacionar conceptos abstractos.\n\nPEDAGOGICAL GOALS:\n- Topic: Formas geométricas básicas\n- Goal: Reconocer y discriminar visualmente el círculo y el cuadrado.\n- Details (Teacher Instructions): Usar el ejercicio de rodear con colores diferenciados.\n\nAVAILABLE EXERCISE TYPES & STRUCTURAL CONSTRAINTS:\n- \"repasar\": Tracing exercises focus on fine motor skills and simple visual-written recognition. Recommended for students learning coordinate tracing.\n  Limits: Min items: 3, Max items: 6\n  Constraints and rules:\n  - The \"prompts\" array must only contain raw strings representing the letters or words to trace (capitalized).\n  - CRITICAL: Only plan a simple list of letters, numbers, or words to trace in uppercase.\n  - Scale the number of items to trace dynamically based on the student profile, strictly between 3 and 6 elements. High support needs profiles should have 3 items; lower support needs should have 4 to 6 items.\n- \"unir\": Matching exercises build cognitive associations and relational classification (e.g. image to word, number to quantity).\n  Limits: Min items: 6, Max items: 12\n  Constraints and rules:\n  - Pairs must represent direct logical associations (e.g. animal-to-food, object-to-category).\n  - For quantity matching, the left item should have the number digit as content (e.g. \"2\"), and the right item should have the concrete noun as searchTerm (e.g. \"flor\") with the target quantity (e.g. 2).\n  - CRITICAL: Only plan direct left-to-right item matching pairs. Do not plan multiple levels, sub-questions, or other layout formats.\n  - Scale the number of matching pairs dynamically based on the student profile, strictly between 3 and 6 pairs. High support needs profiles should have 3 pairs (6 items); lower support needs should have 4 to 6 pairs. Do not generate only 2 pairs unless explicitly asked.\n- \"rodear\": Circling exercises reinforce selective attention and visual discrimination of target elements in a set of distractors.\n  Limits: Min items: 4, Max items: 8\n  Constraints and rules:\n  - Renders a simple flat list or grid of options. Distractors must be concrete, simple, and clearly distinct from target items.\n  - An optional \"prompt\" object can define the target concept.\n  - CRITICAL: Only plan a simple list/grid of options. Never plan complex illustration scenes, body parts labeling, interactive layouts, or subgroups.\n  - Scale the number of options (targets + distractors) dynamically based on the student profile, strictly between 4 and 8 options. High support needs profiles should have 4 options; lower support needs should have 6 to 8 options.\n- \"copiar\": Copying exercises reinforce spelling, letter-by-letter writing, and word copying.\n  Limits: Min items: 3, Max items: 6\n  Constraints and rules:\n  - All words to copy go in \"copies\" as raw strings in UPPERCASE.\n  - Do not include \"image\" or \"searchTerm\" items in this exercise.\n  - CRITICAL: Only plan a simple list of words to copy in uppercase.\n  - Scale the number of words to copy dynamically based on the student profile, strictly between 3 and 6 elements. High support needs profiles should have 3 words; lower support needs should have 4 to 6 words.\n\nEXERCISE COUNT:\nGenerate a recommended number of exercises (usually between 3 and 5) based on the student profile.\n\nRULES:\n1. Choose the most appropriate exercise types from the available list for this student's profile.\n2. Structure the learning progression logically (easier exercises first, e.g. repasar before copiar).\n3. For each exercise, write a clear objective, a concise instruction in uppercase, and a highly detailed content description.\n4. CRITICAL: The content description must strictly match the supported structure of the exercise type. Do NOT invent layouts, background scenes, interactive diagrams, or custom shapes that are not supported. E.g. for \"rodear\", describe targets and distractors; for \"unir\", describe left and right pairs; for \"repasar\", list words to trace.\n5. If appropriate for numeracy or visual matching, you can plan \"unir\" exercises that match text numbers with a repeated pictogram (quantity), describing it in the exercise content description.\n6. All texts (titles, instructions, description details) MUST be in Castilian Spanish (es).\n7. Output ONLY a valid JSON object matching the schema below. No conversational text.\n8. CRITICAL: Strictly follow any exclusions, constraints, or explicit focus areas requested by the teacher in \"Details\" under PEDAGOGICAL GOALS. For instance, if the teacher explicitly says they do not want a specific type of exercise (e.g., \"no quiero ejercicios de repasar\", \"no repasar\", \"no copiar\", \"do not include matching\"), you MUST NOT plan or choose that exercise type under any circumstances, even if it is recommended by the student profile. Do not select it from the available exercise list.\n9. CRITICAL: For each exercise plan, analyze the student's profile (specifically their attention span, motor skills, age, and cognitive support level) and EXPLICITLY specify the exact number of elements, pairs, options, or words to generate in the \"description\" field. The chosen count MUST fall strictly within the \"Min items\" and \"Max items\" limits specified for that exercise type. High support needs / short attention span profiles should get a count close to the Min limit (e.g., exactly 3 pairs/6 items for unir, exactly 4 options/items for rodear); lower support needs / higher attention span profiles should get a count close to the Max limit (e.g., exactly 5-6 pairs/10-12 items for unir, exactly 6-8 options/items for rodear).\n\nOUTPUT SCHEMA:\n{\n  \"title\": \"Short descriptive title of the worksheet in Castilian Spanish (es)\",\n  \"pictogramSearchTerm\": \"Simple noun in Castilian Spanish (es) representing the overall theme\",\n  \"exercisePlans\": [\n    {\n      \"type\": \"one of the available exercise types\",\n      \"objective\": \"Detailed pedagogical objective for this exercise\",\n      \"instruction\": \"SHORT INSTRUCTION IN UPPERCASE\",\n      \"description\": \"Extremely detailed description of the content to generate. E.g. 'Match number 1 with 1 flower pictogram, number 2 with 2 flower pictograms, number 3 with 3 flower pictograms. Left column has numbers, right column has repeated flower pictures.'\"\n    }\n  ]\n}\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{\n  \"title\": \"Formas Geométricas: Círculo y Cuadrado\",\n  \"pictogramSearchTerm\": \"circulo\",\n  \"exercisePlans\": [\n    {\n      \"type\": \"rodear\",\n      \"objective\": \"Reconocer y discriminar visualmente el círculo.\",\n      \"instruction\": \"ROBANDO CON COLOR ROJO EL CÍRCULO.\",\n      \"description\": \"Rodear con un lápiz de color rojo los círculos dibujados. Hay 5 círculos y 3 cuadrados en la página. No hay otras figuras.  Se deben dibujar 5 círculos de tamaño mediano y 3 cuadrados de tamaño mediano, separados claramente.  El objetivo es rodear únicamente los círculos con un lápiz rojo.\"\n    }\n  ]\n}",
+      "provider": "ollama",
+      "status": "success"
+    },
+    {
+      "prompt": "You are the Exercise Constructor Agent (AC) for Adaptator-TEA.\nYour role is to generate the exact JSON structure for a single educational exercise according to a provided pedagogical blueprint.\n\nPEDAGOGICAL BLUEPRINT:\n- Exercise Type: rodear\n- Objective: Reconocer y discriminar visualmente el círculo.\n- Instruction: ROBANDO CON COLOR ROJO EL CÍRCULO.\n- Detailed Content Description: Rodear con un lápiz de color rojo los círculos dibujados. Hay 5 círculos y 3 cuadrados en la página. No hay otras figuras.  Se deben dibujar 5 círculos de tamaño mediano y 3 cuadrados de tamaño mediano, separados claramente.  El objetivo es rodear únicamente los círculos con un lápiz rojo.\n\nTARGET SCHEMA AND RULES:\nYou must output a single JSON object matching the format below.\n{\n  \"exerciseType\": \"rodear\",\n  \"instruction\": {\n    \"text\": \"RODEA LOS ANIMALES\",\n    \"pictograms\": [\n      { \"searchTerm\": \"rodear\", \"content\": \"RODEAR\" }\n    ]\n  },\n  \"exercise\": {\n    \"prompt\": null,\n    \"options\": [\n      { \"content\": \"perro\", \"searchTerm\": \"perro\" },\n      { \"content\": \"silla\", \"searchTerm\": \"silla\" }\n    ]\n  }\n}\n\nADDITIONAL RULES:\n1. Generate the exact content and the exact element count (number of options, pairs, words, traces) described in the blueprint description. Do NOT default or be limited to the counts shown in the JSON schemas or few-shot examples.\n2. Renders a simple flat list or grid of options. Distractors must be concrete, simple, and clearly distinct from target items.\n3. An optional \"prompt\" object can define the target concept.\n4. CRITICAL: Only plan a simple list/grid of options. Never plan complex illustration scenes, body parts labeling, interactive layouts, or subgroups.\n5. Scale the number of options (targets + distractors) dynamically based on the student profile, strictly between 4 and 8 options. High support needs profiles should have 4 options; lower support needs should have 6 to 8 options.\n6. All student-facing and teacher-facing text in the JSON (instructions, contents, searchTerms, copies, etc.) MUST be written in Castilian Spanish (es).\n7. Do NOT include any additional fields or wrapper objects. The output must be exactly the JSON section structure.\n8. Do NOT include markdown styling or text outside the JSON block. Return ONLY the JSON object.\n\nPICTOGRAM SEARCH TERM & CONTENT RULES:\n1. Every item inside the JSON containing \"searchTerm\" (for pictogram lookup) or \"content\" (displayed text) MUST contain a single, simple, concrete word (e.g. \"sol\", \"perro\", \"abrigo\").\n2. CRITICAL: Never use multi-word descriptions, qualifiers, sentences, or phrases for search terms (e.g. NEVER write \"sol de verano\", \"abuela feliz\", \"comer manzana\").\n3. CRITICAL: Do NOT use technical qualifiers or file extensions in the search term. For example, never use suffixes like \"_pictograma\", \"_image\", \"_dibujo\", \"_picto\", \"pictograma\", \"image\", or \"dibujo\".\n4. Do NOT use punctuation, hyphens (-), or underscores (_) inside \"searchTerm\" (e.g. use \"manzana\", never \"manzana_roja\" or \"manzana-roja\").\n5. The content text of the pictogram should match the search term but in UPPERCASE.\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{\n  \"exerciseType\": \"rodear\",\n  \"instruction\": {\n    \"text\": \"RODEA LOS CÍRCULOS CON COLOR ROJO\",\n    \"pictograms\": [\n      { \"searchTerm\": \"circulo\", \"content\": \"CÍRCULO\" }\n    ]\n  },\n  \"exercise\": {\n    \"prompt\": null,\n    \"options\": [\n      { \"content\": \"circulo\", \"searchTerm\": \"circulo\" },\n      { \"content\": \"circulo\", \"searchTerm\": \"circulo\" },\n      { \"content\": \"circulo\", \"searchTerm\": \"circulo\" },\n      { \"content\": \"circulo\", \"searchTerm\": \"circulo\" },\n      { \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\" },\n      { \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\" },\n      { \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\" },\n      { \"content\": \"rectangulo\", \"searchTerm\": \"rectangulo\" }\n    ]\n  }\n}",
+      "provider": "ollama",
+      "status": "success"
+    },
+    {
+      "prompt": "You are the Pedagogical Evaluator Agent (PEA) for Adaptator-TEA.\nYour role is to review a single educational exercise generated by the Exercise Constructor Agent (AC) against the student's profile and the pedagogical plan.\n\nSTUDENT PROFILE:\nDatos generales:\n- Edad: 8\n- Curso o etapa: Primaria 2º\n- Diagnóstico o condición relevante: TEA grado 1 (alto funcionamiento)\n- Objetivos prioritarios actuales: Consolidar comprensión lectora de frases sencillas, autonomía en la resolución de tareas escolares estructuradas y refuerzo de cálculo aritmético simple.\n- Comentarios adicionales: Vocabulario amplio. Puede experimentar fatiga mental si la ficha tiene demasiados elementos repetitivos o carece de una meta lúdica. Responde bien a consignas textuales claras.\n\n1. Comprensión y acceso a la información:\n- Síntesis profesional: Comprende instrucciones escritas de dos pasos si están estructuradas. No requiere apoyo visual masivo de pictogramas (puede llegar a distraerle si está sobrecargado).\n- Canal de acceso preferente: Lectoescritura combinada con esquemas visuales lógicos.\n- Apoyos indispensables: Títulos claros, enunciados directos y estructura espacial limpia.\n\n2. Modalidad de respuesta:\n- Modalidad expresiva: Verbal y lectoescritura funcional. Capaz de escribir palabras y completar frases cortas de forma autónoma.\n- Habilidades motoras: Motricidad fina desarrollada. Puede copiar palabras en minúsculas/mayúsculas y realizar trazos precisos.\n- Adaptaciones de respuesta: Actividades de copiar palabras, resolver operaciones aritméticas y relacionar conceptos abstractos.\n\nPEDAGOGICAL PLAN FOR THIS EXERCISE:\n- Exercise Type: rodear\n- Objective: Reconocer y discriminar visualmente el círculo.\n- Instruction: ROBANDO CON COLOR ROJO EL CÍRCULO.\n- Detailed Content Description: Rodear con un lápiz de color rojo los círculos dibujados. Hay 5 círculos y 3 cuadrados en la página. No hay otras figuras.  Se deben dibujar 5 círculos de tamaño mediano y 3 cuadrados de tamaño mediano, separados claramente.  El objetivo es rodear únicamente los círculos con un lápiz rojo.\n\nGENERATED JSON TO EVALUATE:\n{\"exerciseType\": \"rodear\", \"instruction\": {\"text\": \"RODEA LOS C\\u00cdRCULOS CON COLOR ROJO\", \"pictograms\": [{\"searchTerm\": \"circulo\", \"content\": \"C\\u00cdRCULO\"}]}, \"exercise\": {\"prompt\": null, \"options\": [{\"content\": \"circulo\", \"searchTerm\": \"circulo\"}, {\"content\": \"circulo\", \"searchTerm\": \"circulo\"}, {\"content\": \"circulo\", \"searchTerm\": \"circulo\"}, {\"content\": \"circulo\", \"searchTerm\": \"circulo\"}, {\"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\"}, {\"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\"}, {\"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\"}, {\"content\": \"rectangulo\", \"searchTerm\": \"rectangulo\"}]}}\n\nEVALUATION CRITERIA:\n1. JSON Schema Validity: The JSON must parse correctly and have the exact fields defined for type \"rodear\".\n2. Adaptability to Profile: The activity must fit the motor, cognitive, and attention limits of the student.\n3. Instruction Visual Clarity: The instruction text must be brief, direct, written in Castilian Spanish (es) (UPPERCASE) and accompanied by matching pictograms.\n4. Content Matching: The generated options/items/pairs must strictly represent the detailed description and theme of the blueprint.\n5. Pictogram Search Terms Audit: Inspect all \"searchTerm\" fields. They must contain exactly one simple concrete word.\n   - REJECT any search term that contains multi-word concepts, sentences, or instructions (e.g. \"perro marron\", \"abuela feliz\").\n   - REJECT any search term with hyphens (-), underscores (_) or files extensions (e.g. \"plato_picto\", \"flor_image\").\n   - Ensure spelling is correct in Castilian Spanish (es).\n\nOUTPUT FORMAT:\nYou must return a single valid JSON object with the following fields:\n{\n  \"approved\": true or false,\n  \"feedback\": \"If approved=false, write detailed instructions on what needs to be changed. Explain what failed and how to correct it. If approved=true, leave empty.\"\n}\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{}",
+      "provider": "ollama",
+      "status": "success"
+    },
+    {
+      "prompt": "You are the Global Pedagogical Evaluator Agent (GPEA) for Adaptator-TEA.\nYour role is to audit a full educational worksheet containing multiple exercises, ensuring overall progression, visual simplicity, and structural coherence.\n\nSTUDENT PROFILE:\nDatos generales:\n- Edad: 8\n- Curso o etapa: Primaria 2º\n- Diagnóstico o condición relevante: TEA grado 1 (alto funcionamiento)\n- Objetivos prioritarios actuales: Consolidar comprensión lectora de frases sencillas, autonomía en la resolución de tareas escolares estructuradas y refuerzo de cálculo aritmético simple.\n- Comentarios adicionales: Vocabulario amplio. Puede experimentar fatiga mental si la ficha tiene demasiados elementos repetitivos o carece de una meta lúdica. Responde bien a consignas textuales claras.\n\n1. Comprensión y acceso a la información:\n- Síntesis profesional: Comprende instrucciones escritas de dos pasos si están estructuradas. No requiere apoyo visual masivo de pictogramas (puede llegar a distraerle si está sobrecargado).\n- Canal de acceso preferente: Lectoescritura combinada con esquemas visuales lógicos.\n- Apoyos indispensables: Títulos claros, enunciados directos y estructura espacial limpia.\n\n2. Modalidad de respuesta:\n- Modalidad expresiva: Verbal y lectoescritura funcional. Capaz de escribir palabras y completar frases cortas de forma autónoma.\n- Habilidades motoras: Motricidad fina desarrollada. Puede copiar palabras en minúsculas/mayúsculas y realizar trazos precisos.\n- Adaptaciones de respuesta: Actividades de copiar palabras, resolver operaciones aritméticas y relacionar conceptos abstractos.\n\nGENERATED WORKSHEET JSON:\n{\"title\": \"Formas Geom\\u00e9tricas: C\\u00edrculo y Cuadrado\", \"pictogramSearchTerm\": \"circulo\", \"sections\": [{\"exerciseType\": \"rodear\", \"instruction\": {\"text\": \"RODEA LOS C\\u00cdRCULOS CON COLOR ROJO\", \"pictograms\": [{\"searchTerm\": \"circulo\", \"content\": \"C\\u00cdRCULO\"}]}, \"exercise\": {\"prompt\": null, \"options\": [{\"content\": \"circulo\", \"searchTerm\": \"circulo\"}, {\"content\": \"circulo\", \"searchTerm\": \"circulo\"}, {\"content\": \"circulo\", \"searchTerm\": \"circulo\"}, {\"content\": \"circulo\", \"searchTerm\": \"circulo\"}, {\"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\"}, {\"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\"}, {\"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\"}, {\"content\": \"rectangulo\", \"searchTerm\": \"rectangulo\"}]}, \"items\": [{\"type\": \"image\", \"content\": \"circulo\", \"searchTerm\": \"circulo\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"circulo\", \"searchTerm\": \"circulo\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"circulo\", \"searchTerm\": \"circulo\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"circulo\", \"searchTerm\": \"circulo\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"rectangulo\", \"searchTerm\": \"rectangulo\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}]}]}\n\nEVALUATION CRITERIA:\n1. Overall Coherence: The worksheet must maintain a single, consistent theme across all exercises.\n2. Progression & Visual Load: The exercises must be ordered from easiest (e.g., repasar) to hardest (e.g., copiar). The total number of items must not overwhelm the student's attention limits.\n3. Pictogram Consistency: Search terms for pictograms must be simple single words in the target language. No underscores, hyphens, or technical suffixes.\n\nOUTPUT FORMAT:\nYou must return a single valid JSON object with the following fields:\n{\n  \"approved\": true or false,\n  \"feedback\": \"If approved=false, provide general feedback and specific suggestions for each failed exercise.\",\n  \"rejectedSectionIndexes\": [index of failed exercises in the worksheet sections list, starting from 0. E.g. [1] to reject the second exercise. Empty if all are approved.]\n}\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{\"approved\": false, \"feedback\": \"This worksheet requires significant revisions to better suit the student's profile. The current design is overly focused on a single, potentially overwhelming task (circling shapes) and lacks a clear pedagogical progression. The visual load is high, and the lack of a ludic element risks fatigue. Here's a breakdown of the issues and suggested improvements:\\n\\n**Overall Coherence:** The worksheet attempts to introduce geometric shapes, but the exercise is extremely simplistic and repetitive. It doesn't build upon this introduction in a meaningful way.\\n\\n**Progression & Visual Load:** The activity is purely rote repetition – circling shapes – and provides no opportunity for the student to engage with the concept in a more complex or rewarding way. The sheer number of circles presented initially is likely to be overwhelming.\\n\\n**Pictogram Consistency:** While the pictogram search terms are basic, their inclusion is questionable given the student’s aversion to excessive visual aids. The focus on color alone isn't sufficient.\\n\\n**Specific Suggestions:**\\n\\n*   **Section 1 (Rodear):** Remove this exercise entirely. It’s excessively simple and lacks any learning objective beyond rote circling. Replace with an exercise that introduces the *names* of the shapes – e.g., \\\"Identifica y rodea los círculos\\\" (Identify and circle the circles).  Reduce the number of images drastically (e.g., just 2-3 circles).\\n\\n*   **General Recommendations:** Introduce the concept of shapes gradually.  Start with very simple identification tasks. Incorporate a brief explanation of each shape’s characteristics before the exercises. Add a goal – perhaps 'Let's learn about circles and squares!' – to provide a sense of purpose. Consider a small reward system for completing tasks to maintain engagement.\\n\", \"rejectedSectionIndexes\": [0]}",
+      "provider": "ollama",
+      "status": "success"
+    },
+    {
+      "prompt": "You are the Exercise Constructor Agent (AC) for Adaptator-TEA.\nYour role is to generate the exact JSON structure for a single educational exercise according to a provided pedagogical blueprint.\nATTENTION - PREVIOUS FEEDBACK TO CORRECT:\nThe previous attempt to generate this exercise failed validation or pedagogical criteria. You MUST correct it based on the following feedback:\n\"GLOBAL REJECTION FEEDBACK: This worksheet requires significant revisions to better suit the student's profile. The current design is overly focused on a single, potentially overwhelming task (circling shapes) and lacks a clear pedagogical progression. The visual load is high, and the lack of a ludic element risks fatigue. Here's a breakdown of the issues and suggested improvements:\n\n**Overall Coherence:** The worksheet attempts to introduce geometric shapes, but the exercise is extremely simplistic and repetitive. It doesn't build upon this introduction in a meaningful way.\n\n**Progression & Visual Load:** The activity is purely rote repetition – circling shapes – and provides no opportunity for the student to engage with the concept in a more complex or rewarding way. The sheer number of circles presented initially is likely to be overwhelming.\n\n**Pictogram Consistency:** While the pictogram search terms are basic, their inclusion is questionable given the student’s aversion to excessive visual aids. The focus on color alone isn't sufficient.\n\n**Specific Suggestions:**\n\n*   **Section 1 (Rodear):** Remove this exercise entirely. It’s excessively simple and lacks any learning objective beyond rote circling. Replace with an exercise that introduces the *names* of the shapes – e.g., \"Identifica y rodea los círculos\" (Identify and circle the circles).  Reduce the number of images drastically (e.g., just 2-3 circles).\n\n*   **General Recommendations:** Introduce the concept of shapes gradually.  Start with very simple identification tasks. Incorporate a brief explanation of each shape’s characteristics before the exercises. Add a goal – perhaps 'Let's learn about circles and squares!' – to provide a sense of purpose. Consider a small reward system for completing tasks to maintain engagement.\n\"\n\nPEDAGOGICAL BLUEPRINT:\n- Exercise Type: rodear\n- Objective: Reconocer y discriminar visualmente el círculo.\n- Instruction: ROBANDO CON COLOR ROJO EL CÍRCULO.\n- Detailed Content Description: Rodear con un lápiz de color rojo los círculos dibujados. Hay 5 círculos y 3 cuadrados en la página. No hay otras figuras.  Se deben dibujar 5 círculos de tamaño mediano y 3 cuadrados de tamaño mediano, separados claramente.  El objetivo es rodear únicamente los círculos con un lápiz rojo.\n\nTARGET SCHEMA AND RULES:\nYou must output a single JSON object matching the format below.\n{\n  \"exerciseType\": \"rodear\",\n  \"instruction\": {\n    \"text\": \"RODEA LOS ANIMALES\",\n    \"pictograms\": [\n      { \"searchTerm\": \"rodear\", \"content\": \"RODEAR\" }\n    ]\n  },\n  \"exercise\": {\n    \"prompt\": null,\n    \"options\": [\n      { \"content\": \"perro\", \"searchTerm\": \"perro\" },\n      { \"content\": \"silla\", \"searchTerm\": \"silla\" }\n    ]\n  }\n}\n\nADDITIONAL RULES:\n1. Generate the exact content and the exact element count (number of options, pairs, words, traces) described in the blueprint description. Do NOT default or be limited to the counts shown in the JSON schemas or few-shot examples.\n2. Renders a simple flat list or grid of options. Distractors must be concrete, simple, and clearly distinct from target items.\n3. An optional \"prompt\" object can define the target concept.\n4. CRITICAL: Only plan a simple list/grid of options. Never plan complex illustration scenes, body parts labeling, interactive layouts, or subgroups.\n5. Scale the number of options (targets + distractors) dynamically based on the student profile, strictly between 4 and 8 options. High support needs profiles should have 4 options; lower support needs should have 6 to 8 options.\n6. All student-facing and teacher-facing text in the JSON (instructions, contents, searchTerms, copies, etc.) MUST be written in Castilian Spanish (es).\n7. Do NOT include any additional fields or wrapper objects. The output must be exactly the JSON section structure.\n8. Do NOT include markdown styling or text outside the JSON block. Return ONLY the JSON object.\n\nPICTOGRAM SEARCH TERM & CONTENT RULES:\n1. Every item inside the JSON containing \"searchTerm\" (for pictogram lookup) or \"content\" (displayed text) MUST contain a single, simple, concrete word (e.g. \"sol\", \"perro\", \"abrigo\").\n2. CRITICAL: Never use multi-word descriptions, qualifiers, sentences, or phrases for search terms (e.g. NEVER write \"sol de verano\", \"abuela feliz\", \"comer manzana\").\n3. CRITICAL: Do NOT use technical qualifiers or file extensions in the search term. For example, never use suffixes like \"_pictograma\", \"_image\", \"_dibujo\", \"_picto\", \"pictograma\", \"image\", or \"dibujo\".\n4. Do NOT use punctuation, hyphens (-), or underscores (_) inside \"searchTerm\" (e.g. use \"manzana\", never \"manzana_roja\" or \"manzana-roja\").\n5. The content text of the pictogram should match the search term but in UPPERCASE.\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{\n  \"exerciseType\": \"rodear\",\n  \"instruction\": {\n    \"text\": \"RODEA LOS CÍRCULOS\",\n    \"pictograms\": [\n      { \"searchTerm\": \"rodear\", \"content\": \"RODEA\" }\n    ]\n  },\n  \"exercise\": {\n    \"prompt\": null,\n    \"options\": [\n      { \"content\": \"círculo\", \"searchTerm\": \"círculo\" },\n      { \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\" },\n      { \"content\": \"triángulo\", \"searchTerm\": \"triángulo\" },\n      { \"content\": \"rectángulo\", \"searchTerm\": \"rectángulo\" },\n      { \"content\": \"círculo\", \"searchTerm\": \"círculo\" },\n      { \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\" },\n      { \"content\": \"triángulo\", \"searchTerm\": \"triángulo\" },\n      { \"content\": \"rectángulo\", \"searchTerm\": \"rectángulo\" }\n    ]\n  }\n}",
+      "provider": "ollama",
+      "status": "success"
+    },
+    {
+      "prompt": "You are the Global Pedagogical Evaluator Agent (GPEA) for Adaptator-TEA.\nYour role is to audit a full educational worksheet containing multiple exercises, ensuring overall progression, visual simplicity, and structural coherence.\n\nSTUDENT PROFILE:\nDatos generales:\n- Edad: 8\n- Curso o etapa: Primaria 2º\n- Diagnóstico o condición relevante: TEA grado 1 (alto funcionamiento)\n- Objetivos prioritarios actuales: Consolidar comprensión lectora de frases sencillas, autonomía en la resolución de tareas escolares estructuradas y refuerzo de cálculo aritmético simple.\n- Comentarios adicionales: Vocabulario amplio. Puede experimentar fatiga mental si la ficha tiene demasiados elementos repetitivos o carece de una meta lúdica. Responde bien a consignas textuales claras.\n\n1. Comprensión y acceso a la información:\n- Síntesis profesional: Comprende instrucciones escritas de dos pasos si están estructuradas. No requiere apoyo visual masivo de pictogramas (puede llegar a distraerle si está sobrecargado).\n- Canal de acceso preferente: Lectoescritura combinada con esquemas visuales lógicos.\n- Apoyos indispensables: Títulos claros, enunciados directos y estructura espacial limpia.\n\n2. Modalidad de respuesta:\n- Modalidad expresiva: Verbal y lectoescritura funcional. Capaz de escribir palabras y completar frases cortas de forma autónoma.\n- Habilidades motoras: Motricidad fina desarrollada. Puede copiar palabras en minúsculas/mayúsculas y realizar trazos precisos.\n- Adaptaciones de respuesta: Actividades de copiar palabras, resolver operaciones aritméticas y relacionar conceptos abstractos.\n\nGENERATED WORKSHEET JSON:\n{\"title\": \"Formas Geom\\u00e9tricas: C\\u00edrculo y Cuadrado\", \"pictogramSearchTerm\": \"circulo\", \"sections\": [{\"exerciseType\": \"rodear\", \"instruction\": {\"text\": \"RODEA LOS C\\u00cdRCULOS\", \"pictograms\": [{\"searchTerm\": \"rodear\", \"content\": \"RODEA\"}]}, \"exercise\": {\"prompt\": null, \"options\": [{\"content\": \"c\\u00edrculo\", \"searchTerm\": \"c\\u00edrculo\"}, {\"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\"}, {\"content\": \"tri\\u00e1ngulo\", \"searchTerm\": \"tri\\u00e1ngulo\"}, {\"content\": \"rect\\u00e1ngulo\", \"searchTerm\": \"rect\\u00e1ngulo\"}, {\"content\": \"c\\u00edrculo\", \"searchTerm\": \"c\\u00edrculo\"}, {\"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\"}, {\"content\": \"tri\\u00e1ngulo\", \"searchTerm\": \"tri\\u00e1ngulo\"}, {\"content\": \"rect\\u00e1ngulo\", \"searchTerm\": \"rect\\u00e1ngulo\"}]}, \"items\": [{\"type\": \"image\", \"content\": \"c\\u00edrculo\", \"searchTerm\": \"c\\u00edrculo\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"tri\\u00e1ngulo\", \"searchTerm\": \"tri\\u00e1ngulo\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"rect\\u00e1ngulo\", \"searchTerm\": \"rect\\u00e1ngulo\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"c\\u00edrculo\", \"searchTerm\": \"c\\u00edrculo\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"tri\\u00e1ngulo\", \"searchTerm\": \"tri\\u00e1ngulo\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}, {\"type\": \"image\", \"content\": \"rect\\u00e1ngulo\", \"searchTerm\": \"rect\\u00e1ngulo\", \"selectedPictoUrl\": \"\", \"pictoOptions\": [], \"pictogramRenderMode\": \"auto\"}]}]}\n\nEVALUATION CRITERIA:\n1. Overall Coherence: The worksheet must maintain a single, consistent theme across all exercises.\n2. Progression & Visual Load: The exercises must be ordered from easiest (e.g., repasar) to hardest (e.g., copiar). The total number of items must not overwhelm the student's attention limits.\n3. Pictogram Consistency: Search terms for pictograms must be simple single words in the target language. No underscores, hyphens, or technical suffixes.\n\nOUTPUT FORMAT:\nYou must return a single valid JSON object with the following fields:\n{\n  \"approved\": true or false,\n  \"feedback\": \"If approved=false, provide general feedback and specific suggestions for each failed exercise.\",\n  \"rejectedSectionIndexes\": [index of failed exercises in the worksheet sections list, starting from 0. E.g. [1] to reject the second exercise. Empty if all are approved.]\n}\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{\"approved\": false, \"feedback\": \"The worksheet requires significant revisions to align with the student's profile and learning needs. While the overall concept is appropriate, the exercise design is overwhelming and lacks a clear progression. The high number of options and repetitive images will likely lead to fatigue. The instruction 'RODEA LOS C\\u00cdRCULOS' is too directive and lacks a playful element. Furthermore, the pictogram search terms are overly complex and use underscores. Specific suggestions below:\", \"rejectedSectionIndexes\": [0]}",
+      "provider": "ollama",
+      "status": "success"
+    },
+    {
+      "prompt": "You are the Exercise Constructor Agent (AC) for Adaptator-TEA.\nYour role is to generate the exact JSON structure for a single educational exercise according to a provided pedagogical blueprint.\nATTENTION - PREVIOUS FEEDBACK TO CORRECT:\nThe previous attempt to generate this exercise failed validation or pedagogical criteria. You MUST correct it based on the following feedback:\n\"GLOBAL REJECTION FEEDBACK: The worksheet requires significant revisions to align with the student's profile and learning needs. While the overall concept is appropriate, the exercise design is overwhelming and lacks a clear progression. The high number of options and repetitive images will likely lead to fatigue. The instruction 'RODEA LOS CÍRCULOS' is too directive and lacks a playful element. Furthermore, the pictogram search terms are overly complex and use underscores. Specific suggestions below:\"\n\nPEDAGOGICAL BLUEPRINT:\n- Exercise Type: rodear\n- Objective: Reconocer y discriminar visualmente el círculo.\n- Instruction: ROBANDO CON COLOR ROJO EL CÍRCULO.\n- Detailed Content Description: Rodear con un lápiz de color rojo los círculos dibujados. Hay 5 círculos y 3 cuadrados en la página. No hay otras figuras.  Se deben dibujar 5 círculos de tamaño mediano y 3 cuadrados de tamaño mediano, separados claramente.  El objetivo es rodear únicamente los círculos con un lápiz rojo.\n\nTARGET SCHEMA AND RULES:\nYou must output a single JSON object matching the format below.\n{\n  \"exerciseType\": \"rodear\",\n  \"instruction\": {\n    \"text\": \"RODEA LOS ANIMALES\",\n    \"pictograms\": [\n      { \"searchTerm\": \"rodear\", \"content\": \"RODEAR\" }\n    ]\n  },\n  \"exercise\": {\n    \"prompt\": null,\n    \"options\": [\n      { \"content\": \"perro\", \"searchTerm\": \"perro\" },\n      { \"content\": \"silla\", \"searchTerm\": \"silla\" }\n    ]\n  }\n}\n\nADDITIONAL RULES:\n1. Generate the exact content and the exact element count (number of options, pairs, words, traces) described in the blueprint description. Do NOT default or be limited to the counts shown in the JSON schemas or few-shot examples.\n2. Renders a simple flat list or grid of options. Distractors must be concrete, simple, and clearly distinct from target items.\n3. An optional \"prompt\" object can define the target concept.\n4. CRITICAL: Only plan a simple list/grid of options. Never plan complex illustration scenes, body parts labeling, interactive layouts, or subgroups.\n5. Scale the number of options (targets + distractors) dynamically based on the student profile, strictly between 4 and 8 options. High support needs profiles should have 4 options; lower support needs should have 6 to 8 options.\n6. All student-facing and teacher-facing text in the JSON (instructions, contents, searchTerms, copies, etc.) MUST be written in Castilian Spanish (es).\n7. Do NOT include any additional fields or wrapper objects. The output must be exactly the JSON section structure.\n8. Do NOT include markdown styling or text outside the JSON block. Return ONLY the JSON object.\n\nPICTOGRAM SEARCH TERM & CONTENT RULES:\n1. Every item inside the JSON containing \"searchTerm\" (for pictogram lookup) or \"content\" (displayed text) MUST contain a single, simple, concrete word (e.g. \"sol\", \"perro\", \"abrigo\").\n2. CRITICAL: Never use multi-word descriptions, qualifiers, sentences, or phrases for search terms (e.g. NEVER write \"sol de verano\", \"abuela feliz\", \"comer manzana\").\n3. CRITICAL: Do NOT use technical qualifiers or file extensions in the search term. For example, never use suffixes like \"_pictograma\", \"_image\", \"_dibujo\", \"_picto\", \"pictograma\", \"image\", or \"dibujo\".\n4. Do NOT use punctuation, hyphens (-), or underscores (_) inside \"searchTerm\" (e.g. use \"manzana\", never \"manzana_roja\" or \"manzana-roja\").\n5. The content text of the pictogram should match the search term but in UPPERCASE.\n\nJSON ONLY. Respect Markdown JSON formatting.",
+      "response": "{\n  \"exerciseType\": \"rodear\",\n  \"instruction\": {\n    \"text\": \"RODEA LOS CÍRCULOS\",\n    \"pictograms\": [\n      { \"searchTerm\": \"circulo\", \"content\": \"CÍRCULO\" }\n    ]\n  },\n  \"exercise\": {\n    \"prompt\": null,\n    \"options\": [\n      { \"content\": \"perro\", \"searchTerm\": \"perro\" },\n      { \"content\": \"silla\", \"searchTerm\": \"silla\" },\n      { \"content\": \"sol\", \"searchTerm\": \"sol\" },\n      { \"content\": \"manzana\", \"searchTerm\": \"manzana\" },\n      { \"content\": \"circulo\", \"searchTerm\": \"circulo\" },\n      { \"content\": \"cuadrado\", \"searchTerm\": \"cuadrado\" },\n      { \"content\": \"triangulo\", \"searchTerm\": \"triangulo\" },\n      { \"content\": \"estrella\", \"searchTerm\": \"estrella\" }\n    ]\n  }\n}",
+      "provider": "ollama",
+      "status": "success"
+    }
+  ],
+  "final_worksheet": {
+    "title": "Formas Geométricas: Círculo y Cuadrado",
+    "pictogramSearchTerm": "circulo",
+    "sections": [
+      {
+        "exerciseType": "rodear",
+        "instruction": {
+          "text": "RODEA LOS CÍRCULOS",
+          "pictograms": [
+            {
+              "searchTerm": "circulo",
+              "content": "CÍRCULO",
+              "url": "https://static.arasaac.org/pictograms/4603/4603_500.png"
+            }
+          ]
+        },
+        "exercise": {
+          "prompt": null,
+          "options": [
+            {
+              "content": "perro",
+              "searchTerm": "perro",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/2517/2517_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/2517/2517_500.png",
+                "https://static.arasaac.org/pictograms/7202/7202_500.png",
+                "https://static.arasaac.org/pictograms/38967/38967_500.png"
+              ]
+            },
+            {
+              "content": "silla",
+              "searchTerm": "silla",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/3155/3155_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/3155/3155_500.png",
+                "https://static.arasaac.org/pictograms/6281/6281_500.png",
+                "https://static.arasaac.org/pictograms/6614/6614_500.png",
+                "https://static.arasaac.org/pictograms/25459/25459_500.png",
+                "https://static.arasaac.org/pictograms/25460/25460_500.png"
+              ]
+            },
+            {
+              "content": "sol",
+              "searchTerm": "sol",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/2798/2798_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/2798/2798_500.png",
+                "https://static.arasaac.org/pictograms/7252/7252_500.png"
+              ]
+            },
+            {
+              "content": "manzana",
+              "searchTerm": "manzana",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/2462/2462_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/2462/2462_500.png",
+                "https://static.arasaac.org/pictograms/13645/13645_500.png",
+                "https://static.arasaac.org/pictograms/13644/13644_500.png"
+              ]
+            },
+            {
+              "content": "circulo",
+              "searchTerm": "circulo",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/4603/4603_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/4603/4603_500.png",
+                "https://static.arasaac.org/pictograms/34053/34053_500.png"
+              ]
+            },
+            {
+              "content": "cuadrado",
+              "searchTerm": "cuadrado",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/4616/4616_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/4616/4616_500.png"
+              ]
+            },
+            {
+              "content": "triangulo",
+              "searchTerm": "triangulo",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/2604/2604_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/2604/2604_500.png",
+                "https://static.arasaac.org/pictograms/4763/4763_500.png"
+              ]
+            },
+            {
+              "content": "estrella",
+              "searchTerm": "estrella",
+              "selectedPictoUrl": "https://static.arasaac.org/pictograms/2752/2752_500.png",
+              "pictoOptions": [
+                "https://static.arasaac.org/pictograms/2752/2752_500.png",
+                "https://static.arasaac.org/pictograms/3100/3100_500.png",
+                "https://static.arasaac.org/pictograms/4644/4644_500.png"
+              ]
+            }
+          ]
+        },
+        "items": [
+          {
+            "type": "image",
+            "content": "perro",
+            "searchTerm": "perro",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "silla",
+            "searchTerm": "silla",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "sol",
+            "searchTerm": "sol",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "manzana",
+            "searchTerm": "manzana",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "circulo",
+            "searchTerm": "circulo",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "cuadrado",
+            "searchTerm": "cuadrado",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "triangulo",
+            "searchTerm": "triangulo",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          },
+          {
+            "type": "image",
+            "content": "estrella",
+            "searchTerm": "estrella",
+            "selectedPictoUrl": "",
+            "pictoOptions": [],
+            "pictogramRenderMode": "auto"
+          }
+        ]
+      }
+    ],
+    "selectedPictoUrl": "https://static.arasaac.org/pictograms/4603/4603_500.png",
+    "pictoOptions": [
+      "https://static.arasaac.org/pictograms/4603/4603_500.png",
+      "https://static.arasaac.org/pictograms/34053/34053_500.png"
+    ],
+    "telemetry": {
+      "generationTimeMs": 52787,
+      "adpTimeMs": 8576,
+      "acTimeMs": 10248,
+      "rejectionCount": 0,
+      "manualEditsCount": 0,
+      "pictoOverridesCount": 0,
+      "retryCount": 2,
+      "createdTimestamp": "2026-07-16T06:59:49Z"
+    }
+  }
+}

@@ -128,12 +128,42 @@ const searchPrivateApi = async (searchTerm: string, apiUrl: string): Promise<Pic
   }
 };
 
-export const searchPictograms = async (searchTerm: string, lang = 'es'): Promise<PictogramSearchResult[]> => {
-  const settings = getPictogramSettings();
+import { searchGalleryImages } from './galleryService';
 
-  if (settings.provider === 'private_api') {
-    return searchPrivateApi(searchTerm, settings.privateApiUrl);
+export const searchPictograms = async (
+  searchTerm: string,
+  lang = 'es',
+  options?: { isManualSearch?: boolean }
+): Promise<PictogramSearchResult[]> => {
+  const isManual = options?.isManualSearch || false;
+
+  // 1. Search local gallery first
+  const galleryResults = await searchGalleryImages(searchTerm, lang as any);
+
+  // If auto-selection (not manual), gallery result takes complete precedence. Skip API.
+  if (!isManual && galleryResults.length > 0) {
+    console.log(`[PIC TO AUTOSELECT] Local gallery match found for "${searchTerm}". Skipping ARASAAC API.`);
+    return galleryResults;
   }
 
-  return searchOfficialArasaac(searchTerm, settings.arasaacApiUrl, lang);
+  // 2. Search API
+  const settings = getPictogramSettings();
+  let apiResults: PictogramSearchResult[] = [];
+
+  try {
+    if (settings.provider === 'private_api') {
+      apiResults = await searchPrivateApi(searchTerm, settings.privateApiUrl);
+    } else {
+      apiResults = await searchOfficialArasaac(searchTerm, settings.arasaacApiUrl, lang);
+    }
+  } catch (error) {
+    console.error("API search failed:", error);
+  }
+
+  if (isManual) {
+    // Combine results: gallery matches first, then API matches
+    return [...galleryResults, ...apiResults];
+  }
+
+  return apiResults;
 };
