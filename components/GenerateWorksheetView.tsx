@@ -3,7 +3,7 @@ import { useWorksheetGenerator } from '../hooks/useWorksheetGenerator';
 import { useDynamicLibraries } from '../hooks/useDynamicLibraries';
 import { exportWorksheetAsPdf } from '../lib/worksheetExport';
 import { Spinner } from './Spinner';
-import { FileTextIcon } from './Icons';
+import { FilePlus2Icon, FileTextIcon } from './Icons';
 import { useAppDataManager } from '../hooks/useProfileManager';
 import type { SavedWorksheet } from '../types';
 import { WorksheetEditor } from './WorksheetEditor';
@@ -86,11 +86,20 @@ export const GenerateWorksheetView: React.FC = () => {
           aria-hidden="true"
         />
         <div className="relative">
-          <div className="mb-8 max-w-3xl">
-            <h2 className="text-3xl font-black tracking-tight text-slate-900">Generar nueva ficha</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Define el tema principal y, si quieres, añade un objetivo concreto o instrucciones extra para condicionar mejor la generación.
-            </p>
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div
+              className="relative flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-3xl border border-sky-200 bg-gradient-to-br from-white via-sky-50 to-cyan-100 text-sky-700 shadow-xl shadow-sky-500/15"
+              aria-hidden="true"
+            >
+              <FilePlus2Icon className="h-10 w-10" />
+            </div>
+            <div className="max-w-3xl">
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-sky-700">Pictalia</p>
+              <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-900">Generar nueva ficha</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Define el tema principal y, si quieres, añade un objetivo concreto o instrucciones extra para condicionar mejor la generación.
+              </p>
+            </div>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">

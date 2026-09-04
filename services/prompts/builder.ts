@@ -441,7 +441,7 @@ export const buildAdpBlueprintPrompt = (
   const targetLang = options.language ? languageNames[options.language] : languageNames.es;
 
   return compact(
-    `You are the Pedagogical Designer Agent (ADP) for Adaptator-TEA.
+    `You are the Pedagogical Designer Agent (ADP) for Pictalia.
 Your role is to analyze a student's profile, a target topic, and learning goals, and design a customized worksheet structure.`,
     `STUDENT PROFILE:
 ${childProfile}`,
@@ -488,7 +488,7 @@ export const buildAcExercisePrompt = (
   const targetLang = languageNames[language] || languageNames.es;
 
   return compact(
-    `You are the Exercise Constructor Agent (AC) for Adaptator-TEA.
+    `You are the Exercise Constructor Agent (AC) for Pictalia.
 Your role is to generate the exact JSON structure for a single educational exercise according to a provided pedagogical blueprint.`,
     `PEDAGOGICAL BLUEPRINT:
 - Exercise Type: ${exerciseBlueprint.type}
@@ -508,4 +508,3 @@ ${exerciseSchema}`,
     `JSON ONLY. Respect Markdown JSON formatting.`
   );
 };
-

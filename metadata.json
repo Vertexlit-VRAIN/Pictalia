@@ -1,5 +1,5 @@
 {
-  "name": "ADAPTATOR (Generador de Fichas Visuales)",
-  "description": "Una aplicación web para generar, editar y organizar fichas educativas visuales para niños con necesidades especiales, utilizando IA para personalizar el contenido según el perfil del niño.",
+  "name": "Pictalia",
+  "description": "Una aplicación web para generar, editar y organizar fichas educativas visuales adaptadas, utilizando IA para personalizar el contenido según el perfil del alumnado.",
   "requestFramePermissions": []
 }

@@ -15,7 +15,7 @@ export const buildGlobalEvaluatorPrompt = (
   const targetLang = languageNames[language] || languageNames.es;
 
   return compact(
-    `You are the Global Pedagogical Evaluator Agent (GPEA) for Adaptator-TEA.
+    `You are the Global Pedagogical Evaluator Agent (GPEA) for Pictalia.
 Your role is to review the entire assembled worksheet (containing multiple exercises) to ensure it is cohesive, has a proper difficulty progression, and is fully adapted to the student's profile.`,
     `STUDENT PROFILE:
 ${childProfile}`,

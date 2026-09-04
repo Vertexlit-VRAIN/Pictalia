@@ -24,7 +24,7 @@ export const buildAcExercisePrompt = (
   ];
 
   return compact(
-    `You are the Exercise Constructor Agent (AC) for Adaptator-TEA.
+    `You are the Exercise Constructor Agent (AC) for Pictalia.
 Your role is to generate the exact JSON structure for a single educational exercise according to a provided pedagogical blueprint.`,
     feedback
       ? `ATTENTION - PREVIOUS FEEDBACK TO CORRECT:

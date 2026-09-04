@@ -1,5 +1,6 @@
 import React from 'react';
-import { BrainCircuitIcon, FileTextIcon, FolderOpenIcon, SlidersHorizontalIcon, SparklesIcon, ImageIcon } from './Icons';
+import { FileTextIcon, FolderOpenIcon, SlidersHorizontalIcon, SparklesIcon, ImageIcon } from './Icons';
+import pictaliaIcon from '../assets/icons/pictalia-app-icon-512.png';
 
 type HeaderView = 'generate' | 'profile' | 'library' | 'translator' | 'gallery';
 
@@ -22,15 +23,17 @@ export const Header: React.FC<HeaderProps> = ({ activeView, setActiveView }) => 
       <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 via-cyan-400 to-emerald-300 text-white shadow-lg shadow-sky-500/25">
-              <BrainCircuitIcon className="h-7 w-7" />
-            </div>
+            <img
+              src={pictaliaIcon}
+              alt=""
+              className="h-14 w-14 rounded-2xl object-cover shadow-lg shadow-sky-500/20 ring-1 ring-slate-200"
+            />
             <div>
               <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-                Adaptador TEA
+                Pictalia
               </h1>
               <p className="text-sm text-slate-600">
-                Genera, organiza y edita fichas visuales con una navegación más clara y usable.
+                Genera, organiza y edita fichas visuales adaptadas para el aula.
               </p>
             </div>
           </div>

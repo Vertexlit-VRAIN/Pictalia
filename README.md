@@ -1,4 +1,4 @@
-# Adaptator TEA
+# Pictalia
 
 Aplicación web para generar, editar y organizar fichas educativas con apoyo visual para alumnado con TEA.
 

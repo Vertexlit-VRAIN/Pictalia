@@ -28,7 +28,7 @@ export const buildAdpBlueprintPrompt = (
   }).join('\n');
 
   return compact(
-    `You are the Pedagogical Designer Agent (ADP) for Adaptator-TEA.
+    `You are the Pedagogical Designer Agent (ADP) for Pictalia.
 Your role is to analyze a student's profile, a target topic, and learning goals, and design a customized worksheet structure.`,
     `STUDENT PROFILE:
 ${childProfile}`,

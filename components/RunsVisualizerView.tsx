@@ -146,7 +146,7 @@ export const RunsVisualizerView: React.FC = () => {
                 return updated;
               });
             } else {
-              alert(`El archivo "${file.name}" no parece ser un JSON de corrida válido de Adaptator.`);
+              alert(`El archivo "${file.name}" no parece ser un JSON de corrida válido de Pictalia.`);
             }
           } catch (e) {
             alert(`Error al procesar el archivo JSON: ${e}`);
